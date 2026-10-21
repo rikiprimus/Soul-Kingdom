@@ -317,6 +317,43 @@
           "sha12": "0a32e8ebc832"
         }
       ]
+    },
+    {
+      "asset_id": "297a7340-cc9d-40ee-9567-b6e76a572880",
+      "label": "grid monster tingkat 1 (netral)",
+      "source_sha12": "6d8b00d0424b",
+      "crops": [
+        {
+          "path": "art/monsters/kucing.png",
+          "crop": [0, 0, 682, 576],
+          "sha12": "3d640c2a2274"
+        },
+        {
+          "path": "art/monsters/anjing.png",
+          "crop": [682, 0, 682, 576],
+          "sha12": "46386d7eb274"
+        },
+        {
+          "path": "art/monsters/landak.png",
+          "crop": [1364, 0, 682, 576],
+          "sha12": "50c42d1977e6"
+        },
+        {
+          "path": "art/monsters/kelinci.png",
+          "crop": [0, 576, 682, 576],
+          "sha12": "b17c32c52bdb"
+        },
+        {
+          "path": "art/monsters/tupai.png",
+          "crop": [682, 576, 682, 576],
+          "sha12": "3c8dd8c47cd4"
+        },
+        {
+          "path": "art/monsters/katak.png",
+          "crop": [1364, 576, 682, 576],
+          "sha12": "3ef8f81cda35"
+        }
+      ]
     }
   ]
 }

@@ -410,7 +410,35 @@ function drawToTexture(
 /** Returns a cached texture key for this monster at `size` display pixels. */
 export function monsterTexture(scene: Phaser.Scene, spec: MonsterArtSpec, size: number): string {
   const key = `mon:${spec.form}:${spec.element}:${spec.stage}:${size}`;
+  if (scene.textures.exists(key)) return key;
+  if (scene.textures.exists(MONSTER_ATLAS) && scene.textures.get(MONSTER_ATLAS).has(spec.form)) {
+    return paintedMonster(scene, spec, key, Math.round(size * ART_RES));
+  }
   return drawToTexture(scene, key, size, (g, S) => drawMonster(g, spec, S));
+}
+
+const MONSTER_ATLAS = 'monsters';
+
+/**
+ * Painted art from the monsters atlas: one neutral grey sprite per form, tinted with the
+ * element's main colour and scaled by growth stage like the code-drawn art.
+ * ponytail: only the first element colour tints the body; mixed elements show the rest via
+ * aura and particles. Per-unit colour masks if that reads too flat.
+ */
+function paintedMonster(scene: Phaser.Scene, spec: MonsterArtSpec, key: string, S: number) {
+  const stages = gameData.rules.growth.stages.length;
+  const grow = stages > 1 ? getStage(spec.stage).index / (stages - 1) : 1;
+  const tierScale = [1, 1, 1.03, 1.07, 1.12][getForm(spec.form).tier - 1] ?? 1;
+  const image = scene.make.image({ key: MONSTER_ATLAS, frame: spec.form }, false);
+  image
+    .setOrigin(0.5, 1)
+    .setScale(((0.62 + 0.38 * grow) * tierScale * S * 0.86) / image.width)
+    .setTint(lighten(elementColors(spec.element)[0]!, 0.2));
+  // The render texture owns the saved texture, so it is kept rather than destroyed.
+  const rt = scene.make.renderTexture({ width: S, height: S }, false);
+  rt.draw(image, S / 2, S * 0.94).saveTexture(key);
+  image.destroy();
+  return key;
 }
 
 /** Egg used in the mixer queue and the hatching animation. */

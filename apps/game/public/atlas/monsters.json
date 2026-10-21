@@ -1,0 +1,145 @@
+{
+	"textures": [
+		{
+			"image": "monsters.png",
+			"format": "RGBA8888",
+			"size": {
+				"w": 2048,
+				"h": 512
+			},
+			"scale": 1,
+			"frames": [
+				{
+					"filename": "kucing",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 15,
+						"w": 256,
+						"h": 241
+					},
+					"frame": {
+						"x": 3,
+						"y": 3,
+						"w": 256,
+						"h": 241
+					}
+				},
+				{
+					"filename": "landak",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 16,
+						"w": 256,
+						"h": 240
+					},
+					"frame": {
+						"x": 265,
+						"y": 3,
+						"w": 256,
+						"h": 240
+					}
+				},
+				{
+					"filename": "tupai",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 27,
+						"w": 256,
+						"h": 229
+					},
+					"frame": {
+						"x": 527,
+						"y": 3,
+						"w": 256,
+						"h": 229
+					}
+				},
+				{
+					"filename": "anjing",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 28,
+						"w": 256,
+						"h": 228
+					},
+					"frame": {
+						"x": 789,
+						"y": 3,
+						"w": 256,
+						"h": 228
+					}
+				},
+				{
+					"filename": "katak",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 36,
+						"w": 256,
+						"h": 220
+					},
+					"frame": {
+						"x": 1051,
+						"y": 3,
+						"w": 256,
+						"h": 220
+					}
+				},
+				{
+					"filename": "kelinci",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 28,
+						"y": 0,
+						"w": 200,
+						"h": 256
+					},
+					"frame": {
+						"x": 1313,
+						"y": 3,
+						"w": 200,
+						"h": 256
+					}
+				}
+			]
+		}
+	],
+	"meta": {
+		"app": "http://github.com/odrick/free-tex-packer-core",
+		"version": "0.3.9"
+	}
+}
