@@ -354,6 +354,43 @@
           "sha12": "3ef8f81cda35"
         }
       ]
+    },
+    {
+      "asset_id": "972ca407-7eee-434b-b16e-99d15fb2d971",
+      "label": "grid monster tingkat 2 + elang (netral)",
+      "source_sha12": "8503d37c2775",
+      "crops": [
+        {
+          "path": "art/monsters/serigala.png",
+          "crop": [0, 0, 341, 512],
+          "sha12": "edeacb18bf5e"
+        },
+        {
+          "path": "art/monsters/babi-hutan.png",
+          "crop": [341, 0, 341, 512],
+          "sha12": "233f08ff4f65"
+        },
+        {
+          "path": "art/monsters/ular.png",
+          "crop": [682, 0, 341, 512],
+          "sha12": "6ee13d6f8827"
+        },
+        {
+          "path": "art/monsters/kera.png",
+          "crop": [0, 512, 341, 512],
+          "sha12": "fa5c430c84d4"
+        },
+        {
+          "path": "art/monsters/kura-kura.png",
+          "crop": [341, 512, 341, 512],
+          "sha12": "b88bbbda36c2"
+        },
+        {
+          "path": "art/monsters/elang.png",
+          "crop": [682, 512, 341, 512],
+          "sha12": "a7d7e111a505"
+        }
+      ]
     }
   ]
 }

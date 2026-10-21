@@ -10,6 +10,48 @@
 			"scale": 1,
 			"frames": [
 				{
+					"filename": "babi-hutan",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 2,
+						"w": 256,
+						"h": 254
+					},
+					"frame": {
+						"x": 3,
+						"y": 3,
+						"w": 256,
+						"h": 254
+					}
+				},
+				{
+					"filename": "elang",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 10,
+						"w": 256,
+						"h": 246
+					},
+					"frame": {
+						"x": 265,
+						"y": 3,
+						"w": 256,
+						"h": 246
+					}
+				},
+				{
 					"filename": "kucing",
 					"rotated": false,
 					"trimmed": true,
@@ -24,7 +66,7 @@
 						"h": 241
 					},
 					"frame": {
-						"x": 3,
+						"x": 527,
 						"y": 3,
 						"w": 256,
 						"h": 241
@@ -45,10 +87,31 @@
 						"h": 240
 					},
 					"frame": {
-						"x": 265,
+						"x": 789,
 						"y": 3,
 						"w": 256,
 						"h": 240
+					}
+				},
+				{
+					"filename": "kura-kura",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 26,
+						"w": 256,
+						"h": 230
+					},
+					"frame": {
+						"x": 1051,
+						"y": 3,
+						"w": 256,
+						"h": 230
 					}
 				},
 				{
@@ -66,7 +129,7 @@
 						"h": 229
 					},
 					"frame": {
-						"x": 527,
+						"x": 1313,
 						"y": 3,
 						"w": 256,
 						"h": 229
@@ -87,31 +150,10 @@
 						"h": 228
 					},
 					"frame": {
-						"x": 789,
+						"x": 1575,
 						"y": 3,
 						"w": 256,
 						"h": 228
-					}
-				},
-				{
-					"filename": "katak",
-					"rotated": false,
-					"trimmed": true,
-					"sourceSize": {
-						"w": 256,
-						"h": 256
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 36,
-						"w": 256,
-						"h": 220
-					},
-					"frame": {
-						"x": 1051,
-						"y": 3,
-						"w": 256,
-						"h": 220
 					}
 				},
 				{
@@ -129,9 +171,93 @@
 						"h": 256
 					},
 					"frame": {
-						"x": 1313,
+						"x": 1837,
 						"y": 3,
 						"w": 200,
+						"h": 256
+					}
+				},
+				{
+					"filename": "katak",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 36,
+						"w": 256,
+						"h": 220
+					},
+					"frame": {
+						"x": 1575,
+						"y": 237,
+						"w": 256,
+						"h": 220
+					}
+				},
+				{
+					"filename": "kera",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 12,
+						"y": 0,
+						"w": 232,
+						"h": 256
+					},
+					"frame": {
+						"x": 1313,
+						"y": 238,
+						"w": 232,
+						"h": 256
+					}
+				},
+				{
+					"filename": "serigala",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 15,
+						"y": 0,
+						"w": 226,
+						"h": 256
+					},
+					"frame": {
+						"x": 1051,
+						"y": 239,
+						"w": 226,
+						"h": 256
+					}
+				},
+				{
+					"filename": "ular",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 23,
+						"y": 0,
+						"w": 210,
+						"h": 256
+					},
+					"frame": {
+						"x": 789,
+						"y": 249,
+						"w": 210,
 						"h": 256
 					}
 				}
