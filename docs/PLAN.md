@@ -897,6 +897,12 @@ Keputusan pemilik (2026-10-21): base awal memakai **prajurit manusia**, bukan mo
 - **Tembok:** bisa dipindah satuan (Pindah) atau seluruh sambungan sekaligus (Pindah sebaris, `moveGroup`).
 - **Kartu info:** muncul di atas (atau di bawah) objek yang diklik, bukan di pojok.
 
+### Ide pemilik (2026-10-21, belum dijadwalkan)
+
+- **Penyergapan saat menebang:** kadang bandit atau monster liar muncul dari pohon (atau semak/batu) yang sedang ditebang dan bisa **membunuh pekerja**, supaya pemain berhati-hati saat menebang. Peluangnya **kecil**; angka peluang, jenis musuh, dan apakah pekerja bisa dikawal ditentukan saat dijadwalkan (masuk `data/wilds.json`/`rules.json`).
+- **Eksplorasi mencari sumber daya:** saat sumber daya di wilayah sendiri habis, pemain bisa menjelajah ke luar sambil mencari sumber daya. Pekerja perlu **dikawal** (prajurit/monster) karena bisa diserang; butuh strategi memilih pengawal. Kaitkan dengan mode Petualangan (Tugas 1.5) saat dirancang.
+- **Musuh mengejar saat didekati:** bandit dan monster liar diam di tempatnya, tetapi saat prajurit, monster, atau pekerja kita masuk jarak tertentu, mereka mendekat dan **mengejar untuk menyerang**. Pemain perlu menjaga jarak atau mengawal unitnya. Jarak deteksi dan kecepatan kejar masuk `rules.json` saat dijadwalkan.
+
 ### Keputusan Fase 1A/1B
 
 Semua keputusan pengguna (2026-10-18) beserta alasannya tercatat di [docs/FITUR.md](FITUR.md) bagian 4–5. Ringkasannya ada di "Aturan inti Fase 1A" di atas.
