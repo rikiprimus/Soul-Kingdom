@@ -7,10 +7,17 @@ import type { PlayerState } from './state';
 import { createWorkers } from './workers';
 import { animalRespawnSeconds } from './animals';
 import { encounterRespawnSeconds } from './encounters';
-import { canPlace, createVillage, levelDef, scatterObstacles, type Village } from './village';
+import {
+  canPlace,
+  createVillage,
+  levelDef,
+  placeGoldVeins,
+  scatterObstacles,
+  type Village,
+} from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 14;
+export const SAVE_SCHEMA_VERSION = 15;
 
 const int = z.number().int();
 const monsterSchema = z.object({
@@ -50,6 +57,7 @@ const playerStateSchema = z.object({
         x: int.min(0),
         y: int.min(0),
         work: z.number().min(0),
+        refillAt: z.number().nullable().optional(),
       }),
     ),
     unlockedPlots: z.array(z.string().regex(/^\d+,\d+$/)),
@@ -390,6 +398,14 @@ const migrations: Record<number, (state: unknown) => unknown> = {
   13: (raw) => {
     const state = raw as PlayerState;
     state.units = {};
+    return state;
+  },
+  // v14 had no gold veins: place them now (seeded from the saved RNG, so it is repeatable).
+  14: (raw) => {
+    const state = raw as PlayerState;
+    const rng = createRng(state.rngState);
+    placeGoldVeins(state.village, rng, () => `o${state.nextId++}`);
+    state.rngState = rng.getState();
     return state;
   },
 };

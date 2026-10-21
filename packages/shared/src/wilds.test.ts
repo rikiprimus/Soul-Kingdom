@@ -3,7 +3,7 @@ import { deepClone } from './clone';
 import { gameData } from './data';
 import { deserializeState, serializeState } from './save';
 import { createInitialState, type ActionResult, type PlayerState } from './state';
-import { obstacleDef, plotOf, settleVillage } from './village';
+import { isPlotUnlocked, obstacleDef, plotOf, settleVillage } from './village';
 import {
   advanceWilds,
   gatherRemaining,
@@ -39,7 +39,8 @@ describe('gathering wild nodes', () => {
       expect(gatherWorkers(s, 'n1')).toBe(1);
       const r = advanceWilds(s, def.work.workSeconds, T0);
       expect(r.gathered).toHaveLength(1);
-      expect(r.state.village.obstacles).toHaveLength(0);
+      // Gold veins stay as an empty rock; everything else is gone.
+      expect(r.state.village.obstacles).toHaveLength(def.refillHours ? 1 : 0);
       for (const res of ['gold', 'food', 'wood', 'stone'] as const) {
         expect(r.state.resources[res]).toBe(s.resources[res] + def.yield[res]);
       }
@@ -141,6 +142,17 @@ describe('regrowing wild nodes', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it('never grows back on open land, only on locked plots', () => {
+    const s = createInitialState(T0, 5);
+    s.village.obstacles = [];
+    const later = regrowWilds(s, T0 + regrow.stepSeconds * regrow.maxSteps);
+    expect(later.village.obstacles.length).toBeGreaterThan(0);
+    for (const o of later.village.obstacles) {
+      const { px, py } = plotOf(o.x, o.y);
+      expect(isPlotUnlocked(later.village, px, py)).toBe(false);
+    }
+  });
+
   it('never grows on buildings and is deterministic', () => {
     const s = createInitialState(T0, 9);
     const at = T0 + regrow.stepSeconds * 30;
@@ -168,6 +180,73 @@ describe('save migration v6', () => {
     const loaded = deserializeState(JSON.stringify({ schemaVersion: 6, state: v6 }));
     expect(loaded.village.obstacles.every((o) => o.work === 0)).toBe(true);
     expect(loaded.village.regrowAt).toBe(T0);
+    expect(deserializeState(serializeState(loaded))).toEqual(loaded);
+  });
+});
+
+describe('gold veins (Tugas 1A.14)', () => {
+  const veins = gameData.wilds.goldVeins;
+  const gold = obstacleDef(veins.node);
+
+  it('places 1-3 clusters of side × side gold nodes in a new village', () => {
+    const counts = new Set<number>();
+    for (let seed = 1; seed <= 40; seed++) {
+      const s = createInitialState(T0, seed);
+      const nodes = s.village.obstacles.filter((o) => o.type === veins.node);
+      const per = veins.side * veins.side;
+      expect(nodes.length % per).toBe(0);
+      const clusters = nodes.length / per;
+      expect(clusters).toBeGreaterThanOrEqual(veins.clusters[0]);
+      expect(clusters).toBeLessThanOrEqual(veins.clusters[1]);
+      counts.add(clusters);
+      // Each cluster is a full block: every node has neighbours from its own vein.
+      for (let i = 0; i < nodes.length; i += per) {
+        const block = nodes.slice(i, i + per);
+        const xs = block.map((o) => o.x);
+        const ys = block.map((o) => o.y);
+        expect(Math.max(...xs) - Math.min(...xs)).toBe(veins.side - 1);
+        expect(Math.max(...ys) - Math.min(...ys)).toBe(veins.side - 1);
+      }
+    }
+    expect(counts.size).toBeGreaterThan(1);
+  });
+
+  it('mines gold, turns empty, refuses workers while empty, then fills up again', () => {
+    let s = withNode(veins.node);
+    s = ok(sendWorkers(s, 'n1', 1)).state;
+    const r = advanceWilds(s, gold.work.workSeconds, T0);
+    expect(r.gathered[0]!.amount.gold).toBe(gold.yield.gold);
+    expect(r.state.resources.gold).toBe(s.resources.gold + gold.yield.gold);
+    const empty = r.state.village.obstacles[0]!;
+    expect(empty.refillAt).toBe(T0 + gold.refillHours! * 3600);
+    expect(empty.work).toBe(0);
+    expect(sendWorkers(r.state, 'n1', 1)).toEqual({ ok: false, error: 'notAvailableYet' });
+    // Still empty a second before, full again at refill time (also after a long absence).
+    expect(regrowWilds(r.state, empty.refillAt! - 1).village.obstacles[0]!.refillAt).toBe(
+      empty.refillAt,
+    );
+    const full = regrowWilds(r.state, empty.refillAt! + 10 * 24 * 3600);
+    expect(full.village.obstacles.find((o) => o.id === 'n1')!.refillAt).toBeNull();
+    expect(sendWorkers(full, 'n1', 1).ok).toBe(true);
+  });
+
+  it('is never scattered or regrown at random', () => {
+    expect(gold.weight).toBe(0);
+    expect(gold.regrow.maxPerPlot).toBe(0);
+    const s = createInitialState(T0, 5);
+    const before = s.village.obstacles.filter((o) => o.type === veins.node).length;
+    const later = regrowWilds(s, T0 + 48 * 3600);
+    expect(later.village.obstacles.filter((o) => o.type === veins.node).length).toBe(before);
+  });
+
+  it('adds gold veins to old saves (migration v14)', () => {
+    const v14 = deepClone(createInitialState(T0, 9)) as unknown as {
+      village: { obstacles: { type: string }[] };
+    };
+    v14.village.obstacles = v14.village.obstacles.filter((o) => o.type !== veins.node);
+    const loaded = deserializeState(JSON.stringify({ schemaVersion: 14, state: v14 }));
+    const n = loaded.village.obstacles.filter((o) => o.type === veins.node).length;
+    expect(n).toBeGreaterThanOrEqual(veins.clusters[0] * veins.side * veins.side);
     expect(deserializeState(serializeState(loaded))).toEqual(loaded);
   });
 });

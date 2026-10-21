@@ -3,7 +3,14 @@ import { gameData, VILLAGE_RESOURCES, type GameData, type VillageAmount } from '
 import { advanceAnimals, type AnimalDone } from './animals';
 import { createRng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
-import { canPlace, obstacleDef, plotOf, plotsPerSide, type Obstacle } from './village';
+import {
+  canPlace,
+  isPlotUnlocked,
+  obstacleDef,
+  plotOf,
+  plotsPerSide,
+  type Obstacle,
+} from './village';
 import { assignWorkers, idleWorkers, releaseWorkers } from './workers';
 
 /** A wild node finished by workers, with what it gave. */
@@ -46,6 +53,8 @@ export function sendWorkers(
 ): ActionResult {
   const o = state.village.obstacles.find((x) => x.id === obstacleId);
   if (!o) return fail('obstacleNotFound');
+  // An empty gold vein waits to fill up again.
+  if (o.refillAt != null) return fail('notAvailableYet');
   if (!Number.isInteger(count) || count < 1) return fail('invalidAmount');
   const max = obstacleDef(o.type, data).work.maxWorkers;
   if (gatherWorkers(state, o.id) + count > max) return fail('tooManyWorkers');
@@ -89,6 +98,11 @@ export function advanceWilds(
     for (const r of VILLAGE_RESOURCES) next.resources[r] += def.yield[r];
     next.resources.soulCrystal += soulCrystal;
     releaseWorkers(next, gathering(o.id));
+    // Refilling nodes stay as an empty rock and fill up again later.
+    if (def.refillHours) {
+      o.work = 0;
+      o.refillAt = now + def.refillHours * 3600;
+    }
     gathered.push({
       obstacleId: o.id,
       type: o.type,
@@ -98,7 +112,9 @@ export function advanceWilds(
       soulCrystal,
     });
   }
-  const done = new Set(gathered.map((g) => g.obstacleId));
+  const done = new Set(
+    gathered.filter((g) => !obstacleDef(g.type, data).refillHours).map((g) => g.obstacleId),
+  );
   next.village.obstacles = next.village.obstacles.filter((o) => !done.has(o.id));
   const animals = advanceAnimals(next, seconds, now, data);
   // Workers whose node or animal vanished some other way go back to idle too.
@@ -112,8 +128,8 @@ export function advanceWilds(
 }
 
 /**
- * Wild nodes grow back: every `regrow.stepSeconds` since `village.regrowAt`, each
- * plot rolls each node type's `chancePerStep` and adds one on a free tile while the
+ * Wild nodes grow back on locked plots only: every `regrow.stepSeconds` since
+ * `village.regrowAt`, each locked plot rolls each node type's `chancePerStep` and adds one on a free tile while the
  * plot holds fewer than `maxPerPlot`. Deterministic from the saved RNG and the time;
  * at most `regrow.maxSteps` steps are played at once.
  */
@@ -124,8 +140,14 @@ export function regrowWilds(
 ): PlayerState {
   const { stepSeconds, maxSteps } = data.wilds.regrow;
   const steps = Math.floor((now - state.village.regrowAt) / stepSeconds);
-  if (steps <= 0) return state;
+  const refilled = state.village.obstacles.some((o) => o.refillAt != null && o.refillAt <= now);
+  if (steps <= 0 && !refilled) return state;
   const next = deepClone(state);
+  // Empty gold veins whose time has come are full again.
+  for (const o of next.village.obstacles) {
+    if (o.refillAt != null && o.refillAt <= now) o.refillAt = null;
+  }
+  if (steps <= 0) return next;
   const { village } = next;
   const rng = createRng(next.rngState);
   const n = plotsPerSide(data);
@@ -140,6 +162,9 @@ export function regrowWilds(
   for (let step = 0; step < Math.min(steps, maxSteps); step++) {
     for (let px = 0; px < n; px++) {
       for (let py = 0; py < n; py++) {
+        // Open land stays as the player cleared it: wilds only grow back on locked plots
+        // (open land only has the wilds of the first game).
+        if (isPlotUnlocked(village, px, py)) continue;
         for (const def of data.wilds.nodes) {
           if (!rng.chance(def.regrow.chancePerStep)) continue;
           const k = countKey(px, py, def.id);

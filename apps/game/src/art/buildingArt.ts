@@ -1065,6 +1065,35 @@ const DESIGNS: Record<string, Design> = {
       }
     },
   },
+  'batu-emas': {
+    top: 30,
+    draw(p) {
+      const c = p.fp(0.5, 0.5);
+      p.ellipse({ x: c.x, y: c.y + 2 }, 16, 7, 0x000000, null, 0.18);
+      p.poly(
+        [
+          { x: c.x - 15, y: c.y + 2 },
+          { x: c.x - 11, y: c.y - 9 },
+          { x: c.x - 1, y: c.y - 15 },
+          { x: c.x + 11, y: c.y - 11 },
+          { x: c.x + 15, y: c.y },
+          { x: c.x + 5, y: c.y + 5 },
+        ],
+        0x8f8a80,
+        0x4e4a44,
+      );
+      // Gold nuggets catching the light from the top-left.
+      for (const [dx, dy, r] of [
+        [-7, -5, 3.4],
+        [3, -9, 2.8],
+        [7, -2, 3],
+        [-1, 0, 2.4],
+      ] as const) {
+        p.ellipse({ x: c.x + dx, y: c.y + dy }, r, r * 0.8, 0xffcf40, 0xb8860b);
+        p.ellipse({ x: c.x + dx - r * 0.3, y: c.y + dy - r * 0.3 }, r * 0.35, r * 0.3, 0xfff3b0);
+      }
+    },
+  },
   batu: {
     top: 30,
     draw(p) {

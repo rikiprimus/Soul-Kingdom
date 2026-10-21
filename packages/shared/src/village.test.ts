@@ -80,7 +80,9 @@ describe('new village', () => {
     for (const b of s.village.buildings) area += gameData.buildingById.get(b.type)!.size ** 2;
     for (const o of s.village.obstacles) area += gameData.obstacleById.get(o.type)!.size ** 2;
     expect(occupancy(s.village).size).toBe(area);
-    expect(s.village.obstacles).toHaveLength(village.initialObstacles);
+    expect(
+      s.village.obstacles.filter((o) => o.type !== gameData.wilds.goldVeins.node),
+    ).toHaveLength(village.initialObstacles);
     expect(townHallLevel(s)).toBe(gameData.rules.economy.startingTownHallLevel);
     expect(populationFree(s)).toBeGreaterThanOrEqual(0);
     expect(idleWorkers(s)).toHaveLength(gameData.rules.workers.startingWorkers);
@@ -405,7 +407,9 @@ describe('Tugas 1A.2 data', () => {
   it('starts new villages on the big map with wilds all around', () => {
     const s = createInitialState(T0, 4);
     const { mapSize } = gameData.village.village;
-    expect(s.village.obstacles.length).toBe(gameData.village.village.initialObstacles);
+    expect(s.village.obstacles.filter((o) => o.type !== gameData.wilds.goldVeins.node).length).toBe(
+      gameData.village.village.initialObstacles,
+    );
     expect(s.village.obstacles.some((o) => o.x >= 32 || o.y >= 32)).toBe(true);
     expect(s.village.obstacles.every((o) => o.x < mapSize && o.y < mapSize)).toBe(true);
   });

@@ -695,7 +695,7 @@ Keputusan pemilik (2026-10-21): base awal memakai **prajurit manusia**, bukan mo
 > - **Dicek di browser:** game baru tanpa monster; ketuk Kandang → "Anjing Air menetas!"; menu Bangun menampilkan Guild, Barak Prajurit, Barak Panahan, Barak Berkuda (butuh Balai Lv 2); panel latih Barak Prajurit (Rekrut, Veteran Lv 2, Elit Lv 3); latih 1 Prajurit Rekrut → selesai, populasi bertambah.
 > - **Belum:** gambar SpriteCook untuk tiga barak dan prajurit; gelembung telur bisa tertutup HUD kalau Kandang di tepi atas layar.
 
-### - [ ] Tugas 1A.14 — Batu emas liar
+### - [x] Tugas 1A.14 — Batu emas liar
 
 Ide pemilik (2026-10-21): sumber emas dari alam liar.
 
@@ -708,6 +708,15 @@ Ide pemilik (2026-10-21): sumber emas dari alam liar.
 **Usulan angka (menunggu persetujuan pemilik):** 1–3 gugus per peta (acak berbenih), 4 petak per gugus, tiap petak 150 emas, kerja 75 detik (maks. 2 pekerja), terisi lagi 6 jam setelah diambil, peluang Kristal Jiwa 0,1.
 
 **Kriteria selesai:** tes jumlah gugus (1–3) dan bentuk 2×2, menambang memberi emas lalu petak jadi kosong, kosong tidak bisa ditambang, terisi lagi tepat setelah waktunya (juga setelah lama tidak main), migrasi simpanan; gambar SpriteCook (batu emas + batu kosong) dengan cadangan gambar kode.
+
+> **Ringkasan (selesai 2026-10-21):**
+>
+> - **Data:** node `batu-emas` di `wilds.json` (150 emas, kerja 75 detik, maks. 2 pekerja, Kristal Jiwa 0,1, `refillHours` 6; `weight` 0 dan `maxPerPlot` 0 sehingga tidak pernah tersebar/tumbuh acak) dan `goldVeins` (node, `clusters` [1, 3], `side` 2). `weight` node kini boleh 0; validasi: `goldVeins.node` harus punya `refillHours`.
+> - **Shared:** `placeGoldVeins` (gugus side×side di petak bebas di seluruh peta, termasuk wilayah terkunci, menjauhi bangunan awal) dipanggil saat desa dibuat. Menambang node ber-`refillHours` tidak menghapusnya: `work` 0 dan `Obstacle.refillAt` = waktu terisi lagi; `sendWorkers` menolak (`notAvailableYet`) selama kosong; `regrowWilds` mengosongkan `refillAt` begitu waktunya lewat (juga setelah lama tidak main). **Simpanan v15** (migrasi 14 menambah gugus emas ke desa lama dengan RNG tersimpan).
+> - **Client:** gambar buatan kode batu emas (batu abu berbongkah emas); batu kosong memakai gambar batu biasa; kartu info "Batu ini sudah ditambang dan kosong · Emas terisi lagi dalam …" tanpa tombol kirim pekerja.
+> - **Tes:** `wilds.test.ts` (1–3 gugus 2×2 di 40 benih, tambang → emas + kosong + ditolak, terisi lagi tepat waktunya dan setelah 10 hari, tidak pernah tumbuh acak, migrasi v14); tes jumlah objek liar awal tidak menghitung emas.
+> - **Dicek di browser:** migrasi menambah 1 gugus 2×2 ke simpanan lama; batu emas tampil; petak yang ditambang tampil sebagai batu biasa dengan kartu "terisi lagi dalam 5j 59m".
+> - **Belum:** gambar SpriteCook batu emas (kredit tinggal 4); gambar kode masih lebih kecil dari batu bergambar.
 
 ### - [x] Tugas 1A.15 — Pilih area & perintah unit (inti strategi)
 
@@ -949,6 +958,7 @@ Keputusan pemilik (2026-10-21): memilih prajurit/monster di desa adalah inti str
 - **Hewan ternak:** ditambah Domba dan Sapi (`data/wilds.json → animals.types`), angka di antara ayam/rusa/babi. Masih gambar buatan kode; gambar SpriteCook menyusul.
 - **Tembok:** bisa dipindah satuan (Pindah) atau seluruh sambungan sekaligus (Pindah sebaris, `moveGroup`).
 - **Kartu info:** muncul di atas (atau di bawah) objek yang diklik, bukan di pojok.
+- **Objek liar tidak tumbuh lagi di wilayah terbuka (2026-10-21):** pohon/batu/semak hanya tumbuh di wilayah terkunci; wilayah terbuka hanya punya objek liar dari awal permainan (`regrowWilds`). Batu emas tetap terisi lagi. Untuk menjaga Balai Lv 4 dalam ±3 hari (simulasi ekonomi), biaya kayu Balai Lv 4 turun 9.000 → 7.000; menaikkan hasil kayu/batu/semak tidak berpengaruh di simulasi (yang menahan biaya Balai sendiri).
 - **Rumah lebih besar (2026-10-21):** populasi Rumah 10 / 15 / 20 / 25 / 30 per level (dulu 4–8), jatah Rumah 2 / 4 / 6 / 8 / 10 / 12 per level Balai (dulu 1–6). Desa awal tetap tanpa Rumah. Alasan pemilik: pemain membawa 8–10 prajurit + monster ke pertarungan, jadi bandit tetap pada `powerScale` 2,5 (diukur: 3 Rekrut menang 100 % melawan bandit level 0; hasil simulator cenderung 0 % atau 100 %, varians kerusakan hampir tidak berpengaruh).
 
 ### Ide pemilik (2026-10-21, belum dijadwalkan)

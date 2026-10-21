@@ -272,6 +272,12 @@ export function loadGameData(raw: RawGameData): GameData {
 
   const buildingInfo = validateVillage(village, wilds, rules, issues);
   validateWilds(wilds, buildingInfo, formsByTier, stageIndex, issues);
+  const vein = wilds.nodes.find((n) => n.id === wilds.goldVeins.node);
+  if (!vein?.refillHours) {
+    issues.push(
+      `wilds.json: goldVeins.node "${wilds.goldVeins.node}" harus node dengan refillHours`,
+    );
+  }
   // Barracks: each trains a known soldier kind; soldiers have unique ids and real roles.
   const soldierIds = new Set<string>();
   for (const sd of rules.barracks.soldiers) {

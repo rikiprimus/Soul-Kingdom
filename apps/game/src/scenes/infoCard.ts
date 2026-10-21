@@ -326,6 +326,14 @@ function obstacleInfo(state: PlayerState, id: string, a: InfoActions): InfoConte
         : t('info.wildProgress', { percent, max }),
     buttons: [],
   };
+  // An empty gold vein: nothing to gather until it fills up again.
+  if (o.refillAt != null) {
+    const refillAt = o.refillAt;
+    content.lines = [t('info.veinEmpty')];
+    content.status = () =>
+      t('info.veinRefill', { time: formatDuration(Math.max(0, refillAt - a.now())) });
+    return content;
+  }
   const canSend = Math.min(idleWorkers(state).length, max - crew);
   if (canSend > 0) {
     const { value, set } = pick(a, `gather:${o.id}`, canSend);

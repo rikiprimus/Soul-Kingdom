@@ -45,6 +45,8 @@ export interface Obstacle {
   y: number;
   /** Worker-seconds gathered so far (see wilds.ts); it only grows while the game is open. */
   work: number;
+  /** Refilling nodes (gold veins): empty until this time, and not gatherable meanwhile. */
+  refillAt?: number | null;
 }
 
 export interface Village {
@@ -1051,7 +1053,35 @@ export function createVillage(
       );
     });
   scatterObstacles(village, initialObstacles, rng, nextId, nearBuilding, data);
+  placeGoldVeins(village, rng, nextId, nearBuilding, data);
   return village;
+}
+
+/**
+ * Gold veins (Tugas 1A.14): `goldVeins.clusters` [min, max] groups, each a side × side
+ * block of gold nodes on free tiles anywhere on the map (locked land too).
+ */
+export function placeGoldVeins(
+  village: Village,
+  rng: Rng,
+  nextId: () => string,
+  avoid: (x: number, y: number, size: number) => boolean = () => false,
+  data: GameData = gameData,
+): void {
+  const { node, clusters, side } = data.wilds.goldVeins;
+  const { mapSize } = data.village.village;
+  const want = rng.int(clusters[0], clusters[1]);
+  for (let placed = 0, tries = 0; placed < want && tries < 200; tries++) {
+    const x = rng.int(0, mapSize - side);
+    const y = rng.int(0, mapSize - side);
+    if (avoid(x, y, side) || !canPlace(village, side, x, y, data)) continue;
+    for (let dy = 0; dy < side; dy++) {
+      for (let dx = 0; dx < side; dx++) {
+        village.obstacles.push({ id: nextId(), type: node, x: x + dx, y: y + dy, work: 0 });
+      }
+    }
+    placed += 1;
+  }
 }
 
 /**

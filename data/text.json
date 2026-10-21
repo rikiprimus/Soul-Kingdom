@@ -282,6 +282,8 @@
   "select.hint": "Seret untuk memilih pasukan. Lalu ketuk tanah = pindah, musuh = serang, pohon/batu = kawal.",
   "select.moved": "{n} unit berjalan ke sana",
   "select.clear": "Kosongkan",
+  "info.veinEmpty": "Batu ini sudah ditambang dan kosong.",
+  "info.veinRefill": "Emas terisi lagi dalam {time}",
   "select.retreat": "Menjauh",
   "select.none": "Belum ada pasukan yang dipilih",
   "select.retreating": "{n} unit mundur ke Kandang",

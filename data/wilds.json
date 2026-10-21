@@ -8,6 +8,12 @@
     "encounters: kelompok musuh liar per level Balai, muncul lagi setiap respawnHours sejak terakhir muncul. banditPower = kekuatan satu bandit dalam satuan poin kekuatan monster (monster tingkat 1 Dewasa = 1).",
     "graveyard: biaya menghidupkan monster = biaya per poin kekuatan x rules.battle.powerPoints tingkat wujudnya."
   ],
+  "goldVeins": {
+    "_note": "Tugas 1A.14: 1-3 gugus batu emas per peta, tiap gugus side x side petak berdekatan. Ditambang = jadi batu kosong (tidak bisa diambil) lalu terisi lagi setelah refillHours node itu. Tidak tumbuh acak (weight 0, maxPerPlot 0).",
+    "node": "batu-emas",
+    "clusters": [1, 3],
+    "side": 2
+  },
   "regrow": { "stepSeconds": 3600, "maxSteps": 48 },
   "nodes": [
     {
@@ -39,6 +45,17 @@
       "soulCrystalChance": 0.05,
       "work": { "workSeconds": 30, "maxWorkers": 2 },
       "regrow": { "chancePerStep": 0.5, "maxPerPlot": 4 }
+    },
+    {
+      "id": "batu-emas",
+      "name": "Batu Emas",
+      "size": 1,
+      "weight": 0,
+      "yield": { "gold": 150 },
+      "soulCrystalChance": 0.1,
+      "work": { "workSeconds": 75, "maxWorkers": 2 },
+      "regrow": { "chancePerStep": 0, "maxPerPlot": 0 },
+      "refillHours": 6
     }
   ],
   "animals": {

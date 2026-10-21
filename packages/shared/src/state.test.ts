@@ -76,7 +76,10 @@ describe('createInitialState', () => {
     expect(s.village.buildings.map((b) => b.type)).toEqual(
       gameData.village.village.startingBuildings.map((b) => b.type),
     );
-    expect(s.village.obstacles.length).toBe(gameData.village.village.initialObstacles);
+    // Gold veins come on top of the scattered wilds.
+    expect(s.village.obstacles.filter((o) => o.type !== gameData.wilds.goldVeins.node).length).toBe(
+      gameData.village.village.initialObstacles,
+    );
     // The first monster hatches from the starting egg (Tugas 1A.13).
     expect(s.monsters).toEqual([]);
     expect(s.eggs).toHaveLength(1);

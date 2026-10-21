@@ -307,11 +307,14 @@ export const obstacleDefSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   size: z.number().int().min(1),
-  weight: z.number().positive(),
+  /** Share of random scattering; 0 = never scattered (gold veins are placed on their own). */
+  weight: z.number().min(0),
   yield: villageAmountSchema,
   soulCrystalChance: probability,
   work: z.object({ workSeconds: z.number().positive(), maxWorkers: z.number().int().min(1) }),
   regrow: z.object({ chancePerStep: probability, maxPerPlot: nonNegInt }),
+  /** Set: gathering leaves an empty node that fills up again after this many hours. */
+  refillHours: z.number().positive().optional(),
 });
 
 const encounterGroupSchema = z.object({
@@ -326,6 +329,12 @@ const encounterGroupSchema = z.object({
 
 export const wildsFileSchema = z.object({
   nodes: z.array(obstacleDefSchema).min(1),
+  /** Gold veins: `clusters` [min, max] groups of side × side gold nodes per map. */
+  goldVeins: z.object({
+    node: z.string().min(1),
+    clusters: z.tuple([z.number().int().min(0), z.number().int().min(0)]),
+    side: z.number().int().min(1),
+  }),
   /** Regrowth runs in steps of `stepSeconds`; at most `maxSteps` are caught up at once. */
   regrow: z.object({ stepSeconds: z.number().positive(), maxSteps: z.number().int().min(1) }),
   animals: z.object({

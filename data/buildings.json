@@ -74,7 +74,7 @@
           "population": 12
         },
         {
-          "cost": { "gold": 20000, "food": 5000, "wood": 9000, "stone": 7000 },
+          "cost": { "gold": 20000, "food": 5000, "wood": 7000, "stone": 7000 },
           "seconds": 14400,
           "requiresTownHall": 3,
           "population": 14

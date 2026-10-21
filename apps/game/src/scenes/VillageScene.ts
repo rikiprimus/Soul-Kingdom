@@ -120,6 +120,9 @@ function worldTextStyle(...args: Parameters<typeof textStyle>) {
   return { ...style, resolution: Math.min((window.devicePixelRatio || 1) * MAX_ZOOM, 4) };
 }
 
+/** Art an empty gold vein borrows until it fills up again. */
+const EMPTY_VEIN_LOOK = 'batu';
+
 /** Wild animals are drawn smaller than a full tile so buildings read as bigger. */
 const ANIMAL_SCALE = 0.65;
 
@@ -647,11 +650,14 @@ export class VillageScene extends Phaser.Scene {
     for (const o of obstacles) {
       seen.add(o.id);
       const locked = !isTileUnlocked(village, o.x, o.y);
-      const signature = `${o.type}|${o.x}|${o.y}|${locked}`;
+      // An empty gold vein looks like a plain rock until it fills up again.
+      const empty = o.refillAt != null;
+      const signature = `${o.type}|${o.x}|${o.y}|${locked}|${empty}`;
       if (this.sprites.get(o.id)?.signature === signature) continue;
       this.destroySprite(this.sprites.get(o.id));
       const size = sizeOf(o.type);
-      const image = this.placeImage(buildingTexture(this, o.type, 1), o.x, o.y, size);
+      const look = empty ? EMPTY_VEIN_LOOK : o.type;
+      const image = this.placeImage(buildingTexture(this, look, 1), o.x, o.y, size);
       image.setScale(image.scaleX * wildScale(o.id));
       // Wild things on locked land look faded; they can still be gathered.
       if (locked) image.setTint(0xb4bccb);
