@@ -180,7 +180,7 @@
       "name": "Ladang",
       "description": "Tanam bibit dengan emas, tunggu tumbuh, lalu panen makanan untuk monster.",
       "category": "produksi",
-      "size": 3,
+      "size": 2,
       "maxCount": [2, 3, 4, 5, 6, 7],
       "levels": [
         {

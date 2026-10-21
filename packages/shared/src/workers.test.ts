@@ -279,8 +279,10 @@ describe('building with workers', () => {
       ok: false,
       error: 'invalidAmount',
     });
-    const few = crew(2);
-    expect(buildBuilding(few, { type: 'ladang', ...spot, workers: 3 }, T0)).toEqual({
+    // One worker short: everyone but one is idle.
+    const few = crew(max);
+    assignWorkers(few, 1, { kind: 'gathering', targetId: 'o1' });
+    expect(buildBuilding(few, { type: 'ladang', ...spot, workers: max }, T0)).toEqual({
       ok: false,
       error: 'buildersBusy',
     });
@@ -316,7 +318,8 @@ describe('building with workers', () => {
       ok: false,
       error: 'tooManyWorkers',
     });
-    const busy = deepClone(added.state);
+    // Room for one more on the site, but nobody idle to send.
+    const busy = deepClone(s);
     assignWorkers(busy, idleWorkers(busy).length, { kind: 'gathering', targetId: 'o1' });
     expect(addConstructionWorkers(busy, r.buildingId, 1, half)).toEqual({
       ok: false,

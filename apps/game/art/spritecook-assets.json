@@ -84,20 +84,23 @@
         {
           "path": "art/buildings/ladang/lv1.png",
           "crop": [520, 0, 504, 512],
-          "sha12": "6638b33a742a",
-          "source_sha12": "bb54fcd797fb"
+          "sha12": "a152608005b8",
+          "source_sha12": "bb54fcd797fb",
+          "note": "diperkecil 2/3 untuk ladang 2x2 (2026-10-21)"
         },
         {
           "path": "art/buildings/ladang/lv1-crop-growing.png",
           "crop": [0, 512, 520, 512],
-          "sha12": "c036b52725d1",
-          "source_sha12": "8770fbf9d265"
+          "sha12": "3aad009bef30",
+          "source_sha12": "8770fbf9d265",
+          "note": "diperkecil 2/3 untuk ladang 2x2 (2026-10-21)"
         },
         {
           "path": "art/buildings/ladang/lv1-crop-ready.png",
           "crop": [520, 512, 504, 512],
-          "sha12": "80160047a0eb",
-          "source_sha12": "50871f0a8f3a"
+          "sha12": "a99e82f324ce",
+          "source_sha12": "50871f0a8f3a",
+          "note": "diperkecil 2/3 untuk ladang 2x2 (2026-10-21)"
         }
       ]
     },

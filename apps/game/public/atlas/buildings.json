@@ -661,48 +661,6 @@
 					}
 				},
 				{
-					"filename": "ladang/lv1-crop-ready",
-					"rotated": false,
-					"trimmed": false,
-					"sourceSize": {
-						"w": 384,
-						"h": 212
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 0,
-						"w": 384,
-						"h": 212
-					},
-					"frame": {
-						"x": 1021,
-						"y": 837,
-						"w": 384,
-						"h": 212
-					}
-				},
-				{
-					"filename": "ladang/lv1",
-					"rotated": false,
-					"trimmed": false,
-					"sourceSize": {
-						"w": 384,
-						"h": 210
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 0,
-						"w": 384,
-						"h": 210
-					},
-					"frame": {
-						"x": 1411,
-						"y": 606,
-						"w": 384,
-						"h": 210
-					}
-				},
-				{
 					"filename": "peternakan/lv1",
 					"rotated": false,
 					"trimmed": false,
@@ -717,31 +675,31 @@
 						"h": 208
 					},
 					"frame": {
-						"x": 1411,
-						"y": 822,
+						"x": 1021,
+						"y": 837,
 						"w": 384,
 						"h": 208
 					}
 				},
 				{
-					"filename": "ladang/lv1-crop-growing",
+					"filename": "menara/lv1",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
-						"w": 384,
-						"h": 207
+						"w": 256,
+						"h": 292
 					},
 					"spriteSourceSize": {
 						"x": 0,
 						"y": 0,
-						"w": 384,
-						"h": 207
+						"w": 256,
+						"h": 292
 					},
 					"frame": {
-						"x": 3,
-						"y": 454,
-						"w": 384,
-						"h": 207
+						"x": 1411,
+						"y": 606,
+						"w": 256,
+						"h": 292
 					}
 				},
 				{
@@ -759,8 +717,8 @@
 						"h": 117
 					},
 					"frame": {
-						"x": 393,
-						"y": 454,
+						"x": 1673,
+						"y": 606,
 						"w": 104,
 						"h": 117
 					}
@@ -780,31 +738,10 @@
 						"h": 99
 					},
 					"frame": {
-						"x": 393,
-						"y": 577,
+						"x": 1673,
+						"y": 729,
 						"w": 104,
 						"h": 99
-					}
-				},
-				{
-					"filename": "menara/lv1",
-					"rotated": false,
-					"trimmed": false,
-					"sourceSize": {
-						"w": 256,
-						"h": 292
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 0,
-						"w": 256,
-						"h": 292
-					},
-					"frame": {
-						"x": 3,
-						"y": 667,
-						"w": 256,
-						"h": 292
 					}
 				},
 				{
@@ -822,8 +759,8 @@
 						"h": 198
 					},
 					"frame": {
-						"x": 503,
-						"y": 674,
+						"x": 1783,
+						"y": 751,
 						"w": 256,
 						"h": 198
 					}
@@ -843,8 +780,8 @@
 						"h": 191
 					},
 					"frame": {
-						"x": 503,
-						"y": 878,
+						"x": 1411,
+						"y": 904,
 						"w": 256,
 						"h": 191
 					}
@@ -864,8 +801,8 @@
 						"h": 189
 					},
 					"frame": {
-						"x": 3,
-						"y": 965,
+						"x": 1673,
+						"y": 955,
 						"w": 256,
 						"h": 189
 					}
@@ -885,8 +822,8 @@
 						"h": 185
 					},
 					"frame": {
-						"x": 3,
-						"y": 1160,
+						"x": 1673,
+						"y": 1150,
 						"w": 256,
 						"h": 185
 					}
@@ -906,8 +843,8 @@
 						"h": 179
 					},
 					"frame": {
-						"x": 1411,
-						"y": 1036,
+						"x": 3,
+						"y": 454,
 						"w": 256,
 						"h": 179
 					}
@@ -927,10 +864,73 @@
 						"h": 161
 					},
 					"frame": {
-						"x": 1673,
-						"y": 1055,
+						"x": 3,
+						"y": 639,
 						"w": 256,
 						"h": 161
+					}
+				},
+				{
+					"filename": "ladang/lv1-crop-ready",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 256,
+						"h": 141
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 256,
+						"h": 141
+					},
+					"frame": {
+						"x": 265,
+						"y": 674,
+						"w": 256,
+						"h": 141
+					}
+				},
+				{
+					"filename": "ladang/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 256,
+						"h": 140
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 256,
+						"h": 140
+					},
+					"frame": {
+						"x": 3,
+						"y": 806,
+						"w": 256,
+						"h": 140
+					}
+				},
+				{
+					"filename": "ladang/lv1-crop-growing",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 256,
+						"h": 138
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 256,
+						"h": 138
+					},
+					"frame": {
+						"x": 527,
+						"y": 674,
+						"w": 256,
+						"h": 138
 					}
 				}
 			]
