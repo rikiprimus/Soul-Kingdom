@@ -949,6 +949,7 @@ Keputusan pemilik (2026-10-21): memilih prajurit/monster di desa adalah inti str
 - **Hewan ternak:** ditambah Domba dan Sapi (`data/wilds.json → animals.types`), angka di antara ayam/rusa/babi. Masih gambar buatan kode; gambar SpriteCook menyusul.
 - **Tembok:** bisa dipindah satuan (Pindah) atau seluruh sambungan sekaligus (Pindah sebaris, `moveGroup`).
 - **Kartu info:** muncul di atas (atau di bawah) objek yang diklik, bukan di pojok.
+- **Rumah lebih besar (2026-10-21):** populasi Rumah 10 / 15 / 20 / 25 / 30 per level (dulu 4–8), jatah Rumah 2 / 4 / 6 / 8 / 10 / 12 per level Balai (dulu 1–6). Desa awal tetap tanpa Rumah. Alasan pemilik: pemain membawa 8–10 prajurit + monster ke pertarungan, jadi bandit tetap pada `powerScale` 2,5 (diukur: 3 Rekrut menang 100 % melawan bandit level 0; hasil simulator cenderung 0 % atau 100 %, varians kerusakan hampir tidak berpengaruh).
 
 ### Ide pemilik (2026-10-21, belum dijadwalkan)
 

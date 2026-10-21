@@ -105,10 +105,14 @@ describe('population', () => {
     expect(populationCap(s)).toBe(cap + levelDef('rumah', 2)!.population!);
   });
 
-  it('allows one more Rumah per Balai level', () => {
+  it('allows as many Rumah as the Balai level gives (2 more each level)', () => {
+    const slots = gameData.buildingById.get('rumah')!.maxCount;
+    expect(slots[1]! - slots[0]!).toBe(2);
     let s = rich(1);
-    s = ok(buildBuilding(s, { type: 'rumah', ...freeSpot(s, 2) }, T0)).state;
-    expect(buildBuilding(s, { type: 'rumah', ...freeSpot(s, 2) }, T0 + 10_000)).toEqual({
+    for (let i = 0; i < slots[0]!; i++) {
+      s = ok(buildBuilding(s, { type: 'rumah', ...freeSpot(s, 2) }, T0 + i * 10_000)).state;
+    }
+    expect(buildBuilding(s, { type: 'rumah', ...freeSpot(s, 2) }, T0 + 99_000)).toEqual({
       ok: false,
       error: 'maxCountReached',
     });
