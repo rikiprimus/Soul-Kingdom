@@ -35,7 +35,14 @@ soul-monster/
   apps/game/art/          sumber PNG per atlas (buildings/, ui/, monsters/) → `pnpm atlas`
   apps/game/public/atlas/ atlas hasil kemasan (png + json Phaser 3)
   supabase/               migrasi dan edge functions (mulai Fase 1)
+  .claude/skills/         skill Claude Code proyek (gaya seni + skill GameDev, lihat SOURCES.md)
+  .claude/launch.json     server pratinjau `game` untuk panel browser
 ```
+
+## Alat aset
+
+- **Gambar:** SpriteCook (plugin Claude Code; pasang sekali per komputer: `claude plugin marketplace add https://github.com/SpriteCook/claude-plugin.git` lalu `claude plugin install spritecook@spritecook`, lalu masuk ke akun SpriteCook lewat `/mcp`). Ikuti skill `soul-monster-art-style`; catat aset di `apps/game/art/spritecook-assets.json` dan `PROVENANCE.md`.
+- **Suara:** Ludo.ai, dibuat oleh pemilik dan dipasang di `apps/game/public/audio/` (lihat `docs/SUARA.md`). Generator gambar lain tidak dipakai kecuali pemilik meminta.
 
 ## Perintah
 
