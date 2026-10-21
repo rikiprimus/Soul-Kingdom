@@ -263,6 +263,60 @@
           "sha12": "0e5a9a03f8af"
         }
       ]
+    },
+    {
+      "asset_id": "91f70170-c605-4690-809a-a039dba4554a",
+      "label": "grid hewan liar + bunga",
+      "source_sha12": "81ef4773288d",
+      "crops": [
+        {
+          "path": "art/buildings/ayam-hutan/lv1.png",
+          "crop": [0, 0, 512, 512],
+          "sha12": "0727a1f2caaf"
+        },
+        {
+          "path": "art/buildings/rusa/lv1.png",
+          "crop": [512, 0, 512, 512],
+          "sha12": "0b67812bc937"
+        },
+        {
+          "path": "art/buildings/babi-liar/lv1.png",
+          "crop": [0, 512, 512, 512],
+          "sha12": "58850d332acd"
+        },
+        {
+          "path": "art/buildings/bunga/lv1.png",
+          "crop": [512, 512, 512, 512],
+          "sha12": "81fde0941640"
+        }
+      ]
+    },
+    {
+      "asset_id": "ec435de0-4ea7-4cf6-8216-e6ee9844aa71",
+      "label": "grid dekorasi + arena",
+      "source_sha12": "3bae169011c4",
+      "crops": [
+        {
+          "path": "art/buildings/lampu/lv1.png",
+          "crop": [0, 0, 512, 512],
+          "sha12": "8dc2849f39a6"
+        },
+        {
+          "path": "art/buildings/patung/lv1.png",
+          "crop": [512, 0, 512, 512],
+          "sha12": "1f4abcb8785a"
+        },
+        {
+          "path": "art/buildings/air-mancur/lv1.png",
+          "crop": [0, 512, 512, 512],
+          "sha12": "6656b3d83437"
+        },
+        {
+          "path": "art/buildings/arena/lv1.png",
+          "crop": [512, 512, 512, 512],
+          "sha12": "0a32e8ebc832"
+        }
+      ]
     }
   ]
 }

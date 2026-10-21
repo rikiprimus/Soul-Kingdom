@@ -10,6 +10,27 @@
 			"scale": 1,
 			"frames": [
 				{
+					"filename": "arena/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 512,
+						"h": 445
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 512,
+						"h": 445
+					},
+					"frame": {
+						"x": 3,
+						"y": 3,
+						"w": 512,
+						"h": 445
+					}
+				},
+				{
 					"filename": "balai-utama/lv1",
 					"rotated": false,
 					"trimmed": true,
@@ -24,7 +45,7 @@
 						"h": 422
 					},
 					"frame": {
-						"x": 3,
+						"x": 521,
 						"y": 3,
 						"w": 512,
 						"h": 422
@@ -45,7 +66,7 @@
 						"h": 313
 					},
 					"frame": {
-						"x": 521,
+						"x": 1039,
 						"y": 3,
 						"w": 384,
 						"h": 313
@@ -66,115 +87,94 @@
 						"h": 305
 					},
 					"frame": {
-						"x": 911,
+						"x": 1429,
 						"y": 3,
 						"w": 384,
 						"h": 305
 					}
 				},
 				{
-					"filename": "kandang/lv1",
+					"filename": "patung/lv1",
 					"rotated": false,
 					"trimmed": false,
 					"sourceSize": {
-						"w": 384,
-						"h": 286
+						"w": 128,
+						"h": 227
 					},
 					"spriteSourceSize": {
 						"x": 0,
 						"y": 0,
-						"w": 384,
-						"h": 286
+						"w": 128,
+						"h": 227
 					},
 					"frame": {
-						"x": 1301,
+						"x": 1819,
 						"y": 3,
-						"w": 384,
-						"h": 286
+						"w": 128,
+						"h": 227
 					}
 				},
 				{
-					"filename": "menara/lv1",
-					"rotated": false,
-					"trimmed": false,
-					"sourceSize": {
-						"w": 256,
-						"h": 292
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 0,
-						"w": 256,
-						"h": 292
-					},
-					"frame": {
-						"x": 1691,
-						"y": 3,
-						"w": 256,
-						"h": 292
-					}
-				},
-				{
-					"filename": "soul-mixer/lv1",
-					"rotated": false,
-					"trimmed": false,
-					"sourceSize": {
-						"w": 384,
-						"h": 250
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 0,
-						"w": 384,
-						"h": 250
-					},
-					"frame": {
-						"x": 1301,
-						"y": 295,
-						"w": 384,
-						"h": 250
-					}
-				},
-				{
-					"filename": "lapangan-panah/lv1",
+					"filename": "lampu/lv1",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
-						"w": 384,
-						"h": 238
+						"w": 64,
+						"h": 168
 					},
 					"spriteSourceSize": {
 						"x": 0,
-						"y": 1,
-						"w": 384,
-						"h": 237
+						"y": 0,
+						"w": 64,
+						"h": 136
 					},
 					"frame": {
-						"x": 911,
-						"y": 314,
-						"w": 384,
-						"h": 237
+						"x": 1953,
+						"y": 3,
+						"w": 64,
+						"h": 136
 					}
 				},
 				{
-					"filename": "petarung/lv1",
+					"filename": "tembok/lv2-post",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
-						"w": 384,
-						"h": 238
+						"w": 128,
+						"h": 85
 					},
 					"spriteSourceSize": {
-						"x": 0,
-						"y": 1,
-						"w": 384,
-						"h": 237
+						"x": 53,
+						"y": 9,
+						"w": 22,
+						"h": 50
 					},
 					"frame": {
-						"x": 521,
-						"y": 322,
-						"w": 384,
-						"h": 237
+						"x": 2023,
+						"y": 3,
+						"w": 22,
+						"h": 50
+					}
+				},
+				{
+					"filename": "tembok/lv1-post",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 86
+					},
+					"spriteSourceSize": {
+						"x": 57,
+						"y": 11,
+						"w": 14,
+						"h": 47
+					},
+					"frame": {
+						"x": 2023,
+						"y": 59,
+						"w": 14,
+						"h": 47
 					}
 				},
 				{
@@ -193,7 +193,7 @@
 					},
 					"frame": {
 						"x": 1953,
-						"y": 3,
+						"y": 145,
 						"w": 34,
 						"h": 55
 					}
@@ -214,7 +214,7 @@
 					},
 					"frame": {
 						"x": 1993,
-						"y": 3,
+						"y": 145,
 						"w": 34,
 						"h": 55
 					}
@@ -235,9 +235,72 @@
 					},
 					"frame": {
 						"x": 1953,
-						"y": 64,
+						"y": 206,
 						"w": 34,
 						"h": 55
+					}
+				},
+				{
+					"filename": "batu/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 97
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 128,
+						"h": 96
+					},
+					"frame": {
+						"x": 1819,
+						"y": 236,
+						"w": 128,
+						"h": 96
+					}
+				},
+				{
+					"filename": "kandang/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 384,
+						"h": 286
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 384,
+						"h": 286
+					},
+					"frame": {
+						"x": 1429,
+						"y": 314,
+						"w": 384,
+						"h": 286
+					}
+				},
+				{
+					"filename": "soul-mixer/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 384,
+						"h": 250
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 384,
+						"h": 250
+					},
+					"frame": {
+						"x": 1039,
+						"y": 338,
+						"w": 384,
+						"h": 250
 					}
 				},
 				{
@@ -256,7 +319,7 @@
 					},
 					"frame": {
 						"x": 1993,
-						"y": 64,
+						"y": 206,
 						"w": 34,
 						"h": 55
 					}
@@ -277,7 +340,7 @@
 					},
 					"frame": {
 						"x": 1953,
-						"y": 125,
+						"y": 267,
 						"w": 34,
 						"h": 54
 					}
@@ -298,7 +361,7 @@
 					},
 					"frame": {
 						"x": 1993,
-						"y": 125,
+						"y": 267,
 						"w": 34,
 						"h": 54
 					}
@@ -319,9 +382,30 @@
 					},
 					"frame": {
 						"x": 1953,
-						"y": 185,
+						"y": 327,
 						"w": 34,
 						"h": 52
+					}
+				},
+				{
+					"filename": "bunga/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 128,
+						"h": 96
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 128,
+						"h": 96
+					},
+					"frame": {
+						"x": 1819,
+						"y": 338,
+						"w": 128,
+						"h": 96
 					}
 				},
 				{
@@ -340,7 +424,7 @@
 					},
 					"frame": {
 						"x": 1993,
-						"y": 185,
+						"y": 327,
 						"w": 34,
 						"h": 52
 					}
@@ -361,9 +445,30 @@
 					},
 					"frame": {
 						"x": 1953,
-						"y": 243,
+						"y": 385,
 						"w": 34,
 						"h": 52
+					}
+				},
+				{
+					"filename": "semak/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 96
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 128,
+						"h": 95
+					},
+					"frame": {
+						"x": 1819,
+						"y": 440,
+						"w": 128,
+						"h": 95
 					}
 				},
 				{
@@ -382,30 +487,9 @@
 					},
 					"frame": {
 						"x": 1993,
-						"y": 243,
+						"y": 385,
 						"w": 34,
 						"h": 52
-					}
-				},
-				{
-					"filename": "penggilingan/lv1",
-					"rotated": false,
-					"trimmed": true,
-					"sourceSize": {
-						"w": 256,
-						"h": 199
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 1,
-						"w": 256,
-						"h": 198
-					},
-					"frame": {
-						"x": 1691,
-						"y": 301,
-						"w": 256,
-						"h": 198
 					}
 				},
 				{
@@ -424,7 +508,7 @@
 					},
 					"frame": {
 						"x": 1953,
-						"y": 301,
+						"y": 443,
 						"w": 34,
 						"h": 50
 					}
@@ -445,7 +529,7 @@
 					},
 					"frame": {
 						"x": 1993,
-						"y": 301,
+						"y": 443,
 						"w": 34,
 						"h": 50
 					}
@@ -466,72 +550,114 @@
 					},
 					"frame": {
 						"x": 1953,
-						"y": 357,
+						"y": 499,
 						"w": 27,
 						"h": 59
 					}
 				},
 				{
-					"filename": "tembok/lv2-post",
+					"filename": "pohon-hias/lv1",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
-						"w": 128,
-						"h": 85
+						"w": 120,
+						"h": 236
 					},
 					"spriteSourceSize": {
-						"x": 53,
-						"y": 9,
-						"w": 22,
-						"h": 50
+						"x": 0,
+						"y": 0,
+						"w": 120,
+						"h": 204
 					},
 					"frame": {
-						"x": 1986,
-						"y": 357,
-						"w": 22,
-						"h": 50
+						"x": 1819,
+						"y": 541,
+						"w": 120,
+						"h": 204
 					}
 				},
 				{
-					"filename": "tembok/lv1-post",
+					"filename": "lapangan-panah/lv1",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
-						"w": 128,
-						"h": 86
-					},
-					"spriteSourceSize": {
-						"x": 57,
-						"y": 11,
-						"w": 14,
-						"h": 47
-					},
-					"frame": {
-						"x": 2014,
-						"y": 357,
-						"w": 14,
-						"h": 47
-					}
-				},
-				{
-					"filename": "rumah/lv1",
-					"rotated": false,
-					"trimmed": true,
-					"sourceSize": {
-						"w": 256,
-						"h": 190
+						"w": 384,
+						"h": 238
 					},
 					"spriteSourceSize": {
 						"x": 0,
 						"y": 1,
-						"w": 256,
-						"h": 189
+						"w": 384,
+						"h": 237
 					},
 					"frame": {
-						"x": 1691,
-						"y": 505,
-						"w": 256,
-						"h": 189
+						"x": 521,
+						"y": 431,
+						"w": 384,
+						"h": 237
+					}
+				},
+				{
+					"filename": "pohon/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 120,
+						"h": 178
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 120,
+						"h": 146
+					},
+					"frame": {
+						"x": 911,
+						"y": 431,
+						"w": 120,
+						"h": 146
+					}
+				},
+				{
+					"filename": "rusa/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 104,
+						"h": 190
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 104,
+						"h": 158
+					},
+					"frame": {
+						"x": 911,
+						"y": 583,
+						"w": 104,
+						"h": 158
+					}
+				},
+				{
+					"filename": "petarung/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 384,
+						"h": 238
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 384,
+						"h": 237
+					},
+					"frame": {
+						"x": 1021,
+						"y": 594,
+						"w": 384,
+						"h": 237
 					}
 				},
 				{
@@ -549,8 +675,8 @@
 						"h": 212
 					},
 					"frame": {
-						"x": 1301,
-						"y": 551,
+						"x": 1021,
+						"y": 837,
 						"w": 384,
 						"h": 212
 					}
@@ -570,8 +696,8 @@
 						"h": 210
 					},
 					"frame": {
-						"x": 911,
-						"y": 557,
+						"x": 1411,
+						"y": 606,
 						"w": 384,
 						"h": 210
 					}
@@ -591,8 +717,8 @@
 						"h": 208
 					},
 					"frame": {
-						"x": 1301,
-						"y": 769,
+						"x": 1411,
+						"y": 822,
 						"w": 384,
 						"h": 208
 					}
@@ -612,10 +738,136 @@
 						"h": 207
 					},
 					"frame": {
-						"x": 1301,
-						"y": 983,
+						"x": 3,
+						"y": 454,
 						"w": 384,
 						"h": 207
+					}
+				},
+				{
+					"filename": "ayam-hutan/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 104,
+						"h": 149
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 104,
+						"h": 117
+					},
+					"frame": {
+						"x": 393,
+						"y": 454,
+						"w": 104,
+						"h": 117
+					}
+				},
+				{
+					"filename": "babi-liar/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 104,
+						"h": 131
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 104,
+						"h": 99
+					},
+					"frame": {
+						"x": 393,
+						"y": 577,
+						"w": 104,
+						"h": 99
+					}
+				},
+				{
+					"filename": "menara/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 256,
+						"h": 292
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 256,
+						"h": 292
+					},
+					"frame": {
+						"x": 3,
+						"y": 667,
+						"w": 256,
+						"h": 292
+					}
+				},
+				{
+					"filename": "penggilingan/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 199
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 256,
+						"h": 198
+					},
+					"frame": {
+						"x": 503,
+						"y": 674,
+						"w": 256,
+						"h": 198
+					}
+				},
+				{
+					"filename": "air-mancur/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 192
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 256,
+						"h": 191
+					},
+					"frame": {
+						"x": 503,
+						"y": 878,
+						"w": 256,
+						"h": 191
+					}
+				},
+				{
+					"filename": "rumah/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 190
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 256,
+						"h": 189
+					},
+					"frame": {
+						"x": 3,
+						"y": 965,
+						"w": 256,
+						"h": 189
 					}
 				},
 				{
@@ -633,8 +885,8 @@
 						"h": 185
 					},
 					"frame": {
-						"x": 1691,
-						"y": 700,
+						"x": 3,
+						"y": 1160,
 						"w": 256,
 						"h": 185
 					}
@@ -654,8 +906,8 @@
 						"h": 179
 					},
 					"frame": {
-						"x": 1691,
-						"y": 891,
+						"x": 1411,
+						"y": 1036,
 						"w": 256,
 						"h": 179
 					}
@@ -675,94 +927,10 @@
 						"h": 161
 					},
 					"frame": {
-						"x": 1691,
-						"y": 1076,
+						"x": 1673,
+						"y": 1055,
 						"w": 256,
 						"h": 161
-					}
-				},
-				{
-					"filename": "batu/lv1",
-					"rotated": false,
-					"trimmed": true,
-					"sourceSize": {
-						"w": 128,
-						"h": 97
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 1,
-						"w": 128,
-						"h": 96
-					},
-					"frame": {
-						"x": 3,
-						"y": 431,
-						"w": 128,
-						"h": 96
-					}
-				},
-				{
-					"filename": "semak/lv1",
-					"rotated": false,
-					"trimmed": true,
-					"sourceSize": {
-						"w": 128,
-						"h": 96
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 1,
-						"w": 128,
-						"h": 95
-					},
-					"frame": {
-						"x": 137,
-						"y": 431,
-						"w": 128,
-						"h": 95
-					}
-				},
-				{
-					"filename": "pohon-hias/lv1",
-					"rotated": false,
-					"trimmed": true,
-					"sourceSize": {
-						"w": 120,
-						"h": 236
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 0,
-						"w": 120,
-						"h": 204
-					},
-					"frame": {
-						"x": 271,
-						"y": 431,
-						"w": 120,
-						"h": 204
-					}
-				},
-				{
-					"filename": "pohon/lv1",
-					"rotated": false,
-					"trimmed": true,
-					"sourceSize": {
-						"w": 120,
-						"h": 178
-					},
-					"spriteSourceSize": {
-						"x": 0,
-						"y": 0,
-						"w": 120,
-						"h": 146
-					},
-					"frame": {
-						"x": 137,
-						"y": 532,
-						"w": 120,
-						"h": 146
 					}
 				}
 			]
