@@ -176,6 +176,7 @@ function encounterInfo(state: PlayerState, id: string, a: InfoActions): InfoCont
     group.kind === 'bandit' ? t('enemy.banditInfo') : encounterMembers(e),
     t('team.reward', { reward: rewardLabel(group.reward) }),
   ];
+  if (e.raid) lines.unshift(t('raid.info', { n: gameData.rules.raids.defendTiles }));
   const content: InfoContent = {
     title: encounterTitle(e),
     iconType: group.kind === 'bandit' ? 'enemy-bandit' : 'enemy-monster',
@@ -496,6 +497,20 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
             if (a.run((s, n) => trainWorker(s, n))) a.toast(t('info.trainingStarted'), COLORS.good);
           },
         });
+        break;
+      }
+      case 'defense': {
+        const { tower, wall } = gameData.rules.raids;
+        const at = Math.max(1, b.level);
+        if (b.type === tower.building) {
+          const stats = tower.levels[Math.min(at, tower.levels.length) - 1]!;
+          content.lines.push(
+            t('tower.info', { n: tower.reachTiles, hp: stats.hp, atk: stats.atk }),
+          );
+        } else if (b.type === wall.building) {
+          const hp = wall.hpByLevel[Math.min(at, wall.hpByLevel.length) - 1]!;
+          content.lines.push(t('wall.info', { hp }));
+        }
         break;
       }
       case 'house':

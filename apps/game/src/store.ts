@@ -1,5 +1,7 @@
 import {
+  advanceRaids,
   advanceWilds,
+  type RaidEvent,
   regrowWilds,
   spawnAnimals,
   spawnEncounters,
@@ -125,6 +127,13 @@ export class GameStore {
     const r = advanceWilds(this._state, seconds, this.now());
     if (r.state !== this._state) this.set(r.state);
     return r;
+  }
+
+  /** Adds `seconds` of active play to the raid clock and any raid on its way. */
+  raid(seconds: number): RaidEvent[] {
+    const r = advanceRaids(this._state, seconds, this.now());
+    if (r.state !== this._state) this.set(r.state);
+    return r.events;
   }
 
   skipTime(seconds: number): void {

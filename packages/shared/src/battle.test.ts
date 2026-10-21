@@ -107,6 +107,20 @@ describe('simulateBattle', () => {
     expect(r.events.some((e) => e.kind === 'death' && e.id === 'd')).toBe(true);
   });
 
+  it('keeps fixed fighters (towers) on their starting cell; they only shoot what is in range', () => {
+    const tower = fighter('t', { stats: stats({ range: 3, hp: 400 }), fixed: true });
+    const r = simulateBattle([fighter('a'), fighter('b')], [tower], 5, gameData, {
+      untilDefeat: true,
+    });
+    const start = r.events.find((e) => e.kind === 'start' && e.id === 't');
+    const shots = r.events.filter((e) => e.kind === 'attack' && e.id === 't');
+    expect(shots.length).toBeGreaterThan(0);
+    for (const e of shots) {
+      if (e.kind !== 'attack' || start?.kind !== 'start') continue;
+      expect([e.x, e.y]).toEqual([start.x, start.y]);
+    }
+  });
+
   it('lets the stronger side win more often (Monte Carlo)', () => {
     const weak = [fighter('a')];
     const strong = [fighter('a'), fighter('b')];

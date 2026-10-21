@@ -874,7 +874,7 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
   - membuka tingkat Soul Mixer berikutnya.
 - **Sumber permata gratis** dalam jumlah kecil (angka di data).
 
-### - [ ] Tugas 1.7 — Serangan ke desa & pertahanan
+### - [x] Tugas 1.7 — Serangan ke desa & pertahanan
 
 - Musuh liar atau bandit kadang menyerang desa (jadwal dan kekuatan dari data).
 - Monster pemain **melawan balik otomatis** saat musuh masuk wilayah atau mendekat.
@@ -883,6 +883,16 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 - Memakai simulator Tugas 1.3.
 
 **Kriteria selesai:** tes untuk jadwal serangan, siapa yang ikut bertahan, hasil deterministik, dan monster mati masuk Kuburan.
+
+> **Ringkasan (selesai 2026-10-21):**
+>
+> - **Keputusan pemilik (2026-10-21):** serangan hanya berjalan **saat bermain**; kalah bertahan = **sumber daya dicuri**; Tembok **menghalangi jalan** (musuh memutar atau menjebol); yang ikut bertahan **hanya unit yang dekat** + menara yang menjangkau.
+> - **Data (`rules.raids`, angka baru, bisa diubah):** mulai Balai Lv 2, satu serangan tiap 900 detik bermain, peringatan 60 dtk, jalan 1 petak/dtk, bertahan dalam 4 petak, curian 10 %. Menara: jangkauan 6 petak + statistik per level. Tembok: HP ruas per level (400/1000/2000). Divalidasi zod + cek silang bangunan menara/tembok.
+> - **Shared (`raids.ts`, baru):** `advanceRaids(state, detikBermain, now)` menjalankan jam serangan, memunculkan kelompok dari daftar musuh level Balai di tanah terkunci tepat di luar desa (`WildEncounter.raid`), lalu peringatan → berjalan per petak ke sisi Balai Utama. `raidRoute` = Dijkstra waktu: bangunan/alam liar tidak bisa dilewati, ruas tembok bisa dilewati dengan biaya `HP / kerusakan per detik penyerang` (`raidDps`), jadi musuh memilih memutar atau menjebol; ruas yang dijebol hancur. Pertarungan mulai saat unit dalam `defendTiles`, menara dalam jangkauan, atau musuh tiba (`raidDefenders`, unit di misi/Soul Mixer tidak ikut). `startRaidFight` memakai simulator 1.3 (menara = petarung diam, `Fighter.fixed`); menang = hadiah kelompok, kalah = `MissionFight.stolen` dipotong saat pertarungan selesai (`settleMissions`), monster gugur ke Kuburan. Serangan diabaikan oleh aggro & jatah musuh harian; berhenti saat ada tim yang melawannya. **Simpanan v16** (`village.raidClock`).
+> - **Client:** detik bermain dikirim tiap 1 dtk saat ada serangan (5 dtk bila tidak); peringatan, hitung mundur / "Menuju Balai Utama!" / "Menjebol tembok…" / "Bertarung!", jalur titik merah dengan tanda silang di tembok yang akan dijebol, lingkaran jarak bertahan, gerak musuh halus, bilah HP menara, toast jebol/hadang/curian, kartu info menara & tembok, tombol debug "Serang desa sekarang".
+> - **Tes:** `raids.test.ts` (18: jadwal & hanya saat bermain, jalur lurus/jebol/celah/memutar tembok kuat, lama jebol, siapa bertahan, berhenti saat dilawan, curian, hadiah, Kuburan, deterministik, simpan/migrasi) + tes menara diam di `battle.test.ts`.
+> - **Dicek di browser:** tanpa pertahanan → tiba di Balai, tepat 10 % dicuri; tembok 24 ruas → satu ruas dijebol, prajurit dalam 4 petak menghadang (kalah, 1 gugur, dicuri); menara sendirian vs 1 bandit → menang, hadiah masuk.
+> - **Catatan penyeimbangan:** 3 bandit Balai Lv 2 mengalahkan 3 Prajurit Rekrut (sama dengan catatan Tugas 1.3: bandit simulator kuat). `pnpm sim:economy` belum mensimulasikan serangan desa.
 
 ### - [ ] Tugas 1.6 — Server Supabase
 

@@ -287,6 +287,18 @@ export function loadGameData(raw: RawGameData): GameData {
       issues.push(`rules.json: prajurit "${sd.id}" peran "${sd.role}" tidak ada`);
     }
   }
+  // Raids: the tower and wall buildings exist and have stats for every level they can reach.
+  const { tower, wall } = rules.raids;
+  const towerDef = buildingInfo.buildingById.get(tower.building);
+  if (!towerDef) issues.push(`rules.json: raids.tower.building "${tower.building}" tidak ada`);
+  else if (tower.levels.length < towerDef.levels.length) {
+    issues.push(`rules.json: raids.tower.levels kurang untuk ${towerDef.levels.length} level`);
+  }
+  const wallDef = buildingInfo.buildingById.get(wall.building);
+  if (!wallDef) issues.push(`rules.json: raids.wall.building "${wall.building}" tidak ada`);
+  else if (wall.hpByLevel.length < wallDef.levels.length) {
+    issues.push(`rules.json: raids.wall.hpByLevel kurang untuk ${wallDef.levels.length} level`);
+  }
   for (const b of buildingInfo.buildingById.values()) {
     if (b.feature === 'barracks' && !(b.trainsSoldier && soldierIds.has(b.trainsSoldier))) {
       issues.push(

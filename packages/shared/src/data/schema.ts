@@ -182,6 +182,37 @@ export const rulesFileSchema = z.object({
   }),
   /** Monsters and soldiers standing on village tiles (units.ts). */
   units: z.object({ walkTilesPerSecond: z.number().positive() }),
+  /** Raids on the village and its defence (raids.ts). */
+  raids: z.object({
+    minTownHall: z.number().int().min(1),
+    /** Seconds of active play between raids. */
+    intervalSeconds: z.number().positive(),
+    warnSeconds: z.number().min(0),
+    walkTilesPerSecond: z.number().positive(),
+    defendTiles: z.number().positive(),
+    stealRatio: probability,
+    tower: z.object({
+      building: z.string().min(1),
+      reachTiles: z.number().positive(),
+      /** Battle stats per tower level (index 0 = level 1); it never moves. */
+      levels: z
+        .array(
+          z.object({
+            hp: z.number().positive(),
+            atk: z.number().positive(),
+            def: z.number().nonnegative(),
+            spd: z.number().positive(),
+            range: z.number().positive(),
+          }),
+        )
+        .min(1),
+    }),
+    /** HP of one wall segment per level (index 0 = level 1): how long breaking it takes. */
+    wall: z.object({
+      building: z.string().min(1),
+      hpByLevel: z.array(z.number().positive()).min(1),
+    }),
+  }),
   population: z.object({ workerSlots: z.number().int().min(1) }),
   skirmish: z.object({
     maxTeam: z.number().int().min(1),

@@ -17,9 +17,15 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 15;
+export const SAVE_SCHEMA_VERSION = 16;
 
 const int = z.number().int();
+const villageAmountSchema = z.object({
+  gold: int.min(0),
+  food: int.min(0),
+  wood: int.min(0),
+  stone: int.min(0),
+});
 const monsterSchema = z.object({
   id: z.string(),
   form: z.string(),
@@ -84,9 +90,20 @@ const playerStateSchema = z.object({
         count: int.min(1),
         enemies: z.array(z.object({ form: z.string(), element: z.string(), stage: z.string() })),
         leavesAt: z.number().nullable().optional(),
+        raid: z
+          .object({
+            warnLeft: z.number().min(0),
+            next: z.object({ x: int, y: int }).nullable(),
+            stepLeft: z.number().min(0),
+            stepSeconds: z.number().min(0),
+            breaking: z.string().nullable(),
+          })
+          .nullable()
+          .optional(),
       }),
     ),
     encountersAt: z.number(),
+    raidClock: z.number().min(0),
   }),
   workers: z.array(
     z.object({
@@ -136,13 +153,9 @@ const playerStateSchema = z.object({
           dead: z.array(z.string()),
           hpLeft: z.record(z.string(), z.number().min(0).max(1)),
           enemyHpLeft: z.array(z.number().min(0).max(1)),
-          reward: z.object({
-            gold: int.min(0),
-            food: int.min(0),
-            wood: int.min(0),
-            stone: int.min(0),
-          }),
+          reward: villageAmountSchema,
           soulCrystal: int.min(0),
+          stolen: villageAmountSchema.nullable().optional(),
         })
         .nullable(),
     }),
@@ -407,6 +420,12 @@ const migrations: Record<number, (state: unknown) => unknown> = {
     const rng = createRng(state.rngState);
     placeGoldVeins(state.village, rng, () => `o${state.nextId++}`);
     state.rngState = rng.getState();
+    return state;
+  },
+  // v15 had no raids: the clock towards the first one starts now.
+  15: (raw) => {
+    const state = raw as PlayerState;
+    state.village.raidClock = 0;
     return state;
   },
 };

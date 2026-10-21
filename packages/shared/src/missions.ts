@@ -11,6 +11,7 @@ import {
 import { elementAdvantage } from './elements';
 import { getStage, monsterStats, powerPointsOf, type Monster, type MonsterKind } from './monster';
 import { createRng } from './rng';
+import type { RaidMarch } from './raids';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { hasRoomFor } from './workers';
 
@@ -25,6 +26,8 @@ export interface WildEncounter {
   y: number;
   /** Ambush spawns leave by themselves at this time unless they are fighting. */
   leavesAt?: number | null;
+  /** Set on a group raiding the village: how its march is going (raids.ts). */
+  raid?: RaidMarch | null;
   /** Bandits: how many. Monster groups: one kind per enemy. */
   count: number;
   enemies: (MonsterKind & { stage: string })[];
@@ -42,6 +45,8 @@ export interface MissionFight {
   enemyHpLeft: number[];
   reward: VillageAmount;
   soulCrystal: number;
+  /** Raid defence lost: what the raiders carry off when the fight ends (at most what is left). */
+  stolen?: VillageAmount | null;
 }
 
 /**
@@ -294,6 +299,12 @@ export function settleMissions(
     if (f.won) {
       for (const r of VILLAGE_RESOURCES) next.resources[r] += f.reward[r];
       next.resources.soulCrystal += f.soulCrystal;
+      next.village.encounters = next.village.encounters.filter((e) => e.id !== m.encounterId);
+    } else if (f.stolen) {
+      // Raiders who beat the defence take their loot and leave.
+      for (const r of VILLAGE_RESOURCES) {
+        next.resources[r] -= Math.min(next.resources[r], f.stolen[r]);
+      }
       next.village.encounters = next.village.encounters.filter((e) => e.id !== m.encounterId);
     }
     // Members who fell (on either outcome): soldiers are gone, monsters go to the Kuburan.

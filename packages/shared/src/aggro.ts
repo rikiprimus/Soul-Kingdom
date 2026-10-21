@@ -136,7 +136,8 @@ export function aggroEncounters(
   const reach = (e: WildEncounter, x: number, y: number) =>
     Math.hypot(x - (e.x + 0.5), y - (e.y + 0.5));
   for (const e of (next ?? state).village.encounters) {
-    if (busy.has(e.id)) continue;
+    // Raiders have their own defence rules (raids.ts).
+    if (busy.has(e.id) || e.raid) continue;
     const s = next ?? state;
     const radius = aggroRadius(e, data);
     const near = Object.entries(s.units)

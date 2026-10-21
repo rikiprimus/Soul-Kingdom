@@ -53,9 +53,16 @@ import {
   productionOf,
   scaleAmount,
   sizeOf,
+  currentRaid,
+  missionFor,
+  raidPoint,
+  raidRoute,
   type Building,
   type Monster,
+  type PlayerState,
+  type RaidEvent,
   type Soldier,
+  type VillageAmount,
 } from '@soul-monster/shared';
 import {
   BUILDING_RES,
@@ -240,6 +247,11 @@ export class VillageScene extends Phaser.Scene {
   /** Active play time not yet added to gathering (committed in small batches). */
   private pendingGather = 0;
   private lastTickAt = 0;
+  /** Active play time not yet added to the raid clock or the raid on its way. */
+  private pendingRaid = 0;
+  /** The raiders' planned way to the Balai (dots; walls they will break are marked). */
+  private raidGfx?: Phaser.GameObjects.Graphics;
+  private raidRouteOf: PlayerState | null = null;
   private gatherGfx?: Phaser.GameObjects.Graphics;
   private clouds: Phaser.GameObjects.Image[] = [];
   /** Camera centre from the last frame, restored after a resize. */
@@ -411,7 +423,14 @@ export class VillageScene extends Phaser.Scene {
     for (const [id, view] of this.enemies) {
       const e = this.store.state.village.encounters.find((x) => x.id === id);
       if (!e) continue;
-      const rank = rankBehindPoint(e.x + 0.5, e.y + 0.5, this.footprints, this.drawOrder);
+      const at = e.raid ? raidPoint(e) : e;
+      if (e.raid) {
+        // Raiders walk: ease towards their point (the state moves on once a second).
+        const target = isoToWorld(at.x + 0.5, at.y + 0.5);
+        const k = Math.min(1, delta / 250);
+        view.setPosition(view.x + (target.x - view.x) * k, view.y + (target.y - view.y) * k);
+      }
+      const rank = rankBehindPoint(at.x + 0.5, at.y + 0.5, this.footprints, this.drawOrder);
       view.setDepth((rank + 1) * 10 + 4);
     }
     this.drawTeamRings();
@@ -841,7 +860,9 @@ export class VillageScene extends Phaser.Scene {
       playSfx(this, 'enemy');
       this.game.events.emit(EVT.toast, { message: t('ambush.chase') });
     }
-    this.tickGathering();
+    const dt = this.activeSeconds();
+    this.tickGathering(dt);
+    this.tickRaid(dt);
     if (this.store.state.workers.length > workersBefore) {
       playSfx(this, 'ready');
       this.game.events.emit(EVT.toast, { message: t('village.workerReady'), color: COLORS.good });
@@ -1367,15 +1388,116 @@ export class VillageScene extends Phaser.Scene {
 
   // ---------- Gathering ----------
 
+  /** Seconds of play since the last tick; a long gap (tab hidden, device asleep) does not count. */
+  private activeSeconds(): number {
+    const nowMs = this.time.now;
+    const dt = this.lastTickAt ? Math.min(2, (nowMs - this.lastTickAt) / 1000) : 0;
+    this.lastTickAt = nowMs;
+    return dt;
+  }
+
+  // ---------- Raids ----------
+
+  /**
+   * Raids run on play time only, like gathering: seconds go to the store every second
+   * while raiders are on their way (so they walk smoothly), otherwise every few seconds.
+   */
+  private tickRaid(dt: number) {
+    this.pendingRaid += dt;
+    if (this.pendingRaid >= (currentRaid(this.store.state) ? 1 : 5)) {
+      const seconds = this.pendingRaid;
+      this.pendingRaid = 0;
+      for (const ev of this.store.raid(seconds)) this.reportRaid(ev);
+    }
+    this.updateRaidLabel();
+    this.drawRaidRoute();
+  }
+
+  private reportRaid(ev: RaidEvent) {
+    playSfx(this, 'enemy');
+    if (ev.kind === 'wallBroken') {
+      const c = isoToWorld(ev.x + 0.5, ev.y + 0.5);
+      burst(this, c.x, c.y, 'chips', 'large');
+      this.cameras.main.shake(180, 0.004);
+      this.game.events.emit(EVT.toast, { message: t('raid.wallBroken'), color: COLORS.warn });
+      return;
+    }
+    const e = this.store.state.village.encounters.find((x) => x.id === ev.encounterId);
+    if (ev.kind === 'warning') {
+      this.game.events.emit(EVT.toast, {
+        message: t('raid.warning', {
+          name: e ? encounterTitle(e) : '',
+          s: Math.ceil(gameData.rules.raids.warnSeconds),
+        }),
+        color: COLORS.danger,
+      });
+      return;
+    }
+    const stood = ev.defenders + ev.towers > 0;
+    this.game.events.emit(EVT.toast, {
+      message: t(stood ? 'raid.defence' : 'raid.arrived'),
+      color: stood ? COLORS.warn : COLORS.danger,
+    });
+  }
+
+  /** Under the raiders' name: the warning countdown, then what they are doing. */
+  private updateRaidLabel() {
+    const e = currentRaid(this.store.state);
+    const view = e && this.enemies.get(e.id);
+    const label = view?.getData('raidLabel') as Phaser.GameObjects.Text | undefined;
+    if (!e?.raid || !label) return;
+    // A fight can start during the warning too (a tower or units in reach).
+    if (missionFor(this.store.state, e.id)) {
+      label.setText(t('raid.fighting'));
+      return;
+    }
+    const left = Math.max(0, e.raid.warnLeft - this.pendingRaid);
+    label.setText(
+      left > 0
+        ? t('raid.countdown', { s: Math.ceil(left) })
+        : e.raid.breaking
+          ? t('raid.breaking')
+          : t('raid.marching'),
+    );
+  }
+
+  /** Dotted line along the raiders' planned way; a red cross on each wall they will break. */
+  private drawRaidRoute() {
+    const state = this.store.state;
+    if (state === this.raidRouteOf) return;
+    this.raidRouteOf = state;
+    if (!this.raidGfx) this.raidGfx = this.add.graphics().setDepth(4);
+    const g = this.raidGfx.clear();
+    const e = currentRaid(state);
+    if (!e || missionFor(state, e.id)) return;
+    const walls = new Set(
+      state.village.buildings
+        .filter((b) => b.type === gameData.rules.raids.wall.building)
+        .map((b) => `${b.x},${b.y}`),
+    );
+    const from = raidPoint(e);
+    let prev = isoToWorld(from.x + 0.5, from.y + 0.5);
+    for (const tile of raidRoute(state, e)) {
+      const p = isoToWorld(tile.x + 0.5, tile.y + 0.5);
+      for (let k = 1; k <= 2; k++) {
+        const f = k / 3;
+        g.fillStyle(0xd63c3c, 0.75);
+        g.fillCircle(prev.x + (p.x - prev.x) * f, prev.y + (p.y - prev.y) * f, 2.5);
+      }
+      if (walls.has(`${tile.x},${tile.y}`)) {
+        g.lineStyle(4, 0xd63c3c, 0.95);
+        g.lineBetween(p.x - 9, p.y - 5, p.x + 9, p.y + 5);
+        g.lineBetween(p.x - 9, p.y + 5, p.x + 9, p.y - 5);
+      }
+      prev = p;
+    }
+  }
+
   /**
    * Gathering only runs while the game is open: active seconds pile up here and go
    * to the store every few seconds, or as soon as a node would be finished.
    */
-  private tickGathering() {
-    const nowMs = this.time.now;
-    // A long gap (tab hidden, device asleep) does not count as play time.
-    const dt = this.lastTickAt ? Math.min(2, (nowMs - this.lastTickAt) / 1000) : 0;
-    this.lastTickAt = nowMs;
+  private tickGathering(dt: number) {
     const state = this.store.state;
     const worked = state.village.obstacles
       .map((o) => ({ o, crew: gatherWorkers(state, o.id) }))
@@ -2189,11 +2311,14 @@ export class VillageScene extends Phaser.Scene {
     }
     for (const e of encounters) {
       if (this.enemies.has(e.id)) continue;
-      const c = isoToWorld(e.x + 0.5, e.y + 0.5);
+      const at = e.raid ? raidPoint(e) : e;
+      const c = isoToWorld(at.x + 0.5, at.y + 0.5);
       const view = this.add.container(c.x, c.y);
       const ring = this.add.graphics();
-      // Faint reach: a circle of aggroRadius tiles, squashed to the 2:1 iso grid.
-      const reach = aggroRadius(e) * Math.SQRT2 * TILE_W;
+      // Faint reach, squashed to the 2:1 iso grid: aggroRadius tiles for waiting groups;
+      // for raiders, how close units must be to stand in their way (defendTiles).
+      const radius = e.raid ? gameData.rules.raids.defendTiles : aggroRadius(e);
+      const reach = radius * Math.SQRT2 * TILE_W;
       ring.fillStyle(0xd63c3c, 0.05).fillEllipse(0, 0, reach, reach / 2);
       ring.lineStyle(1.5, 0xd63c3c, 0.35).strokeEllipse(0, 0, reach, reach / 2);
       ring.fillStyle(0xd63c3c, 0.22).fillEllipse(0, 0, 70, 34);
@@ -2234,6 +2359,23 @@ export class VillageScene extends Phaser.Scene {
         )
         .setOrigin(0.5);
       view.add(label);
+      if (e.raid) {
+        // Above the name: the health bars drawn over the enemies sit just below it.
+        const status = this.add
+          .text(
+            0,
+            -60,
+            '',
+            worldTextStyle(10, 0xffe08a, {
+              fontStyle: 'bold',
+              stroke: '#1b1530',
+              strokeThickness: 4,
+            }),
+          )
+          .setOrigin(0.5);
+        view.add(status);
+        view.setData('raidLabel', status);
+      }
       view.setSize(80, 70);
       this.enemies.set(e.id, view);
     }
@@ -2353,6 +2495,12 @@ export class VillageScene extends Phaser.Scene {
         if (m.monsterIds.includes(w.monsterId))
           bar(w.view.x, w.view.y - 30, team(w.monsterId), COLORS.good);
       }
+      // Watchtowers defending against a raid (fighter ids "tower:<building id>").
+      for (const [id, left] of Object.entries(result.hpLeft)) {
+        if (!id.startsWith('tower:')) continue;
+        const img = this.sprites.get(id.slice('tower:'.length))?.image;
+        if (img) bar(img.x, img.y - img.displayHeight * 0.85, drain(left), COLORS.good);
+      }
     }
   }
 
@@ -2367,6 +2515,13 @@ export class VillageScene extends Phaser.Scene {
       message: parts.join(' '),
       color: a.workersLost > 0 ? COLORS.danger : COLORS.warn,
     });
+  }
+
+  /** Raiders who won carry their loot off from the Balai Utama. */
+  private showStolen(loot: VillageAmount) {
+    const hall = this.store.state.village.buildings.find((b) => b.type === gameData.townHallId);
+    const sprite = hall && this.sprites.get(hall.id);
+    if (sprite) this.floatText(sprite, `-${costLabel(loot)}`, COLORS.danger);
   }
 
   /** Toasts for missions that finished during the last settle. */
@@ -2384,13 +2539,19 @@ export class VillageScene extends Phaser.Scene {
         burst(this, spot.x, spot.y, 'sparkle', 'large');
         this.flyResources({ ...fight.reward, soulCrystal: fight.soulCrystal }, spot.x, spot.y - 30);
       }
+      if (fight.stolen) this.showStolen(fight.stolen);
       const message = fight.won
         ? t('mission.won', {
             reward:
               costLabel(fight.reward) +
               (fight.soulCrystal ? ` + ${fight.soulCrystal} ${t('res.soulCrystal')}` : ''),
           })
-        : t('mission.lost', { n: fight.dead.length });
+        : fight.stolen
+          ? [
+              t('raid.lost', { loot: costLabel(fight.stolen) }),
+              ...(fight.dead.length > 0 ? [t('raid.lostDead', { n: fight.dead.length })] : []),
+            ].join(' ')
+          : t('mission.lost', { n: fight.dead.length });
       this.game.events.emit(EVT.toast, {
         message,
         color: fight.won ? COLORS.good : COLORS.danger,

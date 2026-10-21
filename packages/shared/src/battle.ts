@@ -17,6 +17,8 @@ export interface Fighter {
   stats: FighterStats;
   element: ElementId | null;
   skill: boolean;
+  /** Stays where it starts (a watchtower): it only shoots what comes into range. */
+  fixed?: boolean;
 }
 
 export type Side = 'attackers' | 'defenders';
@@ -127,6 +129,7 @@ export function simulateBattle(
       u.cooldown = Math.max(0, u.cooldown - dt);
       // EPS: walking stops exactly at range, and rounding must not leave it a hair short.
       if (best > u.f.stats.range + EPS) {
+        if (u.f.fixed) continue;
         // Walk straight at the target, stopping once it is in range.
         const step = Math.min(u.f.stats.spd * sim.moveTilesPerSpd * dt, best - u.f.stats.range);
         u.x += ((target.x - u.x) / best) * step;

@@ -57,6 +57,19 @@ export function mountDebugPanel(store: GameStore): void {
       ],
     },
     {
+      title: t('debug.raids'),
+      buttons: [
+        [
+          t('debug.raid'),
+          () => {
+            // A full raid clock: the next bit of play time sends a raid (Balai Lv 2+).
+            edit((s) => void (s.village.raidClock = gameData.rules.raids.intervalSeconds));
+            store.raid(0.01);
+          },
+        ],
+      ],
+    },
+    {
       title: t('debug.townHall'),
       buttons: [
         ['−1', () => edit((s) => setHall(s, -1))],

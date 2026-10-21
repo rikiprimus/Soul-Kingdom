@@ -82,7 +82,9 @@ export function spawnEncounters(
   const hall = townHallLevel(next, data);
   const target = encounterTarget(hall, data);
   const level = encounterLevelIndex(hall, data);
-  while (next.village.encounters.length < target) {
+  // A raid on the village is not one of the waiting groups.
+  const waiting = () => next.village.encounters.filter((e) => !e.raid).length;
+  while (waiting() < target) {
     const tile = encounterTile(next, rng, data);
     if (!tile) break;
     next.village.encounters.push({

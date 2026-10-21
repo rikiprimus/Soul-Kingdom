@@ -192,6 +192,7 @@ export function createInitialState(
       animalsAt: now,
       encounters: [],
       encountersAt: now,
+      raidClock: 0,
     },
     workers: [],
     workerTraining: [],

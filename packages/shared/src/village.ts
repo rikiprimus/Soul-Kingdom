@@ -65,6 +65,8 @@ export interface Village {
   /** Wild enemy groups on the map, and when they last spawned (s). */
   encounters: WildEncounter[];
   encountersAt: number;
+  /** Seconds of active play since the last raid on the village (raids.ts). */
+  raidClock: number;
 }
 
 const fail = (error: ActionError): { ok: false; error: ActionError } => ({ ok: false, error });
@@ -1043,6 +1045,7 @@ export function createVillage(
     ranchAnimals: [],
     encounters: [],
     encountersAt: now,
+    raidClock: 0,
   };
   const nearBuilding = (x: number, y: number, size: number) =>
     village.buildings.some((b) => {

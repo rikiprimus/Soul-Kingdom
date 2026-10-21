@@ -102,6 +102,25 @@
     "maxTeam": 6,
     "marchSeconds": 30
   },
+  "raids": {
+    "_note": "Tugas 1.7: serangan ke desa. Hanya berjalan saat bermain: setiap intervalSeconds detik bermain (mulai Balai minTownHall) satu kelompok dari daftar musuh liar level Balai (wilds.json) muncul tepat di luar desa. Setelah warnSeconds peringatan mereka berjalan walkTilesPerSecond petak/detik menuju Balai Utama lewat petak bebas. Bangunan dan alam liar tidak bisa dilewati; Tembok menghalangi jalan, jadi musuh memilih rute tercepat: memutar, atau menjebol satu ruas (lama = HP ruas / kerusakan per detik penyerang; ruas itu hancur). Pertarungan mulai saat monster/prajurit kita ada dalam defendTiles petak, Menara Jaga dalam reachTiles, atau musuh tiba di Balai; hanya unit dalam defendTiles dan menara yang mencapai yang ikut bertahan (maks. battle.maxUnits). Menara bertarung di tempat dengan statistik per level. Kalah = musuh mencuri stealRatio emas/makanan/kayu/batu lalu pergi; menang = hadiah kelompok itu.",
+    "minTownHall": 2,
+    "intervalSeconds": 900,
+    "warnSeconds": 60,
+    "walkTilesPerSecond": 1,
+    "defendTiles": 4,
+    "stealRatio": 0.1,
+    "tower": {
+      "building": "menara",
+      "reachTiles": 6,
+      "levels": [
+        { "hp": 600, "atk": 20, "def": 15, "spd": 8, "range": 6 },
+        { "hp": 1000, "atk": 32, "def": 20, "spd": 8, "range": 6 },
+        { "hp": 1600, "atk": 48, "def": 26, "spd": 8, "range": 6 }
+      ]
+    },
+    "wall": { "building": "tembok", "hpByLevel": [400, 1000, 2000] }
+  },
   "barracks": {
     "_note": "Barak Prajurit (id `petarung`), Barak Panahan (`lapangan-panah`), dan Barak Berkuda (`barak-berkuda`) melatih prajurit manusia, bukan monster (Tugas 1A.13). Prajurit tidak punya elemen, tidak tumbuh, dan tidak bisa jadi induk. Level barak membuka pangkat: pangkat ke-n terbuka di level n. Statistik hp/atk/def dikali statMultiplier pangkat (spd dan range tidak); poin kekuatan = powerPoints + powerBonus; biaya dan waktu dikali costMultiplier dan timeMultiplier. Slot populasi = poin kekuatan.",
     "queueMax": 3,
