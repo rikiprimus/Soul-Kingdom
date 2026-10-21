@@ -170,6 +170,8 @@ export class UIScene extends Phaser.Scene {
     const onTeamToggle = (id: string) => this.toggleTeam(id);
     const onTeamSet = (ids: string[]) => this.setTeam(ids);
     ev.on(EVT.teamSet, onTeamSet);
+    const onEnterSelect = () => this.setSelectMode(true);
+    ev.on(EVT.enterSelect, onEnterSelect);
     ev.on(EVT.teamToggle, onTeamToggle);
     const onCollectFx = (fx: CollectFx) => this.flyToHud(fx);
     ev.on(EVT.collectFx, onCollectFx);
@@ -199,6 +201,7 @@ export class UIScene extends Phaser.Scene {
       this.scale.off('resize', onResize);
       ev.off(EVT.select, onSelect);
       ev.off(EVT.teamSet, onTeamSet);
+      ev.off(EVT.enterSelect, onEnterSelect);
       ev.off(EVT.placement, onPlacement);
       ev.off(EVT.toast, onToast);
       ev.off(EVT.openPanel, onOpenPanel);
@@ -564,25 +567,8 @@ export class UIScene extends Phaser.Scene {
       },
     });
     layer.add(toggle);
+    this.buildSelectDock(layer, L);
     if (!dockVisible) return;
-    // Pilih: while on, dragging the map draws a box that picks units (Tugas 1A.15).
-    const sx = d.x + d.toggleW + d.gap + DOCK_TABS.length * (d.buttonW + d.gap);
-    layer.add(
-      new Button(this, sx + d.buttonW / 2, d.y + d.buttonH / 2, {
-        width: d.buttonW,
-        height: d.buttonH,
-        label: t('nav.select'),
-        fontSize: 13,
-        color: selectMode ? COLORS.gold : COLORS.panel,
-        onClick: () => {
-          selectMode = !selectMode;
-          this.game.events.emit(EVT.selectMode, selectMode);
-          if (selectMode) toast(this, t('select.hint'), COLORS.accent);
-          else this.setTeam([]);
-          this.buildDock();
-        },
-      }),
-    );
     DOCK_TABS.forEach((kind, i) => {
       const x = d.x + d.toggleW + d.gap + i * (d.buttonW + d.gap);
       const active = this.panel?.kind === kind;
@@ -602,6 +588,47 @@ export class UIScene extends Phaser.Scene {
         this.tweens.add({ targets: button, alpha: 1, x: x0, duration: 140, delay: i * 30 });
       }
     });
+  }
+
+  /**
+   * Right-hand dock (Tugas 1A.15): "Pilih" switches Pilih mode on; then it opens upwards with
+   * Menjauh (fall back to the Kandang) and Kosongkan (clear the pick), and Pilih turns
+   * into ✕ to go back to normal play.
+   */
+  private buildSelectDock(layer: Phaser.GameObjects.Container, L: UILayout) {
+    const d = L.dock;
+    const x = L.width - d.x - d.buttonW / 2;
+    const y = d.y + d.buttonH / 2;
+    const button = (row: number, label: string, color: number, onClick: () => void) =>
+      layer.add(
+        new Button(this, x, y - row * (d.buttonH + d.gap), {
+          width: d.buttonW,
+          height: d.buttonH,
+          label,
+          fontSize: 13,
+          color,
+          onClick,
+        }),
+      );
+    if (!selectMode) {
+      button(0, t('nav.select'), COLORS.panel, () => this.setSelectMode(true));
+      return;
+    }
+    button(0, '✕', COLORS.danger, () => this.setSelectMode(false));
+    button(1, t('select.clear'), COLORS.panelLight, () => this.setTeam([]));
+    button(2, t('select.retreat'), COLORS.accentDark, () => {
+      if (team.length === 0) toast(this, t('select.none'));
+      else this.game.events.emit(EVT.retreat, [...team]);
+    });
+  }
+
+  private setSelectMode(on: boolean): void {
+    if (selectMode === on) return;
+    selectMode = on;
+    this.game.events.emit(EVT.selectMode, on);
+    if (on) toast(this, t('select.hint'), COLORS.accent);
+    else this.setTeam([]);
+    this.buildDock();
   }
 
   /** Floating "place / cancel" bar shown while placing or moving a building. */
@@ -968,23 +995,28 @@ export class UIScene extends Phaser.Scene {
     this.collectReady = ready.length;
     if (ready.length < 2) return;
     const L = this.layout;
-    this.collectAllButton = new Button(this, L.width - 92, L.dock.y + L.dock.buttonH / 2, {
-      width: 168,
-      height: L.dock.buttonH,
-      label: t('village.collectAll', { count: ready.length }),
-      fontSize: 13,
-      color: 0x3c9a5f,
-      icon: icons.gold,
-      onClick: () => {
-        const r = this.run((s, n) => collectAll(s, n));
-        if (!r) return;
-        toast(this, `+${costLabel(r)}`, COLORS.good);
-        const from = { x: L.width - 92, y: L.dock.y };
-        for (const resource of ['gold', 'food', 'wood', 'stone'] as const) {
-          if (r[resource] > 0) this.flyToHud({ resource, amount: r[resource], ...from });
-        }
+    this.collectAllButton = new Button(
+      this,
+      L.width - 92 - L.dock.buttonW - L.dock.gap,
+      L.dock.y + L.dock.buttonH / 2,
+      {
+        width: 168,
+        height: L.dock.buttonH,
+        label: t('village.collectAll', { count: ready.length }),
+        fontSize: 13,
+        color: 0x3c9a5f,
+        icon: icons.gold,
+        onClick: () => {
+          const r = this.run((s, n) => collectAll(s, n));
+          if (!r) return;
+          toast(this, `+${costLabel(r)}`, COLORS.good);
+          const from = { x: L.width - 92 - L.dock.buttonW - L.dock.gap, y: L.dock.y };
+          for (const resource of ['gold', 'food', 'wood', 'stone'] as const) {
+            if (r[resource] > 0) this.flyToHud({ resource, amount: r[resource], ...from });
+          }
+        },
       },
-    }).setDepth(140);
+    ).setDepth(140);
   }
 
   /** Small yes/no dialog for destructive actions. */

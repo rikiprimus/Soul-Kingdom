@@ -37,6 +37,7 @@ import {
   mixRemaining,
   moveBuilding,
   moveUnits,
+  retreatUnits,
   guardNode,
   sendTeam,
   unitPoint,
@@ -226,6 +227,8 @@ export class VillageScene extends Phaser.Scene {
   /** Pilih mode (dock button): dragging draws a box that picks units. */
   private selectMode = false;
   private selectBox?: Phaser.GameObjects.Graphics;
+  /** The current drag is a right-button pan, not a selection box. */
+  private panning = false;
   /** Last known fight of each mission, for the report once it has left the state. */
   private lastFights = new Map<string, MissionFight>();
   /** Active play time not yet added to gathering (committed in small batches). */
@@ -350,6 +353,17 @@ export class VillageScene extends Phaser.Scene {
       this.selectBox?.clear();
     };
     ev.on(EVT.selectMode, onSelectMode);
+    const onRetreat = (ids: string[]) => {
+      const r = this.store.apply((st, n) => retreatUnits(st, { ids }, n));
+      this.game.events.emit(
+        EVT.toast,
+        r.ok
+          ? { message: t('select.retreating', { n: r.moved.length }), color: COLORS.good }
+          : { message: errorText(r.error) },
+      );
+    };
+    ev.on(EVT.retreat, onRetreat);
+    this.input.mouse?.disableContextMenu();
     ev.on(EVT.startPlacement, onStart);
     ev.on(EVT.confirmPlacement, onConfirm);
     ev.on(EVT.cancelPlacement, onCancel);
@@ -367,6 +381,7 @@ export class VillageScene extends Phaser.Scene {
       ev.off(EVT.focus, onFocus);
       ev.off(EVT.teamChanged, onTeam);
       ev.off(EVT.selectMode, onSelectMode);
+      ev.off(EVT.retreat, onRetreat);
     });
   }
 
@@ -927,6 +942,8 @@ export class VillageScene extends Phaser.Scene {
     }
     this.downAt = { x: p.x, y: p.y };
     this.moved = false;
+    // Right button held: pans the map (Pilih mode uses the left button for the box).
+    this.panning = p.rightButtonDown();
     this.dragGhost = null;
     if (this.placement) {
       const w = this.worldPoint(p);
@@ -946,6 +963,11 @@ export class VillageScene extends Phaser.Scene {
       if (!p1.isDown || !p2.isDown) return;
       const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
       this.zoomAt((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, (this.pinch.zoom * dist) / this.pinch.dist);
+      // Two fingers also drag the map (how touch players pan in Pilih mode).
+      const dx = (p1.x - p1.prevPosition.x + p2.x - p2.prevPosition.x) / 2;
+      const dy = (p1.y - p1.prevPosition.y + p2.y - p2.prevPosition.y) / 2;
+      cam.scrollX -= dx / cam.zoom;
+      cam.scrollY -= dy / cam.zoom;
       return;
     }
     if (!p.isDown) {
@@ -962,7 +984,7 @@ export class VillageScene extends Phaser.Scene {
       this.moveGhost(Math.round(u - this.dragGhost.du), Math.round(v - this.dragGhost.dv));
       return;
     }
-    if (this.selectMode && !this.placement) {
+    if (this.selectMode && !this.placement && !p.rightButtonDown()) {
       this.drawSelectBox(p);
       return;
     }
@@ -975,12 +997,13 @@ export class VillageScene extends Phaser.Scene {
       if (!this.input.pointer1.isDown && !this.input.pointer2.isDown) this.pinch = null;
       return;
     }
-    if (this.downAt && !this.moved) {
+    if (this.downAt && !this.moved && !this.panning) {
       const w = this.worldPoint(p);
       this.tap(w.x, w.y);
-    } else if (this.downAt && this.selectMode && !this.placement) {
+    } else if (this.downAt && this.selectMode && !this.placement && !this.panning) {
       this.pickInBox(p);
     }
+    this.panning = false;
     this.downAt = null;
     this.dragGhost = null;
   }
@@ -1155,6 +1178,7 @@ export class VillageScene extends Phaser.Scene {
       (w) => !w.away && Phaser.Math.Distance.Between(wx, wy, w.view.x, w.view.y) < 22,
     );
     if (walker) {
+      if (!this.selectMode) this.game.events.emit(EVT.enterSelect);
       this.game.events.emit(EVT.teamToggle, walker.monsterId);
       return;
     }

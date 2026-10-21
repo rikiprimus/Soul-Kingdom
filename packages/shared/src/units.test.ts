@@ -4,8 +4,16 @@ import { gameData } from './data';
 import { sendTeam } from './missions';
 import { deserializeState, serializeState } from './save';
 import { createInitialState, type ActionResult, type PlayerState } from './state';
-import { guardNode, guardsOf, moveUnits, settleUnits, unitPoint, unitTile } from './units';
-import { canPlaceBuilding, isTileUnlocked } from './village';
+import {
+  guardNode,
+  guardsOf,
+  moveUnits,
+  retreatUnits,
+  settleUnits,
+  unitPoint,
+  unitTile,
+} from './units';
+import { canPlace, canPlaceBuilding, isTileUnlocked } from './village';
 
 const T0 = 1_000_000;
 const speed = gameData.rules.units.walkTilesPerSecond;
@@ -78,11 +86,11 @@ describe('moveUnits', () => {
       let prev = { x: p.x, y: p.y };
       for (const t of p.path) {
         expect(Math.abs(t.x - prev.x) + Math.abs(t.y - prev.y)).toBe(1);
-        expect(canPlaceBuilding(r.state.village, 1, t.x, t.y)).toBe(true);
+        expect(canPlace(r.state.village, 1, t.x, t.y)).toBe(true);
         prev = t;
       }
       const end = p.path.at(-1)!;
-      expect(unitTile(p, T0 + p.path.length / speed)).toEqual(end);
+      expect(unitTile(p, T0 + p.path.length / speed + 1e-6)).toEqual(end);
       const half = unitPoint(p, T0 + 0.5 / speed);
       expect(Math.abs(half.x - p.x) + Math.abs(half.y - p.y)).toBeCloseTo(0.5);
     }
@@ -92,22 +100,22 @@ describe('moveUnits', () => {
     expect(later.units.m1).toMatchObject({ x: to.x, y: to.y, path: [] });
   });
 
-  it('refuses locked land, blocked or off-map tiles, busy units and bad teams', () => {
+  it('may walk onto locked land, but refuses off-map tiles, busy units and bad teams', () => {
     const s = village();
     const { mapSize } = gameData.village.village;
     let locked = { x: -1, y: -1 };
     for (let y = 0; y < mapSize && locked.x < 0; y++) {
       for (let x = 0; x < mapSize; x++) {
-        if (!isTileUnlocked(s.village, x, y)) {
+        if (!isTileUnlocked(s.village, x, y) && canPlace(s.village, 1, x, y)) {
           locked = { x, y };
           break;
         }
       }
     }
-    expect(moveUnits(s, { ids: ['m1'], ...locked }, T0)).toEqual({
-      ok: false,
-      error: 'plotLocked',
-    });
+    const out = ok(moveUnits(s, { ids: ['m1'], ...locked }, T0));
+    const end = out.state.units.m1!.path.at(-1)!;
+    expect(Math.max(Math.abs(end.x - locked.x), Math.abs(end.y - locked.y))).toBeLessThanOrEqual(2);
+    expect(isTileUnlocked(s.village, end.x, end.y)).toBe(false);
     expect(moveUnits(s, { ids: ['m1'], x: -1, y: 0 }, T0)).toEqual({ ok: false, error: 'blocked' });
     expect(moveUnits(s, { ids: [], ...farTile(s) }, T0)).toEqual({
       ok: false,
@@ -124,6 +132,37 @@ describe('moveUnits', () => {
       ok: false,
       error: 'monsterBusy',
     });
+  });
+
+  it('never puts two units on one tile, picked or not', () => {
+    const s = village();
+    const to = farTile(s);
+    // m1 takes the spot first; then the others are sent to the very same tile.
+    const first = ok(moveUnits(s, { ids: ['m1'], ...to }, T0));
+    const second = ok(moveUnits(first.state, { ids: ['m2', 's1'], ...to }, T0));
+    const ends = ['m1', 'm2', 's1'].map((id) => {
+      const p = second.state.units[id]!;
+      return JSON.stringify(p.path.at(-1) ?? { x: p.x, y: p.y });
+    });
+    expect(new Set(ends).size).toBe(3);
+    expect(ends[0]).toBe(JSON.stringify(to));
+    // A unit standing still holds its tile too.
+    const standing = second.state.units.m1!;
+    const target = standing.path.at(-1)!;
+    const third = ok(moveUnits(second.state, { ids: ['m2'], ...target }, T0 + 1));
+    expect(third.state.units.m2!.path.at(-1)).not.toEqual(target);
+  });
+
+  it('falls back to the Kandang with retreatUnits', () => {
+    const s = village();
+    const away = ok(moveUnits(s, { ids: ['m1', 's1'], ...farTile(s) }, T0));
+    const settled = settleUnits(away.state, T0 + 1000);
+    const back = ok(retreatUnits(settled, { ids: ['m1', 's1'] }, T0 + 1000));
+    const home = s.units.m1!;
+    for (const id of ['m1', 's1']) {
+      const end = back.state.units[id]!.path.at(-1)!;
+      expect(Math.max(Math.abs(end.x - home.x), Math.abs(end.y - home.y))).toBeLessThanOrEqual(4);
+    }
   });
 
   it('keeps where everyone stands and walks through save and load', () => {

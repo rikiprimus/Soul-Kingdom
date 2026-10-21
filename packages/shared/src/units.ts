@@ -2,7 +2,7 @@ import { deepClone } from './clone';
 import { gameData, type GameData } from './data';
 import { isOnMission } from './missions';
 import type { ActionError, ActionResult, PlayerState } from './state';
-import { canPlaceBuilding, isTileUnlocked, sizeOf, type Tile } from './village';
+import { canPlace, sizeOf, type Tile } from './village';
 
 /**
  * Where a monster or soldier stands in the village and where it is walking (Tugas 1A.15).
@@ -43,8 +43,22 @@ export function unitTile(place: UnitPlace, now: number, data: GameData = gameDat
   return route[Math.min(Math.floor(walked), route.length - 1)]!;
 }
 
+/** Units may walk anywhere on the map that no building or wild node stands on,
+ * locked land included (owner, 2026-10-21). */
 const walkable = (state: PlayerState, t: Tile, data: GameData) =>
-  canPlaceBuilding(state.village, 1, t.x, t.y, data);
+  canPlace(state.village, 1, t.x, t.y, data);
+
+const tileKey = (t: Tile) => `${t.x},${t.y}`;
+
+/** Tiles other units stand on or are walking to: no two units share a tile. */
+function heldTiles(state: PlayerState, except: ReadonlySet<string>): Set<string> {
+  const held = new Set<string>();
+  for (const [id, p] of Object.entries(state.units)) {
+    if (except.has(id)) continue;
+    held.add(tileKey(p.path.at(-1) ?? p));
+  }
+  return held;
+}
 
 /** Free open tiles in rings around `center`, nearest first (the centre itself first). */
 function* ringTiles(center: Tile, maxRadius: number): Generator<Tile> {
@@ -131,14 +145,14 @@ export function settleUnits(
     const arrived = p.path.length > 0 && (now - p.departAt) * speed >= p.path.length;
     units[id] = arrived ? { x: t.x, y: t.y, path: [], departAt: now, guard: p.guard } : p;
     if (units[id]!.guard !== null && !nodes.has(units[id]!.guard!)) units[id]!.guard = null;
-    taken.add(`${t.x},${t.y}`);
+    taken.add(tileKey(units[id]!.path.at(-1) ?? units[id]!));
   }
   const home = homeTile(next, data);
   for (const id of ids) {
     if (units[id]) continue;
     let spot: Tile = home;
     for (const t of ringTiles(home, 12)) {
-      if (walkable(next, t, data) && !taken.has(`${t.x},${t.y}`)) {
+      if (walkable(next, t, data) && !taken.has(tileKey(t))) {
         spot = t;
         break;
       }
@@ -169,17 +183,18 @@ function sendUnits(
     if (isOnMission(s, id)) return fail('monsterBusy');
   }
   const next = s === state ? deepClone(s) : s;
-  const used = new Set<string>();
+  // Collision: a spot taken (or about to be) by any other unit is skipped.
+  const used = heldTiles(next, new Set(ids));
   const moved: string[] = [];
   const spots = ringTiles(center, 8);
   for (const id of ids) {
     const from = unitTile(next.units[id]!, now, data);
     for (let it = spots.next(); !it.done; it = spots.next()) {
       const t = it.value;
-      if (used.has(`${t.x},${t.y}`) || !walkable(next, t, data)) continue;
+      if (used.has(tileKey(t)) || !walkable(next, t, data)) continue;
       const path = findPath(next, from, t, data);
       if (!path) continue;
-      used.add(`${t.x},${t.y}`);
+      used.add(tileKey(t));
       next.units[id] = { x: from.x, y: from.y, path, departAt: now, guard };
       moved.push(id);
       break;
@@ -199,8 +214,17 @@ export function moveUnits(
   const { mapSize } = data.village.village;
   const { x, y } = params;
   if (x < 0 || y < 0 || x >= mapSize || y >= mapSize) return fail('blocked');
-  if (!isTileUnlocked(state.village, x, y, data)) return fail('plotLocked');
   return sendUnits(state, params.ids, { x, y }, null, now, data);
+}
+
+/** "Menjauh": the selected units fall back to the Kandang, away from the wild enemies. */
+export function retreatUnits(
+  state: PlayerState,
+  params: { ids: string[] },
+  now: number,
+  data: GameData = gameData,
+): ActionResult<{ moved: string[] }> {
+  return sendUnits(state, params.ids, homeTile(state, data), null, now, data);
 }
 
 /** "Ketuk pohon/batu": the selected units stand guard around a wild node. */

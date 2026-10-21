@@ -729,7 +729,13 @@ Keputusan pemilik (2026-10-21): memilih prajurit/monster di desa adalah inti str
 > - **Client:** tombol **Pilih** di dock (emas saat aktif, petunjuk singkat). Saat aktif, seret = kotak pilihan (bukan geser kamera); unit di dalam kotak menjadi tim (cincin emas); ketuk unit tetap menambah/mengurangi. Dengan unit terpilih: ketuk musuh = serang, ketuk pohon/batu/semak = kawal, ketuk tanah = pindah. Monster dan prajurit kini berdiri/berjalan sesuai `state.units` (tidak lagi jalan-jalan acak), kembali ke petaknya setelah misi. Diperbaiki: tim yang dipilih membuang prajurit setiap state berubah.
 > - **Tes:** `units.test.ts` (penempatan awal unik & bebas, jalur satu petak per langkah di tanah terbuka, formasi, posisi saat berjalan, lipat setelah tiba, penolakan, simpan/muat, kawal + lepas saat node hilang, migrasi v13).
 > - **Dicek di browser:** mode Pilih → kotak memilih 3 unit → ketuk tanah: 3 unit berjalan (1,5 petak/detik) ke 3 petak berbeda; posisi bertahan setelah dimuat ulang; pilih 2 prajurit → ketuk pohon: "2 unit mengawal di sana".
-> - **Belum:** kotak pilihan belum dicoba di HP sungguhan; bangunan yang dibangun di atas unit belum memindahkan unit itu.
+> - **Revisi pemilik (2026-10-21):**
+>   - Unit **boleh menuju wilayah terkunci** / di luar wilayah (jalan di petak mana pun yang tidak ada bangunan atau objek liar).
+>   - **Dock kanan** khusus Pilih: tombol "Pilih"; saat aktif terbuka ke atas berisi **Menjauh** (unit terpilih mundur ke Kandang, `retreatUnits`) dan **Kosongkan**, dan "Pilih" berubah menjadi **✕** untuk kembali ke mode normal. Tombol "kumpulkan semua" digeser ke kiri dock ini.
+>   - **Ketuk monster/prajurit** di mode normal langsung masuk mode Pilih dan memilihnya.
+>   - Di mode Pilih: **seret kiri = kotak**, **tahan klik kanan = geser peta** (menu klik kanan dimatikan); di layar sentuh, **dua jari** menggeser peta.
+>   - **Tabrakan antarunit:** tidak ada dua unit di satu petak, terpilih atau tidak — petak yang ditempati atau sedang dituju unit lain dilewati saat mencari tempat (perintah pindah/kawal/mundur dan unit baru).
+> - **Belum:** kotak pilihan dan geser dua jari belum dicoba di HP sungguhan; geser klik kanan belum bisa diuji dengan alat browser (tidak ada seret klik kanan); bangunan yang dibangun di atas unit belum memindahkan unit itu; unit boleh berpapasan saat berjalan (tabrakan hanya untuk tempat berdiri).
 
 ## Fase 1B — Konten & retensi (4–5 minggu)
 

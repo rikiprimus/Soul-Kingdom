@@ -26,6 +26,10 @@ export const EVT = {
   teamChanged: 'team:changed',
   /** UI → village: the Pilih (select) mode was switched on or off. */
   selectMode: 'village:select-mode',
+  /** Village → UI: a unit was tapped outside Pilih mode, so the mode switches on. */
+  enterSelect: 'village:enter-select',
+  /** UI → village: "Menjauh": the picked units fall back to the Kandang. */
+  retreat: 'village:retreat',
   /** Village → UI: a drag box picked these units as the team. */
   teamSet: 'team:set',
   /** Village → UI: resources were earned at a screen point; icons fly to the HUD. */
