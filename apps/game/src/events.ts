@@ -34,7 +34,8 @@ export type Selection = {
   id: string;
 } | null;
 
-export type PlacementRequest = { type: string } | { moveId: string };
+/** `group`: move the whole connected stretch of walls along with `moveId`. */
+export type PlacementRequest = { type: string } | { moveId: string; group?: boolean };
 
 /** Sent with `confirmPlacement`: builders for a timed construction. */
 export interface PlacementConfirm {

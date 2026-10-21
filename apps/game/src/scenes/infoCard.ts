@@ -96,7 +96,7 @@ export interface InfoActions {
   openPanel(kind: PanelKind, targetId?: string): void;
   toast(message: string, color?: number, sound?: SoundId | null): void;
   deselect(): void;
-  startMove(buildingId: string): void;
+  startMove(buildingId: string, group?: boolean): void;
   confirm(message: string, onYes: () => void): void;
   /** Monsters picked for the next wild fight. */
   team(): string[];
@@ -631,6 +631,16 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
     color: COLORS.panelLight,
     onClick: () => a.startMove(b.id),
   });
+  if (def.lineBuild && !b.construction) {
+    const count = connectedGroup(state, b.id).length;
+    if (count > 1) {
+      buttons.push({
+        label: t('info.moveGroup', { count }),
+        color: COLORS.panelLight,
+        onClick: () => a.startMove(b.id, true),
+      });
+    }
+  }
 
   if (def.sellable && !b.construction) {
     const refund = sellValue(b);

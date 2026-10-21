@@ -648,6 +648,64 @@ export function moveBuilding(
   return { ok: true, state: next };
 }
 
+/**
+ * Where a connected stretch of a `lineBuild` type (see connectedGroup) would stand if
+ * `buildingId` moved to (x, y) and the rest kept their place relative to it, and whether
+ * every new tile is inside the map, on open land and free of anything outside the stretch.
+ */
+export function groupMoveTiles(
+  state: PlayerState,
+  params: { buildingId: string; x: number; y: number },
+  data: GameData = gameData,
+): { ids: string[]; tiles: { x: number; y: number }[]; ok: boolean } {
+  const b = state.village.buildings.find((x) => x.id === params.buildingId);
+  if (!b || !buildingDef(b.type, data).lineBuild) return { ids: [], tiles: [], ok: false };
+  const group = connectedGroup(state, b.id, data);
+  const ids = new Set(group.map((g) => g.id));
+  const dx = params.x - b.x;
+  const dy = params.y - b.y;
+  const tiles = group.map((g) => ({ x: g.x + dx, y: g.y + dy }));
+  const taken = occupancy(state.village, data);
+  const { mapSize } = data.village.village;
+  const ok = tiles.every((t) => {
+    const owner = taken.get(key(t.x, t.y));
+    return (
+      t.x >= 0 &&
+      t.y >= 0 &&
+      t.x < mapSize &&
+      t.y < mapSize &&
+      (owner === undefined || ids.has(owner)) &&
+      isAreaUnlocked(state.village, 1, t.x, t.y, data)
+    );
+  });
+  return { ids: group.map((g) => g.id), tiles, ok };
+}
+
+/** Moves a whole connected stretch of walls at once (see groupMoveTiles). */
+export function moveGroup(
+  state: PlayerState,
+  params: { buildingId: string; x: number; y: number },
+  data: GameData = gameData,
+): ActionResult<{ count: number }> {
+  const b = state.village.buildings.find((x) => x.id === params.buildingId);
+  if (!b) return fail('buildingNotFound');
+  if (!buildingDef(b.type, data).lineBuild) return fail('notLineBuilding');
+  const { ids, tiles, ok } = groupMoveTiles(state, params, data);
+  if (!ok) {
+    const locked = tiles.some(
+      (t) => t.x >= 0 && t.y >= 0 && !isAreaUnlocked(state.village, 1, t.x, t.y, data),
+    );
+    return fail(locked ? 'plotLocked' : 'blocked');
+  }
+  const next = deepClone(state);
+  ids.forEach((id, i) => {
+    const nb = next.village.buildings.find((x) => x.id === id)!;
+    nb.x = tiles[i]!.x;
+    nb.y = tiles[i]!.y;
+  });
+  return { ok: true, state: next, count: ids.length };
+}
+
 export function constructionRemaining(b: Building, now: number): number {
   return b.construction ? Math.max(0, b.construction.endsAt - now) : 0;
 }

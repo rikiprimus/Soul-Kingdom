@@ -8,5 +8,7 @@ export default defineConfig({
     target: 'es2022',
     chunkSizeWarningLimit: 2000,
   },
-  server: { host: true },
+  // A fixed port keeps the save: localStorage belongs to one address, and Vite would
+  // otherwise move to 5174+ (a fresh, empty game) whenever 5173 is taken.
+  server: { host: true, port: 5173, strictPort: true },
 });

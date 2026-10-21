@@ -22,6 +22,7 @@ import {
   type ToastRequest,
 } from '../events';
 import type { GameStore } from '../store';
+import type { VillageScene } from './VillageScene';
 import { errorText, formatDuration, formatNumber, t } from '../text';
 import { COLORS, textStyle } from '../ui/theme';
 import { canFullscreen, isFullscreen, toggleFullscreen } from '../ui/fullscreen';
@@ -92,6 +93,7 @@ export class UIScene extends Phaser.Scene {
   private dockLayer?: Phaser.GameObjects.Container;
   private info?: Phaser.GameObjects.Container;
   private infoTimers: (() => void)[] = [];
+  private infoHome?: { x: number; y: number; w: number; h: number };
   private collectAllButton?: Button;
   private collectReady = 0;
   private selection: Selection = null;
@@ -777,7 +779,7 @@ export class UIScene extends Phaser.Scene {
       toast: (message, color, sound) =>
         sound === undefined ? toast(this, message, color) : toast(this, message, color, sound),
       deselect: () => this.game.events.emit(EVT.deselect),
-      startMove: (id) => this.game.events.emit(EVT.startPlacement, { moveId: id }),
+      startMove: (id, group) => this.game.events.emit(EVT.startPlacement, { moveId: id, group }),
       confirm: (message, onYes) => this.confirm(message, onYes),
       team: () => [...team],
       clearTeam: () => this.setTeam([]),
@@ -792,11 +794,12 @@ export class UIScene extends Phaser.Scene {
 
     const L = this.layout;
     const { play } = L;
-    // Landscape: a side card on the right of the play area; portrait: a card above the bar.
+    // The card is built at the origin and moved above the selected thing every frame
+    // (positionInfo); when that is off screen it falls back to the bottom-right corner.
     const cardW = L.landscape
       ? Math.min(340, Math.max(280, play.w * 0.45))
       : Math.min(play.w - 16, 560);
-    const x = L.landscape ? play.x + play.w - cardW - 8 : play.x + (play.w - cardW) / 2;
+    const x = 0;
     const { buttons } = content;
     const perRow = cardW < 420 ? 2 : 3;
     const rows = Math.ceil(buttons.length / perRow);
@@ -816,7 +819,13 @@ export class UIScene extends Phaser.Scene {
     const headH = Math.max(86, 40 + body.height + status.height);
     const stepH = content.workers ? 40 : 0;
     const cardH = headH + stepH + rows * 42 + 10;
-    const y = Math.max(play.y + 8, contentBottom(L, dockVisible) - cardH);
+    const y = 0;
+    this.infoHome = {
+      x: L.landscape ? play.x + play.w - cardW - 8 : play.x + (play.w - cardW) / 2,
+      y: Math.max(play.y + 8, contentBottom(L, dockVisible) - cardH),
+      w: cardW,
+      h: cardH,
+    };
     const layer = this.add.container(0, 0).setDepth(150);
     const bg = roundedPanel(this, x, y, cardW, cardH, COLORS.panel, COLORS.accent, 14);
     const blocker = this.add.zone(x, y, cardW, cardH).setOrigin(0).setInteractive();
@@ -878,6 +887,42 @@ export class UIScene extends Phaser.Scene {
       );
     });
     this.info = layer;
+    this.positionInfo();
+  }
+
+  override update(): void {
+    this.positionInfo();
+  }
+
+  /** Keeps the info card just above the selected thing, inside the play area. */
+  private positionInfo(): void {
+    const home = this.infoHome;
+    if (!this.info || !home) return;
+    const { play } = this.layout;
+    const bottom = contentBottom(this.layout, dockVisible);
+    const anchor = (this.scene.get('village') as VillageScene).selectionAnchor();
+    const onScreen =
+      anchor &&
+      anchor.x > play.x &&
+      anchor.x < play.x + play.w &&
+      anchor.bottom > play.y &&
+      anchor.top < bottom;
+    if (!onScreen) {
+      this.info.setPosition(home.x, home.y);
+      return;
+    }
+    const gap = 10;
+    const x = Phaser.Math.Clamp(anchor.x - home.w / 2, play.x + 8, play.x + play.w - home.w - 8);
+    // Above the thing when there is room, else below it, else as close as fits.
+    const above = anchor.top - gap - home.h;
+    const below = anchor.bottom + gap;
+    const y =
+      above >= play.y + 8
+        ? above
+        : below + home.h <= bottom
+          ? below
+          : Phaser.Math.Clamp(above, play.y + 8, bottom - home.h);
+    this.info.setPosition(x, y);
   }
 
   /** Floating "collect everything" button, shown when several buildings are ready. */

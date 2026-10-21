@@ -8,6 +8,8 @@ import {
   levelDef,
   lineTiles,
   maxCountFor,
+  moveBuilding,
+  moveGroup,
   upgradeGroup,
   upgradeBuilding,
 } from './village';
@@ -132,5 +134,63 @@ describe('connected wall upgrades', () => {
     expect(upgradeGroup(s, wallsOf(s)[0]!.id, T0)).toEqual({ ok: false, error: 'townHallTooLow' });
     const pasar = s.village.buildings.find((b) => b.type === 'pasar')!;
     expect(upgradeGroup(s, pasar.id, T0)).toEqual({ ok: false, error: 'notLineBuilding' });
+  });
+});
+
+describe('moveGroup', () => {
+  it('moves the whole connected stretch by the same offset', () => {
+    let s = ready();
+    s = ok(buildLine(s, { type: 'tembok', from: { x: 0, y: 0 }, to: { x: 3, y: 0 } }, T0)).state;
+    const second = wallsOf(s)[1]!;
+    const r = ok(moveGroup(s, { buildingId: second.id, x: 2, y: 5 }));
+    expect(r.count).toBe(4);
+    const spots = wallsOf(r.state)
+      .map((w) => `${w.x},${w.y}`)
+      .sort();
+    expect(spots).toEqual(['1,5', '2,5', '3,5', '4,5']);
+  });
+
+  it('may overlap its own old tiles when sliding along the line', () => {
+    let s = ready();
+    s = ok(buildLine(s, { type: 'tembok', from: { x: 0, y: 0 }, to: { x: 3, y: 0 } }, T0)).state;
+    const r = ok(moveGroup(s, { buildingId: wallsOf(s)[0]!.id, x: 1, y: 0 }));
+    expect(
+      wallsOf(r.state)
+        .map((w) => w.x)
+        .sort(),
+    ).toEqual([1, 2, 3, 4]);
+  });
+
+  it('refuses blocked, off-map and locked spots, and other buildings', () => {
+    let s = ready();
+    s = ok(buildLine(s, { type: 'tembok', from: { x: 0, y: 0 }, to: { x: 2, y: 0 } }, T0)).state;
+    const first = wallsOf(s)[0]!;
+    const pasar = s.village.buildings.find((b) => b.type === 'pasar')!;
+    expect(moveGroup(s, { buildingId: first.id, x: pasar.x, y: pasar.y })).toEqual({
+      ok: false,
+      error: 'blocked',
+    });
+    const edge = gameData.village.village.mapSize - 1;
+    expect(moveGroup(s, { buildingId: first.id, x: edge, y: 0 }).ok).toBe(false);
+    s.village.unlockedPlots = ['0,0'];
+    expect(moveGroup(s, { buildingId: first.id, x: 0, y: edge })).toEqual({
+      ok: false,
+      error: 'plotLocked',
+    });
+    expect(moveGroup(s, { buildingId: pasar.id, x: 0, y: 5 })).toEqual({
+      ok: false,
+      error: 'notLineBuilding',
+    });
+  });
+
+  it('a single wall still moves alone with moveBuilding', () => {
+    let s = ready();
+    s = ok(buildLine(s, { type: 'tembok', from: { x: 0, y: 0 }, to: { x: 2, y: 0 } }, T0)).state;
+    const r = ok(moveBuilding(s, { buildingId: wallsOf(s)[0]!.id, x: 0, y: 6 }));
+    expect(
+      wallsOf(r.state)
+        .map((w) => `${w.x},${w.y}`)
+        .sort(),
+    ).toEqual(['0,6', '1,0', '2,0']);
   });
 });

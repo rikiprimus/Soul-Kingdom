@@ -34,6 +34,9 @@ import {
   levelDef,
   mixRemaining,
   moveBuilding,
+  moveGroup,
+  groupMoveTiles,
+  connectedGroup,
   pendingProduction,
   productionOf,
   scaleAmount,
@@ -104,6 +107,8 @@ interface Placement {
   valid: boolean;
   /** Line buildings: the tapped start tile (x, y is then the end) and the segment ghosts. */
   line?: { start: { x: number; y: number } | null; ghosts: Phaser.GameObjects.Image[] };
+  /** Moving a whole stretch of walls: its building ids and one ghost per segment. */
+  group?: { ids: string[]; ghosts: Phaser.GameObjects.Image[] };
 }
 
 interface Walker {
@@ -653,7 +658,7 @@ export class VillageScene extends Phaser.Scene {
       signature,
       image,
     };
-    if (this.placement?.moveId === b.id) image.setVisible(false);
+    if (this.isBeingMoved(b.id)) image.setVisible(false);
     if (b.construction && !firstBuild) {
       sprite.overlay = this.placeImage(scaffoldTexture(this, size), b.x, b.y, size);
     }
@@ -786,6 +791,37 @@ export class VillageScene extends Phaser.Scene {
     this.selection = selection;
     this.drawSelection();
     this.game.events.emit(EVT.select, selection);
+  }
+
+  /** Centre x, top and bottom of the selected thing in screen pixels, for the info card. */
+  selectionAnchor(): { x: number; top: number; bottom: number } | null {
+    const s = this.selection;
+    if (!s) return null;
+    let box: { x: number; top: number; bottom: number } | undefined;
+    const bounds = (
+      s.kind === 'encounter'
+        ? this.enemies.get(s.id)
+        : s.kind === 'animal'
+          ? this.animals.find((a) => a.id === s.id)?.image
+          : s.kind === 'plot'
+            ? this.plotSigns.get(s.id)
+            : this.sprites.get(s.id)?.image
+    )?.getBounds();
+    if (bounds) box = { x: bounds.centerX, top: bounds.top, bottom: bounds.bottom };
+    else if (s.kind === 'plot') {
+      const [px = 0, py = 0] = s.id.split(',').map(Number);
+      const quad = this.plotQuad(px, py);
+      const ys = quad.map((p) => p.y);
+      box = { x: (quad[0]!.x + quad[2]!.x) / 2, top: Math.min(...ys), bottom: Math.max(...ys) };
+    }
+    if (!box) return null;
+    const cam = this.cameras.main;
+    const sy = (y: number) => (y - cam.worldView.y) * cam.zoom + cam.y;
+    return {
+      x: (box.x - cam.worldView.x) * cam.zoom + cam.x,
+      top: sy(box.top),
+      bottom: sy(box.bottom),
+    };
   }
 
   private drawSelection() {
@@ -945,11 +981,18 @@ export class VillageScene extends Phaser.Scene {
       if (!img.visible || !img.getBounds().contains(wx, wy)) continue;
       const left = img.x - img.displayOriginX * img.scaleX;
       const top = img.y - img.displayOriginY * img.scaleY;
-      const alpha = this.textures.getPixelAlpha(
-        Math.floor((wx - left) / img.scaleX),
-        Math.floor((wy - top) / img.scaleY),
-        img.texture.key,
-      );
+      let alpha: number | null = 255;
+      try {
+        // Atlas art needs its frame name; textures that cannot be read count as solid.
+        alpha = this.textures.getPixelAlpha(
+          Math.floor((wx - left) / img.scaleX),
+          Math.floor((wy - top) / img.scaleY),
+          img.texture.key,
+          img.frame.name,
+        );
+      } catch {
+        alpha = 255;
+      }
       if ((alpha ?? 0) > 40) return s;
     }
     const { u, v } = worldToIso(wx, wy);
@@ -1288,7 +1331,13 @@ export class VillageScene extends Phaser.Scene {
     if (!moving && gameData.buildingById.get(type)?.lineBuild) {
       this.placement.line = { start: null, ghosts: [] };
     }
-    if (moving) this.sprites.get(moving.id)?.image.setVisible(false);
+    if (moving && 'group' in req && req.group) {
+      const ids = connectedGroup(this.store.state, moving.id).map((g) => g.id);
+      this.placement.group = { ids, ghosts: [] };
+    }
+    for (const id of this.placement.group?.ids ?? (moving ? [moving.id] : [])) {
+      this.sprites.get(id)?.image.setVisible(false);
+    }
     this.drawGrid(true);
     this.moveGhost(x, y);
   }
@@ -1309,6 +1358,10 @@ export class VillageScene extends Phaser.Scene {
     if (!pl) return;
     if (pl.line) {
       this.refreshLinePlacement(pl, pl.line);
+      return;
+    }
+    if (pl.group) {
+      this.refreshGroupPlacement(pl, pl.group);
       return;
     }
     pl.valid = canPlaceBuilding(this.store.state.village, pl.size, pl.x, pl.y, gameData, pl.moveId);
@@ -1343,20 +1396,46 @@ export class VillageScene extends Phaser.Scene {
     const fitsCount = countBuildings(state, pl.type) + tiles.length <= maxCountFor(state, pl.type);
     const free = tiles.every((t) => canPlaceBuilding(state.village, 1, t.x, t.y));
     pl.valid = line.start !== null && free && fitsCount;
-    const color = free && fitsCount ? COLORS.good : COLORS.danger;
-    const inLine = new Set(tiles.map((t) => `${t.x},${t.y}`));
-    for (const g of line.ghosts) g.destroy();
-    line.ghosts = tiles.map((t) => {
-      const art = buildingTexture(this, pl.type, 1, `wall-${wallMask(t.x, t.y, inLine)}`);
-      const c = footprintCenter(t.x, t.y, 1);
-      return this.add
-        .image(c.x, c.y, art.key, art.frame)
-        .setOrigin(art.originX, art.originY)
-        .setScale(1 / BUILDING_RES)
-        .setAlpha(0.85)
-        .setTint(free && fitsCount ? 0xffffff : 0xff9a9a)
-        .setDepth(1_500_001 + t.x + t.y);
+    line.ghosts = this.tileGhosts(pl, line.ghosts, tiles, free && fitsCount, 1);
+    const price = levelDef(pl.type, 1)!.cost;
+    const status: PlacementStatus = {
+      active: true,
+      valid: pl.valid,
+      type: pl.type,
+      line: {
+        started: line.start !== null,
+        count: tiles.length,
+        cost: scaleAmount(price, tiles.length),
+      },
+    };
+    this.game.events.emit(EVT.placement, status);
+  }
+
+  /** Moving a stretch of walls: one ghost per segment, green when every new tile is free. */
+  private refreshGroupPlacement(pl: Placement, group: NonNullable<Placement['group']>) {
+    const moving = this.store.state.village.buildings.find((b) => b.id === pl.moveId);
+    const { tiles, ok } = groupMoveTiles(this.store.state, {
+      buildingId: pl.moveId ?? '',
+      x: pl.x,
+      y: pl.y,
     });
+    pl.valid = ok;
+    group.ghosts = this.tileGhosts(pl, group.ghosts, tiles, ok, moving?.level ?? 1);
+    const status: PlacementStatus = { active: true, valid: ok, type: pl.type, moving: true };
+    this.game.events.emit(EVT.placement, status);
+  }
+
+  /** Replaces `old` with one wall ghost per tile and paints their footprints. */
+  private tileGhosts(
+    pl: Placement,
+    old: Phaser.GameObjects.Image[],
+    tiles: { x: number; y: number }[],
+    fine: boolean,
+    level: number,
+  ): Phaser.GameObjects.Image[] {
+    for (const g of old) g.destroy();
+    const inLine = new Set(tiles.map((t) => `${t.x},${t.y}`));
+    const color = fine ? COLORS.good : COLORS.danger;
     pl.ghost.setVisible(false);
     pl.footprint.clear();
     for (const t of tiles) {
@@ -1372,18 +1451,22 @@ export class VillageScene extends Phaser.Scene {
         .lineStyle(2, color, 1)
         .strokePoints(pts, true, true);
     }
-    const price = levelDef(pl.type, 1)!.cost;
-    const status: PlacementStatus = {
-      active: true,
-      valid: pl.valid,
-      type: pl.type,
-      line: {
-        started: line.start !== null,
-        count: tiles.length,
-        cost: scaleAmount(price, tiles.length),
-      },
-    };
-    this.game.events.emit(EVT.placement, status);
+    return tiles.map((t) => {
+      const art = buildingTexture(this, pl.type, level, `wall-${wallMask(t.x, t.y, inLine)}`);
+      const c = footprintCenter(t.x, t.y, 1);
+      return this.add
+        .image(c.x, c.y, art.key, art.frame)
+        .setOrigin(art.originX, art.originY)
+        .setScale(1 / BUILDING_RES)
+        .setAlpha(0.85)
+        .setTint(fine ? 0xffffff : 0xff9a9a)
+        .setDepth(1_500_001 + t.x + t.y);
+    });
+  }
+
+  private isBeingMoved(id: string): boolean {
+    const pl = this.placement;
+    return !!pl && (pl.group ? pl.group.ids.includes(id) : pl.moveId === id);
   }
 
   private confirmPlacement(opts: PlacementConfirm = {}) {
@@ -1404,6 +1487,21 @@ export class VillageScene extends Phaser.Scene {
       // Ready for the next line, starting fresh.
       pl.line.start = null;
       this.refreshPlacement();
+      return;
+    }
+    if (pl.group) {
+      const moved = this.store.apply((s) =>
+        moveGroup(s, { buildingId: pl.moveId!, x: pl.x, y: pl.y }),
+      );
+      if (!moved.ok) {
+        this.game.events.emit(EVT.toast, { message: errorText(moved.error) });
+        return;
+      }
+      const ids = pl.group.ids;
+      playSfx(this, 'place');
+      this.endPlacement();
+      for (const id of ids) this.feelBuilding(id, 'small');
+      this.select({ kind: 'building', id: ids[0]! });
       return;
     }
     const result = pl.moveId
@@ -1436,8 +1534,10 @@ export class VillageScene extends Phaser.Scene {
     if (!pl) return;
     pl.ghost.destroy();
     pl.footprint.destroy();
-    for (const g of pl.line?.ghosts ?? []) g.destroy();
-    if (pl.moveId) this.sprites.get(pl.moveId)?.image.setVisible(true);
+    for (const g of [...(pl.line?.ghosts ?? []), ...(pl.group?.ghosts ?? [])]) g.destroy();
+    for (const id of pl.group?.ids ?? (pl.moveId ? [pl.moveId] : [])) {
+      this.sprites.get(id)?.image.setVisible(true);
+    }
     this.placement = null;
     this.drawGrid(false);
     this.sync();
