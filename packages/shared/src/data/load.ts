@@ -12,6 +12,9 @@ import {
   type TextFile,
   buildingsFileSchema,
   wildsFileSchema,
+  adventureFileSchema,
+  type AdventureFile,
+  type Defender,
   type BuildingDef,
   type BuildingsFile,
   type ObstacleDef,
@@ -39,6 +42,7 @@ export interface RawGameData {
   text: unknown;
   buildings: unknown;
   wilds: unknown;
+  adventure: unknown;
 }
 
 export interface GameData {
@@ -57,6 +61,7 @@ export interface GameData {
   readonly stageIndex: ReadonlyMap<StageId, number>;
   readonly village: BuildingsFile;
   readonly wilds: WildsFile;
+  readonly adventure: AdventureFile;
   readonly buildingById: ReadonlyMap<string, BuildingDef>;
   readonly obstacleById: ReadonlyMap<string, ObstacleDef>;
   /** Id of the building with feature "townHall". */
@@ -105,7 +110,8 @@ export function loadGameData(raw: RawGameData): GameData {
   const text = parseFile(textFileSchema, raw.text, 'text.json', issues);
   const village = parseFile(buildingsFileSchema, raw.buildings, 'buildings.json', issues);
   const wilds = parseFile(wildsFileSchema, raw.wilds, 'wilds.json', issues);
-  if (!elements || !forms || !recipes || !rules || !text || !village || !wilds) {
+  const adventure = parseFile(adventureFileSchema, raw.adventure, 'adventure.json', issues);
+  if (!elements || !forms || !recipes || !rules || !text || !village || !wilds || !adventure) {
     throw new DataValidationError(issues);
   }
 
@@ -287,6 +293,75 @@ export function loadGameData(raw: RawGameData): GameData {
       issues.push(`rules.json: prajurit "${sd.id}" peran "${sd.role}" tidak ada`);
     }
   }
+  // Serbu bases: unique ids, real forms/elements/stages/soldiers/tower levels, a field
+  // wide enough for both sides, and room for every defender.
+  const { serbu } = rules;
+  if (serbu.placeColumns * 2 > serbu.grid.columns) {
+    issues.push('rules.json: serbu.placeColumns x 2 lebih lebar dari medan');
+  }
+  /** Checks one list of defenders against the other data; returns how many there are. */
+  const checkDefenders = (where: string, defenders: readonly Defender[]): number => {
+    let count = 0;
+    for (const d of defenders) {
+      count += d.count;
+      if (d.kind === 'monster' || d.kind === 'boss') {
+        if (!formById.has(d.form)) issues.push(`${where}: wujud "${d.form}" tidak ada`);
+        if (!elementById.has(d.element)) issues.push(`${where}: elemen "${d.element}" tidak ada`);
+        if (!stageIndex.has(d.stage)) issues.push(`${where}: tahap "${d.stage}" tidak ada`);
+      } else if (d.kind === 'soldier') {
+        const kind = rules.barracks.soldiers.find((x) => x.id === d.soldier);
+        if (!kind) issues.push(`${where}: prajurit "${d.soldier}" tidak ada`);
+        if (d.rank >= rules.barracks.ranks.length) {
+          issues.push(`${where}: pangkat ${d.rank} tidak ada`);
+        }
+      } else if (d.kind === 'tower' && d.level > rules.raids.tower.levels.length) {
+        issues.push(`${where}: Menara level ${d.level} tidak punya statistik`);
+      }
+    }
+    return count;
+  };
+  const baseIds = new Set<string>();
+  for (const base of serbu.bases) {
+    const where = `rules.json: serbu.bases "${base.id}"`;
+    if (baseIds.has(base.id)) issues.push(`${where} ganda`);
+    baseIds.add(base.id);
+    const count = checkDefenders(where, base.defenders);
+    if (count > serbu.placeColumns * serbu.grid.rows) {
+      issues.push(`${where}: ${count} pertahanan tidak muat di medan`);
+    }
+  }
+  // Petualangan: unique ids, a path through earlier nodes of the same region, one boss
+  // per region, refill hours on resource nodes only, defenders that fit the field.
+  const nodeIds = new Set<string>();
+  const regionIds = new Set<string>();
+  for (const region of adventure.regions) {
+    const where = `adventure.json: wilayah "${region.id}"`;
+    if (regionIds.has(region.id)) issues.push(`${where} ganda`);
+    regionIds.add(region.id);
+    const seen = new Set<string>();
+    for (const node of region.nodes) {
+      const at = `${where} titik "${node.id}"`;
+      if (nodeIds.has(node.id)) issues.push(`${at}: id ganda`);
+      nodeIds.add(node.id);
+      for (const id of node.after) {
+        if (!seen.has(id))
+          issues.push(`${at}: "after" harus titik sebelumnya di wilayah ini ("${id}")`);
+      }
+      seen.add(node.id);
+      if ((node.kind === 'resource') !== (node.refillHours !== undefined)) {
+        issues.push(`${at}: refillHours hanya (dan wajib) untuk titik sumber daya`);
+      }
+      if (checkDefenders(at, node.defenders) > serbu.placeColumns * serbu.grid.rows) {
+        issues.push(`${at}: pertahanan tidak muat di medan`);
+      }
+    }
+    if (region.nodes.filter((n) => n.kind === 'boss').length !== 1) {
+      issues.push(`${where}: harus punya tepat satu bos`);
+    }
+  }
+  if (rules.battle.maxUnits > serbu.placeColumns * serbu.grid.rows) {
+    issues.push('rules.json: battle.maxUnits tidak muat di petak penempatan Serbu');
+  }
   // Raids: the tower and wall buildings exist and have stats for every level they can reach.
   const { tower, wall } = rules.raids;
   const towerDef = buildingInfo.buildingById.get(tower.building);
@@ -324,6 +399,7 @@ export function loadGameData(raw: RawGameData): GameData {
     stageIndex,
     village,
     wilds,
+    adventure,
     ...buildingInfo,
   };
 }

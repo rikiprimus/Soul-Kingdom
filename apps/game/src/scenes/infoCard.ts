@@ -29,6 +29,7 @@ import {
   barracksQueue,
   barracksRemaining,
   serbuPowerCap,
+  maxFormTier,
   animalType,
   animalWorkers,
   freeRanchSlots,
@@ -98,6 +99,8 @@ export interface InfoActions {
     action: (s: PlayerState, now: number) => ActionResult<T>,
   ): (ActionResult<T> & { ok: true }) | null;
   openPanel(kind: PanelKind, targetId?: string): void;
+  /** Opens the Serbu screen (Guild) or the Petualangan map (Gerbang Petualangan). */
+  openBattles(source: 'serbu' | 'adventure'): void;
   toast(message: string, color?: number, sound?: SoundId | null): void;
   deselect(): void;
   startMove(buildingId: string, group?: boolean): void;
@@ -542,7 +545,31 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
       case 'mixer':
         buttons.push({ label: t('info.openMixer'), onClick: () => a.openPanel('mixer') });
         break;
+      case 'serbu':
+        content.lines.push(t('info.powerCap', { cap: serbuPowerCap(state) }));
+        if (b.level >= 1) {
+          buttons.push({
+            label: t('info.openSerbu'),
+            color: COLORS.danger,
+            onClick: () => a.openBattles('serbu'),
+          });
+        }
+        break;
       case 'adventure':
+        content.lines.push(
+          t('info.adventureProgress', {
+            n: state.bossesDefeated,
+            tier: maxFormTier(state.bossesDefeated),
+          }),
+        );
+        if (b.level >= 1) {
+          buttons.push({
+            label: t('info.openAdventure'),
+            color: COLORS.accentDark,
+            onClick: () => a.openBattles('adventure'),
+          });
+        }
+        break;
       case 'arena':
         content.lines.push(t('info.comingSoon'));
         break;

@@ -102,6 +102,177 @@
     "maxTeam": 6,
     "marchSeconds": 30
   },
+  "serbu": {
+    "_note": "Tugas 1.4: Mode Serbu melawan markas NPC (sementara, sebelum markas pemain lain di Tugas 2.2). Medan sendiri grid (kolom x baris); pemain menaruh unit di placeColumns kolom kiri (1 unit per petak), pertahanan NPC di placeColumns kolom kanan (diacak berbenih). Maks. battle.maxUnits unit dan poin kekuatan <= batas gabungan barak. Batas waktu battle.maxTicks (habis = penyerang kalah). Unit yang gugur mati: monster ke Kuburan, prajurit hilang. Markas terbuka berurutan (markas sebelumnya harus sudah dikalahkan) dan butuh Balai requiresTownHall. Menang pertama = firstReward, menang lagi = repeatReward. Pertahanan: bandit (power = banditPower, lihat battle.bandit), monster (wujud/elemen/tahap), soldier (jenis prajurit + rank 0..), tower (level Menara Jaga, statistik raids.tower). trackEveryTicks = jarak rekaman posisi untuk pemutaran.",
+    "grid": { "columns": 12, "rows": 8 },
+    "placeColumns": 4,
+    "trackEveryTicks": 4,
+    "bases": [
+      {
+        "id": "pos-bandit",
+        "name": "Pos Bandit",
+        "requiresTownHall": 1,
+        "defenders": [{ "kind": "bandit", "power": 0.5, "count": 4 }],
+        "firstReward": { "gold": 300, "food": 100 },
+        "repeatReward": { "gold": 60, "food": 20 }
+      },
+      {
+        "id": "kemah-perampok",
+        "name": "Kemah Perampok",
+        "requiresTownHall": 1,
+        "defenders": [{ "kind": "bandit", "power": 0.6, "count": 6 }],
+        "firstReward": { "gold": 500, "food": 150, "wood": 150 },
+        "repeatReward": { "gold": 100, "food": 30 }
+      },
+      {
+        "id": "sarang-hewan-liar",
+        "name": "Sarang Hewan Liar",
+        "requiresTownHall": 2,
+        "defenders": [
+          {
+            "kind": "monster",
+            "form": "kelinci",
+            "element": "angin",
+            "stage": "dewasa",
+            "count": 2
+          },
+          {
+            "kind": "monster",
+            "form": "landak",
+            "element": "tanah",
+            "stage": "dewasa",
+            "count": 2
+          },
+          { "kind": "monster", "form": "katak", "element": "air", "stage": "dewasa", "count": 1 }
+        ],
+        "firstReward": { "gold": 800, "food": 250, "stone": 100 },
+        "repeatReward": { "gold": 150, "food": 40 }
+      },
+      {
+        "id": "benteng-kayu",
+        "name": "Benteng Kayu",
+        "requiresTownHall": 2,
+        "defenders": [
+          { "kind": "bandit", "power": 0.8, "count": 5 },
+          { "kind": "tower", "level": 1, "count": 1 }
+        ],
+        "firstReward": { "gold": 1200, "wood": 300, "stone": 200, "soulCrystal": 1 },
+        "repeatReward": { "gold": 200, "wood": 50 }
+      },
+      {
+        "id": "lembah-serigala",
+        "name": "Lembah Serigala",
+        "requiresTownHall": 3,
+        "defenders": [
+          {
+            "kind": "monster",
+            "form": "serigala",
+            "element": "kegelapan",
+            "stage": "dewasa",
+            "count": 2
+          },
+          { "kind": "monster", "form": "kera", "element": "angin", "stage": "dewasa", "count": 2 },
+          { "kind": "monster", "form": "kucing", "element": "api", "stage": "dewasa", "count": 2 }
+        ],
+        "firstReward": { "gold": 2000, "food": 500, "stone": 300, "soulCrystal": 1 },
+        "repeatReward": { "gold": 300, "food": 80 }
+      },
+      {
+        "id": "markas-prajurit-bayaran",
+        "name": "Markas Prajurit Bayaran",
+        "requiresTownHall": 3,
+        "defenders": [
+          { "kind": "soldier", "soldier": "prajurit", "rank": 1, "count": 4 },
+          { "kind": "soldier", "soldier": "pemanah", "rank": 1, "count": 3 },
+          { "kind": "tower", "level": 2, "count": 1 }
+        ],
+        "firstReward": { "gold": 3000, "wood": 800, "stone": 600, "soulCrystal": 2 },
+        "repeatReward": { "gold": 500, "wood": 120 }
+      },
+      {
+        "id": "kuil-hantu",
+        "name": "Kuil Hantu",
+        "requiresTownHall": 4,
+        "defenders": [
+          {
+            "kind": "monster",
+            "form": "hantu",
+            "element": "kegelapan",
+            "stage": "dewasa",
+            "count": 2
+          },
+          { "kind": "monster", "form": "ular", "element": "air", "stage": "dewasa", "count": 2 },
+          { "kind": "tower", "level": 2, "count": 1 }
+        ],
+        "firstReward": { "gold": 5000, "food": 1000, "soulCrystal": 2 },
+        "repeatReward": { "gold": 800, "food": 150 }
+      },
+      {
+        "id": "benteng-batu",
+        "name": "Benteng Batu",
+        "requiresTownHall": 4,
+        "defenders": [
+          { "kind": "monster", "form": "buaya", "element": "air", "stage": "dewasa", "count": 2 },
+          { "kind": "monster", "form": "golem", "element": "tanah", "stage": "dewasa", "count": 1 },
+          { "kind": "soldier", "soldier": "penombak-berkuda", "rank": 1, "count": 3 },
+          { "kind": "tower", "level": 2, "count": 2 }
+        ],
+        "firstReward": { "gold": 8000, "wood": 1500, "stone": 1500, "soulCrystal": 3 },
+        "repeatReward": { "gold": 1200, "stone": 200 }
+      },
+      {
+        "id": "sarang-naga",
+        "name": "Sarang Naga",
+        "requiresTownHall": 5,
+        "defenders": [
+          { "kind": "monster", "form": "naga", "element": "api", "stage": "dewasa", "count": 1 },
+          {
+            "kind": "monster",
+            "form": "burung-agung",
+            "element": "angin",
+            "stage": "dewasa",
+            "count": 1
+          },
+          {
+            "kind": "monster",
+            "form": "elang",
+            "element": "cahaya",
+            "stage": "dewasa",
+            "count": 2
+          },
+          { "kind": "tower", "level": 3, "count": 1 }
+        ],
+        "firstReward": { "gold": 12000, "food": 2500, "soulCrystal": 4 },
+        "repeatReward": { "gold": 1800, "food": 300 }
+      },
+      {
+        "id": "takhta-titan",
+        "name": "Takhta Titan",
+        "requiresTownHall": 5,
+        "defenders": [
+          { "kind": "monster", "form": "titan", "element": "tanah", "stage": "dewasa", "count": 1 },
+          {
+            "kind": "monster",
+            "form": "raksasa",
+            "element": "kegelapan",
+            "stage": "dewasa",
+            "count": 1
+          },
+          {
+            "kind": "monster",
+            "form": "siluman",
+            "element": "kegelapan",
+            "stage": "dewasa",
+            "count": 1
+          },
+          { "kind": "soldier", "soldier": "prajurit", "rank": 2, "count": 4 },
+          { "kind": "tower", "level": 3, "count": 2 }
+        ],
+        "firstReward": { "gold": 20000, "wood": 4000, "stone": 4000, "soulCrystal": 6 },
+        "repeatReward": { "gold": 3000, "wood": 400, "stone": 400 }
+      }
+    ]
+  },
   "raids": {
     "_note": "Tugas 1.7: serangan ke desa. Hanya berjalan saat bermain: setiap intervalSeconds detik bermain (mulai Balai minTownHall) satu kelompok dari daftar musuh liar level Balai (wilds.json) muncul tepat di luar desa. Setelah warnSeconds peringatan mereka berjalan walkTilesPerSecond petak/detik menuju Balai Utama lewat petak bebas. Bangunan dan alam liar tidak bisa dilewati; Tembok menghalangi jalan, jadi musuh memilih rute tercepat: memutar, atau menjebol satu ruas (lama = HP ruas / kerusakan per detik penyerang; ruas itu hancur). Pertarungan mulai saat monster/prajurit kita ada dalam defendTiles petak, Menara Jaga dalam reachTiles, atau musuh tiba di Balai; hanya unit dalam defendTiles dan menara yang mencapai yang ikut bertahan (maks. battle.maxUnits). Menara bertarung di tempat dengan statistik per level. Kalah = musuh mencuri stealRatio emas/makanan/kayu/batu lalu pergi; menang = hadiah kelompok itu.",
     "minTownHall": 3,

@@ -5,6 +5,7 @@ import rules from '../../../../data/rules.json';
 import text from '../../../../data/text.json';
 import buildings from '../../../../data/buildings.json';
 import wilds from '../../../../data/wilds.json';
+import adventure from '../../../../data/adventure.json';
 import { loadGameData, type RawGameData } from './load';
 
 export * from './load';
@@ -19,6 +20,7 @@ export const rawGameData: RawGameData = {
   text,
   buildings,
   wilds,
+  adventure,
 };
 
 /** Validated game data. Importing this module throws if `data/` is invalid. */

@@ -75,6 +75,54 @@ export const villageAmountSchema = z.object({
 });
 export const VILLAGE_RESOURCES = ['gold', 'food', 'wood', 'stone'] as const;
 
+/**
+ * One group of NPC defenders (Serbu bases, Petualangan nodes): bandits, monsters,
+ * soldiers, watchtowers, or a boss (a named monster with its stats multiplied).
+ */
+export const defenderSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('bandit'),
+    power: z.number().positive(),
+    count: z.number().int().min(1),
+  }),
+  z.object({
+    kind: z.literal('monster'),
+    form: z.string().min(1),
+    element: z.string().min(1),
+    stage: z.string().min(1),
+    count: z.number().int().min(1),
+  }),
+  z.object({
+    kind: z.literal('soldier'),
+    soldier: z.string().min(1),
+    rank: nonNegInt,
+    count: z.number().int().min(1),
+  }),
+  z.object({
+    kind: z.literal('tower'),
+    level: z.number().int().min(1),
+    count: z.number().int().min(1),
+  }),
+  z.object({
+    kind: z.literal('boss'),
+    name: z.string().min(1),
+    form: z.string().min(1),
+    element: z.string().min(1),
+    stage: z.string().min(1),
+    /** hp, atk and def of the monster are multiplied by this. */
+    statMultiplier: z.number().positive(),
+    count: z.number().int().min(1),
+  }),
+]);
+export type Defender = z.infer<typeof defenderSchema>;
+
+/** What winning a fight pays: village resources, Soul Crystals and (rarely) gems. */
+export const battleRewardSchema = villageAmountSchema.extend({
+  soulCrystal: nonNegInt.default(0),
+  gems: nonNegInt.default(0),
+});
+export type BattleReward = z.infer<typeof battleRewardSchema>;
+
 const statBlockSchema = z.object({
   hp: z.number().positive(),
   atk: z.number().positive(),
@@ -182,6 +230,25 @@ export const rulesFileSchema = z.object({
   }),
   /** Monsters and soldiers standing on village tiles (units.ts). */
   units: z.object({ walkTilesPerSecond: z.number().positive() }),
+  /** Serbu against NPC bases (serbu.ts). */
+  serbu: z.object({
+    grid: z.object({ columns: z.number().int().min(4), rows: z.number().int().min(1) }),
+    /** Columns each side may start in, from its own edge. */
+    placeColumns: z.number().int().min(1),
+    trackEveryTicks: z.number().int().min(1),
+    bases: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          name: z.string().min(1),
+          requiresTownHall: z.number().int().min(1),
+          defenders: z.array(defenderSchema).min(1),
+          firstReward: battleRewardSchema,
+          repeatReward: battleRewardSchema,
+        }),
+      )
+      .min(1),
+  }),
   /** Raids on the village and its defence (raids.ts). */
   raids: z.object({
     minTownHall: z.number().int().min(1),
@@ -284,6 +351,7 @@ export const buildingFeatures = [
   'adventure',
   'arena',
   'defense',
+  'serbu',
 ] as const;
 
 export const buildingLevelSchema = z.object({
@@ -451,3 +519,40 @@ export type VillageResource = (typeof VILLAGE_RESOURCES)[number];
 export type BuildingFeature = (typeof buildingFeatures)[number];
 export type Rarity = z.infer<typeof raritySchema>;
 export const RARITY_ORDER: readonly Rarity[] = rarityIds;
+
+/** Petualangan (Tugas 1.5): regions, each a small map of nodes ending in a boss. */
+export const adventureFileSchema = z.object({
+  _notes: z.array(z.string()).optional(),
+  regions: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        description: z.string(),
+        requiresTownHall: z.number().int().min(1),
+        nodes: z
+          .array(
+            z.object({
+              id: z.string().min(1),
+              kind: z.enum(['resource', 'camp', 'boss']),
+              name: z.string().min(1),
+              /** Place on the region map, 0..1 across and down. */
+              x: z.number().min(0).max(1),
+              y: z.number().min(0).max(1),
+              /** Nodes that must be beaten first (the path). */
+              after: z.array(z.string()),
+              defenders: z.array(defenderSchema).min(1),
+              /** Camps and bosses: paid once. Resource nodes: paid every time they are taken. */
+              reward: battleRewardSchema,
+              /** Resource nodes: hours until the node (and its guards) are back. */
+              refillHours: z.number().positive().optional(),
+              /** Resource nodes: chance of one gem each time they are taken. */
+              gemChance: probability.default(0),
+            }),
+          )
+          .min(1),
+      }),
+    )
+    .min(1),
+});
+export type AdventureFile = z.infer<typeof adventureFileSchema>;

@@ -835,6 +835,10 @@ export class UIScene extends Phaser.Scene {
       now: () => this.store.now(),
       run: (action) => this.run(action),
       openPanel: (kind, targetId) => this.openPanel(kind, targetId),
+      openBattles: (source) => {
+        this.closePanel();
+        this.scene.launch('serbu', { source });
+      },
       toast: (message, color, sound) =>
         sound === undefined ? toast(this, message, color) : toast(this, message, color, sound),
       deselect: () => this.game.events.emit(EVT.deselect),

@@ -17,7 +17,7 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 16;
+export const SAVE_SCHEMA_VERSION = 18;
 
 const int = z.number().int();
 const villageAmountSchema = z.object({
@@ -195,6 +195,11 @@ const playerStateSchema = z.object({
   mixerSlots: int.min(1),
   pedia: z.object({ monsters: z.array(z.string()), recipes: z.array(z.string()) }),
   pityStreak: int.min(0),
+  serbu: z.object({ cleared: z.array(z.string()) }),
+  adventure: z.object({
+    cleared: z.array(z.string()),
+    refillAt: z.record(z.string(), z.number()),
+  }),
   rngState: int.min(0),
   nextId: int.min(1),
 }) satisfies z.ZodType<PlayerState>;
@@ -426,6 +431,18 @@ const migrations: Record<number, (state: unknown) => unknown> = {
   15: (raw) => {
     const state = raw as PlayerState;
     state.village.raidClock = 0;
+    return state;
+  },
+  // v16 had no Serbu: no NPC base beaten yet.
+  16: (raw) => {
+    const state = raw as PlayerState;
+    state.serbu = { cleared: [] };
+    return state;
+  },
+  // v17 had no Petualangan: nothing explored yet (bosses beaten in debug stay counted).
+  17: (raw) => {
+    const state = raw as PlayerState;
+    state.adventure = { cleared: [], refillAt: {} };
     return state;
   },
 };

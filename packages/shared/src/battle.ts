@@ -43,6 +43,26 @@ export interface BattleResult {
   /** HP left per fighter id (0 = fallen). */
   hp: Record<string, number>;
   events: BattleEvent[];
+  /** Positions of the living fighters every `trackEvery` ticks (only when asked, for replays). */
+  frames?: BattleFrame[];
+}
+
+export interface BattleFrame {
+  tick: number;
+  pos: Record<string, [number, number]>;
+}
+
+export interface BattleOptions {
+  /** Wild fights: no time limit, one side must fall. */
+  untilDefeat?: boolean;
+  /** Field size; `rules.battle.grid` when not given. */
+  grid?: { columns: number; rows: number };
+  /** How many columns each side starts in, from its own edge (2 when not given). */
+  sideColumns?: number;
+  /** Starting cells chosen by the player (Serbu), by fighter id; the rest are seeded. */
+  cells?: Readonly<Record<string, { x: number; y: number }>>;
+  /** Record every fighter's position every this many ticks (replays). */
+  trackEvery?: number;
 }
 
 const EPS = 1e-6;
@@ -62,8 +82,9 @@ interface Live {
 
 /**
  * Pure, deterministic auto-battle on the `rules.battle.grid` field (columns × rows,
- * one tile per cell). Attackers start in the two left columns, defenders in the two
- * right ones, on cells picked by the seeded RNG. Every tick each living fighter, in a
+ * one tile per cell; Serbu passes its own `grid`). Attackers start in the left
+ * `sideColumns` columns, defenders in the right ones, on cells picked by the seeded RNG
+ * unless `cells` places them. Every tick each living fighter, in a
  * fixed order, walks towards its nearest enemy until it is in range, then attacks on its
  * cooldown. Same fighters + same seed always give the same result; when `maxTicks` runs
  * out the attackers have failed.
@@ -73,9 +94,11 @@ export function simulateBattle(
   defenders: readonly Fighter[],
   seed: RngState,
   data: GameData = gameData,
-  opts: { untilDefeat?: boolean } = {},
+  opts: BattleOptions = {},
 ): BattleResult {
-  const { grid, maxTicks, ticksPerSecond, sim } = data.rules.battle;
+  const { maxTicks, ticksPerSecond, sim } = data.rules.battle;
+  const grid = opts.grid ?? data.rules.battle.grid;
+  const sideColumns = opts.sideColumns ?? 2;
   const rng = createRng(seed);
   const dt = 1 / ticksPerSecond;
   const events: BattleEvent[] = [];
@@ -83,10 +106,13 @@ export function simulateBattle(
     const cells = rng.shuffle(
       columns.flatMap((x) => Array.from({ length: grid.rows }, (_, y) => ({ x, y }))),
     );
-    return team.map((f, i): Live => {
+    let seeded = 0;
+    return team.map((f): Live => {
+      const chosen = opts.cells?.[f.id];
       // More fighters than cells: later ones share a cell, nudged so they do not overlap.
-      const cell = cells[i % cells.length]!;
-      const nudge = Math.floor(i / cells.length) * 0.3;
+      const i = chosen ? 0 : seeded++;
+      const cell = chosen ?? cells[i % cells.length]!;
+      const nudge = chosen ? 0 : Math.floor(i / cells.length) * 0.3;
       const unit = {
         f,
         side,
@@ -100,10 +126,20 @@ export function simulateBattle(
       return unit;
     });
   };
+  const columns = (from: number) => Array.from({ length: sideColumns }, (_, i) => from + i);
   const units = [
-    ...place(attackers, 'attackers', [0, 1]),
-    ...place(defenders, 'defenders', [grid.columns - 2, grid.columns - 1]),
+    ...place(attackers, 'attackers', columns(0)),
+    ...place(defenders, 'defenders', columns(grid.columns - sideColumns)),
   ];
+  const frames: BattleFrame[] | undefined = opts.trackEvery ? [] : undefined;
+  const snapshot = (tick: number) =>
+    frames?.push({
+      tick,
+      pos: Object.fromEntries(
+        units.filter((u) => u.hp > 0).map((u) => [u.f.id, [u.x, u.y] as [number, number]]),
+      ),
+    });
+  snapshot(0);
   const alive = (side: Side) => units.some((u) => u.side === side && u.hp > 0);
   const interval = (u: Live) => (sim.attackSecondsAtSpd10 * 10) / u.f.stats.spd;
 
@@ -158,13 +194,16 @@ export function simulateBattle(
       if (target.hp === 0) events.push({ tick, kind: 'death', id: target.f.id });
       u.cooldown = interval(u);
     }
+    if (frames && tick % opts.trackEvery! === 0) snapshot(tick);
   }
+  if (frames && frames.at(-1)!.tick !== tick) snapshot(tick);
   const winner: Side = alive('attackers') && !alive('defenders') ? 'attackers' : 'defenders';
   return {
     winner,
     ticks: tick,
     hp: Object.fromEntries(units.map((u) => [u.f.id, u.hp])),
     events,
+    ...(frames ? { frames } : {}),
   };
 }
 
@@ -174,7 +213,7 @@ export function estimateWinChance(
   defenders: readonly Fighter[],
   runs: number = gameData.rules.battle.sim.previewRuns,
   data: GameData = gameData,
-  opts: { untilDefeat?: boolean } = {},
+  opts: BattleOptions = {},
 ): number {
   if (attackers.length === 0) return 0;
   let wins = 0;

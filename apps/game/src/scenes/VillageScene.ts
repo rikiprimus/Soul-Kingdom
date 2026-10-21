@@ -1,4 +1,5 @@
 import { soldierTexture } from '../art/soldierArt';
+import { banditTexture } from '../art/enemyArt';
 import Phaser from 'phaser';
 import {
   buildBuilding,
@@ -2282,23 +2283,6 @@ export class VillageScene extends Phaser.Scene {
 
   // ---------- Wild enemies and missions ----------
 
-  private banditTexture() {
-    const key = 'fx:bandit';
-    if (this.textures.exists(key)) return key;
-    const g = this.make.graphics({}, false);
-    g.fillStyle(0x000000, 0.22).fillEllipse(16, 49, 20, 6);
-    g.fillStyle(0x2b2522).fillRect(10, 36, 5, 13).fillRect(17, 36, 5, 13);
-    g.fillStyle(0x4a3f5c).fillRoundedRect(8, 21, 16, 18, 5);
-    g.fillStyle(0x6b4026).fillRect(8, 31, 16, 3);
-    g.fillStyle(0xe0b088).fillCircle(16, 14, 7);
-    g.fillStyle(0xb8322a).fillRect(9, 11, 14, 4);
-    g.fillStyle(0x1b1530).fillRect(11, 12, 3, 2).fillRect(18, 12, 3, 2);
-    g.lineStyle(3, 0x7a4a26, 1).lineBetween(25, 34, 30, 18);
-    g.generateTexture(key, 32, 52);
-    g.destroy();
-    return key;
-  }
-
   /** Enemy groups: bandits or wild monsters standing on a red danger ring. */
   private syncEnemies() {
     const { encounters } = this.store.state.village;
@@ -2336,7 +2320,7 @@ export class VillageScene extends Phaser.Scene {
         if (encounterGroup(e).kind === 'bandit') {
           view.add(
             this.add
-              .image(dx!, dy! + 4, this.banditTexture())
+              .image(dx!, dy! + 4, banditTexture(this))
               .setOrigin(0.5, 1)
               .setScale(0.55)
               .setFlipX(i % 2 === 1),

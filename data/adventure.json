@@ -1,0 +1,293 @@
+{
+  "_notes": [
+    "Petualangan (Tugas 1.5). Semua angka masih awal dan akan diseimbangkan.",
+    "Wilayah terbuka berurutan: bos wilayah sebelumnya harus sudah dikalahkan, dan Balai Utama minimal requiresTownHall.",
+    "Titik di peta (x, y = 0..1) terbuka bila semua titik di 'after' sudah dikalahkan. Pertarungan memakai medan Serbu (rules.serbu), batas poin gabungan barak, dan unit yang gugur mati.",
+    "resource: dijaga musuh; menang = reward setiap kali, lalu titik (dan penjaganya) kembali setelah refillHours. gemChance = peluang 1 permata tiap diambil.",
+    "camp: kemah musuh, reward sekali. boss: reward sekali (termasuk permata) dan menaikkan jumlah bos dikalahkan, yang membuka tingkat Soul Mixer berikutnya (rules.mixer.maxFormTierByBossesDefeated).",
+    "Pertahanan sama dengan markas Serbu, ditambah boss: monster bernama dengan hp/atk/def dikali statMultiplier."
+  ],
+  "regions": [
+    {
+      "id": "hutan-berbisik",
+      "name": "Hutan Berbisik",
+      "description": "Hutan lebat di tepi desa. Raja Serigala menguasai jantungnya.",
+      "requiresTownHall": 2,
+      "nodes": [
+        {
+          "id": "hb-kayu",
+          "kind": "resource",
+          "name": "Tumpukan Kayu",
+          "x": 0.1,
+          "y": 0.7,
+          "after": [],
+          "defenders": [{ "kind": "bandit", "power": 0.5, "count": 3 }],
+          "reward": { "wood": 400 },
+          "refillHours": 8,
+          "gemChance": 0.1
+        },
+        {
+          "id": "hb-kemah",
+          "kind": "camp",
+          "name": "Kemah Pemburu Liar",
+          "x": 0.32,
+          "y": 0.45,
+          "after": ["hb-kayu"],
+          "defenders": [{ "kind": "bandit", "power": 0.6, "count": 6 }],
+          "reward": { "gold": 800, "food": 200 }
+        },
+        {
+          "id": "hb-sungai",
+          "kind": "resource",
+          "name": "Tepi Sungai",
+          "x": 0.55,
+          "y": 0.22,
+          "after": ["hb-kemah"],
+          "defenders": [
+            { "kind": "monster", "form": "katak", "element": "air", "stage": "dewasa", "count": 2 },
+            {
+              "kind": "monster",
+              "form": "kelinci",
+              "element": "angin",
+              "stage": "dewasa",
+              "count": 2
+            }
+          ],
+          "reward": { "food": 500 },
+          "refillHours": 8,
+          "gemChance": 0.1
+        },
+        {
+          "id": "hb-batu",
+          "kind": "resource",
+          "name": "Bukit Batu",
+          "x": 0.58,
+          "y": 0.72,
+          "after": ["hb-kemah"],
+          "defenders": [
+            {
+              "kind": "monster",
+              "form": "landak",
+              "element": "tanah",
+              "stage": "dewasa",
+              "count": 4
+            }
+          ],
+          "reward": { "stone": 350 },
+          "refillHours": 8,
+          "gemChance": 0.1
+        },
+        {
+          "id": "hb-bos",
+          "kind": "boss",
+          "name": "Sarang Raja Serigala",
+          "x": 0.88,
+          "y": 0.45,
+          "after": ["hb-sungai", "hb-batu"],
+          "defenders": [
+            {
+              "kind": "boss",
+              "name": "Raja Serigala",
+              "form": "serigala",
+              "element": "kegelapan",
+              "stage": "dewasa",
+              "statMultiplier": 3,
+              "count": 1
+            },
+            {
+              "kind": "monster",
+              "form": "kucing",
+              "element": "kegelapan",
+              "stage": "dewasa",
+              "count": 3
+            }
+          ],
+          "reward": { "gold": 2500, "food": 500, "soulCrystal": 2, "gems": 20 }
+        }
+      ]
+    },
+    {
+      "id": "rawa-kabut",
+      "name": "Rawa Kabut",
+      "description": "Rawa berkabut tempat para perampok bersembunyi. Buaya Purba tidur di dasarnya.",
+      "requiresTownHall": 3,
+      "nodes": [
+        {
+          "id": "rk-emas",
+          "kind": "resource",
+          "name": "Peti Perampok",
+          "x": 0.1,
+          "y": 0.35,
+          "after": [],
+          "defenders": [
+            { "kind": "soldier", "soldier": "prajurit", "rank": 1, "count": 3 },
+            { "kind": "soldier", "soldier": "pemanah", "rank": 1, "count": 2 }
+          ],
+          "reward": { "gold": 1500 },
+          "refillHours": 10,
+          "gemChance": 0.15
+        },
+        {
+          "id": "rk-kemah",
+          "kind": "camp",
+          "name": "Benteng Lumpur",
+          "x": 0.35,
+          "y": 0.6,
+          "after": ["rk-emas"],
+          "defenders": [
+            { "kind": "soldier", "soldier": "prajurit", "rank": 1, "count": 4 },
+            { "kind": "soldier", "soldier": "pemanah", "rank": 1, "count": 3 },
+            { "kind": "tower", "level": 2, "count": 1 }
+          ],
+          "reward": { "gold": 2500, "wood": 600, "stone": 400, "soulCrystal": 1 }
+        },
+        {
+          "id": "rk-makanan",
+          "kind": "resource",
+          "name": "Kebun Rawa",
+          "x": 0.6,
+          "y": 0.3,
+          "after": ["rk-kemah"],
+          "defenders": [
+            { "kind": "monster", "form": "ular", "element": "air", "stage": "dewasa", "count": 2 },
+            {
+              "kind": "monster",
+              "form": "kura-kura",
+              "element": "tanah",
+              "stage": "dewasa",
+              "count": 2
+            }
+          ],
+          "reward": { "food": 1200 },
+          "refillHours": 10,
+          "gemChance": 0.15
+        },
+        {
+          "id": "rk-bos",
+          "kind": "boss",
+          "name": "Kolam Buaya Purba",
+          "x": 0.88,
+          "y": 0.55,
+          "after": ["rk-makanan"],
+          "defenders": [
+            {
+              "kind": "boss",
+              "name": "Buaya Purba",
+              "form": "buaya",
+              "element": "air",
+              "stage": "dewasa",
+              "statMultiplier": 3,
+              "count": 1
+            },
+            {
+              "kind": "monster",
+              "form": "ular",
+              "element": "kegelapan",
+              "stage": "dewasa",
+              "count": 3
+            }
+          ],
+          "reward": { "gold": 5000, "food": 1000, "soulCrystal": 3, "gems": 30 }
+        }
+      ]
+    },
+    {
+      "id": "gunung-api",
+      "name": "Gunung Api",
+      "description": "Lereng membara yang dijaga makhluk perkasa. Naga Merah bersarang di puncaknya.",
+      "requiresTownHall": 4,
+      "nodes": [
+        {
+          "id": "ga-batu",
+          "kind": "resource",
+          "name": "Tambang Obsidian",
+          "x": 0.1,
+          "y": 0.75,
+          "after": [],
+          "defenders": [
+            {
+              "kind": "monster",
+              "form": "golem",
+              "element": "tanah",
+              "stage": "dewasa",
+              "count": 2
+            },
+            {
+              "kind": "monster",
+              "form": "babi-hutan",
+              "element": "api",
+              "stage": "dewasa",
+              "count": 2
+            }
+          ],
+          "reward": { "stone": 1500, "gold": 1000 },
+          "refillHours": 12,
+          "gemChance": 0.2
+        },
+        {
+          "id": "ga-kemah",
+          "kind": "camp",
+          "name": "Kuil Bara",
+          "x": 0.35,
+          "y": 0.45,
+          "after": ["ga-batu"],
+          "defenders": [
+            { "kind": "monster", "form": "hantu", "element": "api", "stage": "dewasa", "count": 2 },
+            {
+              "kind": "monster",
+              "form": "harimau",
+              "element": "api",
+              "stage": "dewasa",
+              "count": 2
+            },
+            { "kind": "tower", "level": 3, "count": 1 }
+          ],
+          "reward": { "gold": 6000, "wood": 1500, "stone": 1500, "soulCrystal": 2 }
+        },
+        {
+          "id": "ga-kayu",
+          "kind": "resource",
+          "name": "Hutan Arang",
+          "x": 0.6,
+          "y": 0.2,
+          "after": ["ga-kemah"],
+          "defenders": [
+            { "kind": "monster", "form": "elang", "element": "api", "stage": "dewasa", "count": 2 },
+            {
+              "kind": "monster",
+              "form": "harimau",
+              "element": "tanah",
+              "stage": "dewasa",
+              "count": 2
+            }
+          ],
+          "reward": { "wood": 2500, "food": 1000 },
+          "refillHours": 12,
+          "gemChance": 0.2
+        },
+        {
+          "id": "ga-bos",
+          "kind": "boss",
+          "name": "Puncak Naga Merah",
+          "x": 0.88,
+          "y": 0.5,
+          "after": ["ga-kayu"],
+          "defenders": [
+            {
+              "kind": "boss",
+              "name": "Naga Merah",
+              "form": "naga",
+              "element": "api",
+              "stage": "dewasa",
+              "statMultiplier": 2.5,
+              "count": 1
+            },
+            { "kind": "monster", "form": "elang", "element": "api", "stage": "dewasa", "count": 2 },
+            { "kind": "monster", "form": "golem", "element": "api", "stage": "dewasa", "count": 2 }
+          ],
+          "reward": { "gold": 12000, "stone": 3000, "soulCrystal": 5, "gems": 50 }
+        }
+      ]
+    }
+  ]
+}

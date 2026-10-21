@@ -25,6 +25,8 @@ import { encounterRespawnSeconds, spawnEncounters } from './encounters';
 import { isOnMission, type Mission } from './missions';
 import { deepClone } from './clone';
 import { createRng, type RngState } from './rng';
+import type { AdventureProgress } from './adventure';
+import type { SerbuProgress } from './serbu';
 import { settleUnits, type UnitPlace } from './units';
 import { createVillage, hasFeature, townHallLevel, type Village } from './village';
 import { createWorkers, hasRoomFor, type Worker, type WorkerTraining } from './workers';
@@ -86,6 +88,10 @@ export interface PlayerState {
   mixerSlots: number;
   pedia: Monsterpedia;
   pityStreak: number;
+  /** Serbu against NPC bases: which ones have been beaten. */
+  serbu: SerbuProgress;
+  /** Petualangan: nodes beaten, and when taken resource nodes come back. */
+  adventure: AdventureProgress;
   rngState: RngState;
   nextId: number;
 }
@@ -141,6 +147,7 @@ export type ActionError =
   | 'obstacleNotFound'
   | 'notSellable'
   | 'notLineBuilding'
+  | 'powerCapExceeded'
   | 'notEnoughWood'
   | 'notEnoughStone'
   | 'notAvailableYet'
@@ -208,6 +215,8 @@ export function createInitialState(
     mixerSlots: mixer.initialSlots,
     pedia: { monsters: [], recipes: [] },
     pityStreak: 0,
+    serbu: { cleared: [] },
+    adventure: { cleared: [], refillAt: {} },
     rngState: seed >>> 0,
     nextId: 1,
   };

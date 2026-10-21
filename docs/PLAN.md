@@ -856,7 +856,7 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 > - **Revisi pemilik (2026-10-21): pertarungan liar tanpa batas waktu.** Tim berjalan selama `skirmish.marchSeconds` (dulu `missionSeconds`), lalu pertarungan **disimulasikan saat tim tiba** (`settleMissions` → `Mission.fight`) dan berlangsung sampai musuh habis atau seluruh tim mati (`simulateBattle(..., { untilDefeat: true })`; `maxTicks` tetap berlaku untuk Serbu). Lama pertarungan = lama simulasi. Kartu musuh: "menuju musuh, tiba dalam …" lalu "sedang bertarung sampai salah satu pihak habis". **Simpanan v13** (migrasi 12 mengubah misi lama menjadi pertarungan yang sudah berjalan). Diperbaiki: unit bisa macet tepat di batas jangkauan karena pembulatan (toleransi 1e-6; tes regresi 300 benih).
 > - **Catatan penyeimbangan:** di simulasi ekonomi 14 hari, bot kini sering kalah melawan bandit (hari 3: 1 menang/10 kalah) — bandit simulator lebih kuat dari rumus lama. Perlu ditinjau bersama Tugas 1A.11 (angka bandit / `banditPower`).
 
-### - [ ] Tugas 1.4 — Mode Serbu
+### - [x] Tugas 1.4 — Mode Serbu
 
 - **Layar penempatan:**
   - seret monster ke petak;
@@ -866,13 +866,35 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 - **Pemutaran:** dari log, kecepatan 1x/2x, tombol jurus saat pengukur penuh.
 - **Lawan sementara:** markas NPC.
 
-### - [ ] Tugas 1.5 — Mode Petualangan (dungeon)
+> **Ringkasan (selesai 2026-10-21):**
+>
+> - **Keputusan pemilik (2026-10-21):** markas NPC berupa **daftar bertingkat** (menang pertama = hadiah besar + markas berikutnya terbuka, boleh diulang dengan hadiah kecil); unit yang gugur **mati** (monster ke Kuburan, prajurit hilang); **medan Serbu sendiri yang lebih besar**; **jurus tetap otomatis** (tiap serangan ke-4), tombol jurus manual menyusul karena butuh simulasi yang menerima input pemain.
+> - **Data (`rules.serbu`):** medan 12×8, penempatan di 4 kolom kiri (pertahanan NPC di 4 kolom kanan, diacak berbenih), rekaman posisi tiap 4 langkah, dan **10 markas** (Pos Bandit → Takhta Titan) dengan syarat Balai, pertahanan (bandit / monster / prajurit / Menara Jaga), `firstReward` dan `repeatReward`. Divalidasi zod + cek silang (wujud, elemen, tahap, prajurit, pangkat, level menara, muat di medan). Guild (`barak`) kini punya fitur `serbu`.
+> - **Simulator:** `simulateBattle` menerima `grid`, `sideColumns`, `cells` (posisi pilihan pemain) dan `trackEvery` (rekaman posisi untuk pemutaran); perilaku lama tidak berubah.
+> - **Shared (`serbu.ts`, baru):** `serbuBaseStatus` (terkunci / butuh Balai / terbuka / sudah dikalahkan), `serbuArmy` (unit bebas: tidak di misi, tidak di Soul Mixer), `serbuUnitPower`, `baseFighters`, `basePower`, `attackBase` (validasi petak, maks. `battle.maxUnits`, poin ≤ batas gabungan barak, lalu simulasi dengan `maxTicks` sebagai batas waktu; hadiah, Kuburan, kemajuan). Galat baru `powerCapExceeded`. **Simpanan v17** (`serbu.cleared`).
+> - **Client (`SerbuScene`, baru):** dibuka dari kartu Guild. Daftar markas (status, pertahanan, kekuatan, hadiah) → penempatan (seret unit ke zona hijau atau ketuk unit lalu petak, ketuk/seret unit di medan untuk memindah/menarik, penghitung poin & unit, "Isi otomatis" menaruh unit terkuat dalam batas: penahan/petarung di depan, pemanah di belakang) → pemutaran dari log (posisi dari rekaman, bilah HP, pengukur jurus, angka kerusakan, kilat jurus, 1x/2x, Lewati, sisa waktu) → hasil (menang/kalah, hadiah, markas baru terbuka, yang gugur).
+> - **Tes:** `serbu.test.ts` (9: urutan buka & syarat Balai, pertahanan → petarung, markas makin kuat, validasi penempatan/batas/unit sibuk, hadiah pertama & ulang, Kuburan & prajurit hilang saat kalah, posisi awal & rekaman & batas waktu, deterministik, simpan/migrasi). Total 275 tes lulus.
+> - **Penyeimbangan (simulasi 30 benih):** pasukan awal (2 prajurit + 1 kucing) menang 100 % di Pos Bandit; 10 veteran sampai Markas Prajurit Bayaran (97 %); Takhta Titan butuh pasukan elit + monster tingkat 3–4.
+> - **Dicek di browser:** kartu Guild → Serbu; daftar 10 markas; seret Kucing ke medan; Isi otomatis; Serang → pemutaran → "Menang!" +300 emas +100 makanan, Pos Bandit "Sudah dikalahkan", Kemah Perampok terbuka; tutup → desa jalan lagi. (Pemutaran terlihat lambat di panel browser yang sedang di latar karena FPS-nya dibatasi ±2.)
+> - **Belum:** tombol jurus manual, batas jumlah Serbu per waktu (D3, energi), markas pemain lain (Tugas 2.2).
+
+### - [x] Tugas 1.5 — Mode Petualangan (dungeon)
 
 - Peta wilayah dengan titik sumber daya, musuh, dan satu bos per wilayah; data di `data/adventure.json`.
 - Mengalahkan bos:
   - menaikkan jumlah bos dikalahkan;
   - membuka tingkat Soul Mixer berikutnya.
 - **Sumber permata gratis** dalam jumlah kecil (angka di data).
+
+> **Ringkasan (selesai 2026-10-21):**
+>
+> - **Keputusan pemilik (2026-10-21):** wilayah berupa **peta jalur bertitik**; bertarung **seperti Serbu** (penempatan + pemutaran, batas poin gabungan barak, unit gugur mati); titik sumber daya **dijaga lalu terisi lagi**; permata dari **bos + sedikit dari titik**.
+> - **Data (`data/adventure.json`, baru):** 3 wilayah — Hutan Berbisik (Balai 2, bos Raja Serigala), Rawa Kabut (Balai 3, Buaya Purba), Gunung Api (Balai 4, Naga Merah). Tiap titik: jenis (`resource` / `camp` / `boss`), posisi peta, jalur (`after`), pertahanan, hadiah; titik sumber daya punya `refillHours` dan `gemChance`. Pertahanan jenis baru `boss` (monster bernama, statistik × `statMultiplier`) dipakai bersama Serbu; hadiah kini bisa berisi permata. Divalidasi zod + cek silang (jalur hanya ke titik sebelumnya, tepat satu bos per wilayah, refillHours hanya untuk sumber daya, pertahanan muat).
+> - **Shared:** `serbu.ts` dipecah — `fightPlaced` (validasi penempatan + simulasi + Kuburan) dipakai Serbu dan Petualangan; `defenderFighters`, `defendersPower`, `payReward`. `adventure.ts` (baru): `regionStatus`, `nodeStatus` (terkunci / butuh Balai / terbuka / sudah dikalahkan / terisi lagi), `attackNode` (sumber daya dibayar tiap diambil + peluang permata, lalu terisi lagi; kemah & bos sekali; bos pertama kali menaikkan `bossesDefeated` → tingkat Soul Mixer berikutnya). **Simpanan v18** (`adventure.cleared`, `adventure.refillAt`).
+> - **Client:** Gerbang Petualangan → peta wilayah (tab wilayah, jalur menyala setelah dilewati, titik berwarna per jenis, tanda ✓ / …, layar kunci wilayah) + kartu titik (penjaga, kekuatan, hadiah, waktu isi ulang, peluang permata) → layar penempatan & pemutaran Serbu yang sama; bos tampil lebih besar dengan aura; hasil bos menyebut tingkat Soul Mixer baru.
+> - **Tes:** `adventure.test.ts` (10: urutan wilayah & syarat Balai, jalur, sumber daya dibayar + terisi lagi, permata Monte Carlo, kemah sekali, bos menaikkan tingkat Soul Mixer, kalah tanpa hadiah, semua titik bisa dikalahkan pasukan kuat, validasi data, simpan/migrasi). Total 285 tes lulus.
+> - **Penyeimbangan (simulasi 30 benih):** titik Hutan Berbisik bisa diambil 6 prajurit rekrut; Raja Serigala butuh ±10 veteran; Buaya Purba butuh pasukan elit + monster tingkat 3; Naga Merah butuh elit + monster tingkat 3–4 (93 %).
+> - **Dicek di browser:** kartu Gerbang → peta Hutan Berbisik; Tumpukan Kayu → menang +400 kayu → "Terisi lagi dalam 7j 59m", Kemah terbuka; pratinjau bos Raja Serigala.
 
 ### - [x] Tugas 1.7 — Serangan ke desa & pertahanan
 

@@ -386,7 +386,8 @@
     {
       "id": "barak",
       "name": "Guild",
-      "description": "Markas para pejuang desa. Fungsinya segera hadir.",
+      "description": "Markas para pejuang desa. Dari sini pasukan berangkat Serbu ke markas musuh.",
+      "feature": "serbu",
       "category": "militer",
       "size": 3,
       "maxCount": [1, 1, 1, 1, 1, 1],
@@ -523,7 +524,7 @@
     {
       "id": "gerbang-petualangan",
       "name": "Gerbang Petualangan",
-      "description": "Pintu menuju wilayah liar dan para bos. Petualangan segera hadir.",
+      "description": "Pintu menuju wilayah liar dan para bos. Kalahkan bos untuk membuka tingkat Soul Mixer berikutnya.",
       "category": "militer",
       "feature": "adventure",
       "size": 3,
