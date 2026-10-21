@@ -20,7 +20,7 @@ import {
   type MonsterKind,
 } from './monster';
 import { animalRespawnSeconds, spawnAnimals } from './animals';
-import type { BarracksTraining } from './barracks';
+import { rollEgg, type BarracksTraining, type Egg, type Soldier } from './barracks';
 import { encounterRespawnSeconds, spawnEncounters } from './encounters';
 import { isOnMission, type Mission } from './missions';
 import { deepClone } from './clone';
@@ -69,6 +69,10 @@ export interface PlayerState {
   workerTraining: WorkerTraining[];
   /** Soldiers in training at the barracks; they hold their population slot already. */
   barracksQueue: BarracksTraining[];
+  /** Human soldiers from the barracks; they fight beside monsters but never breed. */
+  soldiers: Soldier[];
+  /** Unhatched monster eggs (the first monster comes from one). */
+  eggs: Egg[];
   /** Teams out fighting wild encounters. */
   missions: Mission[];
   /** Fallen monsters, waiting in the Kuburan to be revived (they take no population). */
@@ -189,6 +193,8 @@ export function createInitialState(
     workers: [],
     workerTraining: [],
     barracksQueue: [],
+    soldiers: [],
+    eggs: [],
     missions: [],
     graveyard: [],
     bossesDefeated: 0,
@@ -200,9 +206,10 @@ export function createInitialState(
     rngState: seed >>> 0,
     nextId: 1,
   };
-  for (const m of economy.startingMonsters) addMonster(state, m);
   const rng = createRng(state.rngState);
   state.village = createVillage(rng, now, () => newId(state, 'b'), data);
+  // No monster at the start: the first one hatches from this egg.
+  state.eggs.push(rollEgg(rng, newId(state, 'e'), now + economy.startingEgg.hatchSeconds, data));
   state.rngState = rng.getState();
   createWorkers(state, data.rules.workers.startingWorkers);
   // The first animals are there from the start.

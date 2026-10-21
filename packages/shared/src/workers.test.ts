@@ -31,7 +31,7 @@ import {
 } from './workers';
 
 const T0 = 1_000_000;
-const { workers: workerRules, population, battle, economy } = gameData.rules;
+const { workers: workerRules, population, battle } = gameData.rules;
 
 function ok<T extends object>(result: ActionResult<T>) {
   if (!result.ok) throw new Error(`Aksi gagal: ${result.error}`);
@@ -56,8 +56,8 @@ function formOfTier(tier: number) {
 }
 
 function monster(id: string, tier: number): Monster {
-  const base = economy.startingMonsters[0]!;
-  return { id, form: formOfTier(tier).id, element: base.element, stage: base.stage, food: 0 };
+  const adult = gameData.rules.growth.stages[gameData.rules.growth.stages.length - 1]!.id;
+  return { id, form: formOfTier(tier).id, element: 'api', stage: adult, food: 0 };
 }
 
 /** Adds tier-1 monsters until the village has `free` slots left. */
@@ -116,7 +116,7 @@ describe('population', () => {
 
   it('refuses a hatching monster when the village is full', () => {
     const full = fillTo(rich(), 0);
-    const kind = economy.startingMonsters[0]!;
+    const kind = monster('k', 1);
     full.mixQueue.push({
       id: 'x1',
       parents: [monster('p1', 1), monster('p2', 1)],

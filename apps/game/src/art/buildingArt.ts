@@ -764,6 +764,36 @@ const DESIGNS: Record<string, Design> = {
       p.ellipse({ x: c.x - 15, y: c.y - 21.5 }, 0.9, 0.9, 0x111111);
     },
   },
+  'barak-berkuda': {
+    top: 80,
+    draw(p, level) {
+      p.flat(0.02, 0.02, 0.98, 0.98, 0xc9b98f);
+      // Long wooden stable with a blue roof, a paddock fence and a lance banner.
+      const h = 22 + level * 3;
+      const stable = p.box(0.1, 0.1, 0.55, 0.9, h, C.wood);
+      stable.right(0.15, 0.35, 0, h * 0.7, 0x4a3520);
+      stable.right(0.45, 0.65, 0, h * 0.7, 0x4a3520);
+      stable.right(0.75, 0.95, 0, h * 0.7, 0x4a3520);
+      p.pyramid(0.07, 0.07, 0.58, 0.93, h, 14, C.roofBlue);
+      const rail = 0xb07a3f;
+      for (const lift of [5, 10]) {
+        p.line(p.fp(0.65, 0.12, lift), p.fp(0.95, 0.12, lift), rail, 1.6);
+        p.line(p.fp(0.95, 0.12, lift), p.fp(0.95, 0.9, lift), rail, 1.6);
+        p.line(p.fp(0.65, 0.9, lift), p.fp(0.95, 0.9, lift), rail, 1.6);
+      }
+      for (const [u, v] of [
+        [0.65, 0.12],
+        [0.95, 0.12],
+        [0.95, 0.5],
+        [0.95, 0.9],
+        [0.65, 0.9],
+      ] as const) {
+        p.line(p.fp(u, v), p.fp(u, v, 13), 0x7a5230, 2.2);
+      }
+      p.ellipse(p.fp(0.8, 0.5, 5), 8, 4, 0xe6c25a, darken(0xe6c25a, 0.4));
+      flag(p, p.fp(0.12, 0.12, h + 14), 26, 0x3f6fb8);
+    },
+  },
   barak: {
     top: 90,
     draw(p, level) {

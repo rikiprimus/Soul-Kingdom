@@ -269,36 +269,25 @@ export function loadGameData(raw: RawGameData): GameData {
       if (parts) checkMonster(parts[0], parts[1], where);
     }
   }
-  rules.economy.startingMonsters.forEach((m, i) => {
-    const where = `rules.json: economy.startingMonsters[${i}]`;
-    checkMonster(m.form, m.element, where);
-    if (!stageIndex.has(m.stage)) issues.push(`${where}: tahap "${m.stage}" tidak ada`);
-  });
 
   const buildingInfo = validateVillage(village, wilds, rules, issues);
   validateWilds(wilds, buildingInfo, formsByTier, stageIndex, issues);
-  // Barracks: a role with tier-1 forms, unlocks for every level, base elements only.
-  const barracksLevels = Math.max(
-    0,
-    ...[...buildingInfo.buildingById.values()]
-      .filter((b) => b.feature === 'barracks')
-      .map((b) => b.levels.length),
-  );
-  if (rules.barracks.unlocksByLevel.length < barracksLevels) {
-    issues.push(`rules.json: barracks.unlocksByLevel butuh ${barracksLevels} level`);
+  // Barracks: each trains a known soldier kind; soldiers have unique ids and real roles.
+  const soldierIds = new Set<string>();
+  for (const sd of rules.barracks.soldiers) {
+    if (soldierIds.has(sd.id)) issues.push(`rules.json: prajurit "${sd.id}" ganda`);
+    soldierIds.add(sd.id);
+    if (!forms.roles[sd.role]) {
+      issues.push(`rules.json: prajurit "${sd.id}" peran "${sd.role}" tidak ada`);
+    }
   }
   for (const b of buildingInfo.buildingById.values()) {
-    if (b.feature === 'barracks' && !b.trainsRole) {
-      issues.push(`buildings.json: "${b.id}" (barracks) butuh trainsRole`);
+    if (b.feature === 'barracks' && !(b.trainsSoldier && soldierIds.has(b.trainsSoldier))) {
+      issues.push(
+        `buildings.json: "${b.id}" (barracks) butuh trainsSoldier yang ada di rules.barracks.soldiers`,
+      );
     }
   }
-  rules.barracks.unlocksByLevel.forEach((u, i) => {
-    for (const el of u.elements) {
-      if (!(baseUnits as readonly string[]).includes(el)) {
-        issues.push(`rules.json: barracks.unlocksByLevel[${i}] "${el}" bukan elemen dasar`);
-      }
-    }
-  });
 
   if (issues.length > 0) throw new DataValidationError(issues);
 
@@ -453,7 +442,8 @@ function validateVillage(
     );
   }
   // Starting population must hold the starting workers and monsters.
-  const monsterSlots = rules.economy.startingMonsters.length * (rules.battle.powerPoints['1'] ?? 1);
+  // The starting egg hatches into a tier-1 monster that needs its slots too.
+  const monsterSlots = rules.battle.powerPoints['1'] ?? 1;
   const needed = monsterSlots + rules.workers.startingWorkers * rules.population.workerSlots;
   if (population < needed) {
     issues.push(

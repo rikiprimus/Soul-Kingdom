@@ -3,29 +3,28 @@ import {
   barracksQueue,
   barracksRemaining,
   gameData,
-  monsterName,
-  monsterStats,
   populationCap,
   populationUsed,
-  rarityOf,
+  soldierKindOf,
+  soldierName,
+  soldierPower,
+  soldierStats,
+  soldierTrainCost,
   trainSoldier,
-  trainingOptions,
+  unlockedRanks,
 } from '@soul-monster/shared';
-import { elementIconTexture, ART_RES } from '../art/monsterArt';
-import { MonsterView } from '../art/MonsterView';
-import { unitColor } from '../art/palette';
+import { soldierTexture } from '../art/soldierArt';
 import { formatDuration, t } from '../text';
 import { costLabel } from '../ui/cost';
-import { drawCardFrame, rarityName, stageName } from '../ui/MonsterCard';
-import { COLORS, RARITY_COLORS, textStyle } from '../ui/theme';
+import { drawCardFrame } from '../ui/MonsterCard';
+import { COLORS, textStyle } from '../ui/theme';
 import { Button, darken, toast } from '../ui/widgets';
 import { GAP, gridColumns } from './CollectionView';
 import { View } from './View';
 
-const selection = { form: '', element: '' };
-const adultStage = () => gameData.rules.growth.stages[gameData.rules.growth.stages.length - 1]!.id;
+const selection = { rank: 0 };
 
-/** Training panel of one barracks: pick an unlocked form and element, queue an adult soldier. */
+/** Training panel of one barracks: pick an opened rank of its soldier and queue one. */
 export class BarracksView extends View {
   private queueText?: Phaser.GameObjects.Text;
 
@@ -58,9 +57,9 @@ export class BarracksView extends View {
     const left = Math.round((this.ctx.rect.width - width) / 2);
     if (!b) return 40;
     const def = gameData.buildingById.get(b.type)!;
-    const { forms, elements } = trainingOptions(b.type, b.level);
-    if (!forms.includes(selection.form)) selection.form = forms[0] ?? '';
-    if (!elements.includes(selection.element)) selection.element = elements[0] ?? '';
+    const soldier = soldierKindOf(b.type);
+    const opened = unlockedRanks(b.level);
+    if (selection.rank >= opened) selection.rank = Math.max(0, opened - 1);
 
     let y = 10;
     content.add(
@@ -88,106 +87,73 @@ export class BarracksView extends View {
     );
     content.add(this.queueText);
     y += this.queueText.height + 12;
-    if (forms.length === 0) return y + 20;
+    if (!soldier || opened === 0) return y + 20;
 
-    const chipGrid = (
-      items: { id: string; label: string; color: number }[],
-      selected: string,
-      onPick: (id: string) => void,
-    ) => {
-      const { cols, cardW } = gridColumns(width, 100, 3);
-      items.forEach((item, i) => {
-        const x = left + (i % cols) * (cardW + GAP) + cardW / 2;
-        const cy = y + Math.floor(i / cols) * 44 + 18;
-        content.add(
-          new Button(scene, x, cy, {
-            width: cardW,
-            height: 36,
-            label: item.label,
-            fontSize: 13,
-            color: item.id === selected ? item.color : darken(item.color, 0.55),
-            onClick: () => onPick(item.id),
-          }),
-        );
-      });
-      y += Math.ceil(items.length / cols) * 44 + 8;
-    };
-    chipGrid(
-      forms.map((id) => ({ id, label: gameData.formById.get(id)!.name, color: COLORS.accent })),
-      selection.form,
-      (id) => {
-        selection.form = id;
-        this.render();
-      },
-    );
-    chipGrid(
-      elements.map((id) => ({
-        id,
-        label: gameData.elementById.get(id)!.name,
-        color: unitColor(id),
-      })),
-      selection.element,
-      (id) => {
-        selection.element = id;
-        this.render();
-      },
-    );
+    // One chip per rank; ranks the barracks has not opened yet show the level they need.
+    const { cols, cardW } = gridColumns(width, 100, 3);
+    gameData.rules.barracks.ranks.forEach((rank, i) => {
+      const x = left + (i % cols) * (cardW + GAP) + cardW / 2;
+      const cy = y + Math.floor(i / cols) * 44 + 18;
+      const open = i < opened;
+      content.add(
+        new Button(scene, x, cy, {
+          width: cardW,
+          height: 36,
+          label: open ? rank.name : t('barracks.rankLocked', { name: rank.name, level: i + 1 }),
+          fontSize: 12,
+          color: i === selection.rank ? COLORS.accent : darken(COLORS.accent, 0.55),
+          disabled: !open,
+          onClick: () => {
+            selection.rank = i;
+            this.render();
+          },
+        }),
+      );
+    });
+    y += Math.ceil(gameData.rules.barracks.ranks.length / cols) * 44 + 8;
 
-    // Preview of the adult soldier and the train button.
-    const kind = { form: selection.form, element: selection.element, stage: adultStage() };
-    const cardH = 250;
+    // Preview of the soldier and the train button.
+    const kind = { kind: soldier.id, rank: selection.rank };
+    const cardH = 220;
     const card = scene.add.container(left, y);
     const frame = scene.add.graphics();
-    const rarity = rarityOf(kind);
-    drawCardFrame(frame, width, cardH, rarity);
+    drawCardFrame(frame, width, cardH, 'biasa');
     card.add(frame);
-    card.add(new MonsterView(scene, width / 2, 76, kind, 120));
+    card.add(scene.add.image(width / 2, 70, soldierTexture(scene, kind)).setScale(2));
     card.add(
       scene.add
-        .image(width - 26, 26, elementIconTexture(scene, kind.element, 28))
-        .setScale(1 / ART_RES),
-    );
-    card.add(
-      scene.add
-        .text(width / 2, 144, monsterName(kind), textStyle(17, COLORS.text, { fontStyle: 'bold' }))
+        .text(width / 2, 120, soldierName(kind), textStyle(17, COLORS.text, { fontStyle: 'bold' }))
         .setOrigin(0.5, 0),
     );
+    const stats = soldierStats(kind);
     card.add(
       scene.add
         .text(
           width / 2,
-          168,
-          `${rarityName(rarity)} · ${stageName(kind.stage)}`,
-          textStyle(12, RARITY_COLORS[rarity], { fontStyle: 'bold' }),
+          144,
+          [
+            `${t('monster.stats', stats)}   ${t('monster.stats2', stats)}`,
+            t('barracks.power', { power: soldierPower(kind) }),
+          ].join('\n'),
+          textStyle(11, COLORS.text, { align: 'center' }),
         )
         .setOrigin(0.5, 0),
     );
-    const stats = monsterStats(kind);
-    card.add(
-      scene.add
-        .text(
-          width / 2,
-          186,
-          `${t('monster.stats', stats)}   ${t('monster.stats2', stats)}`,
-          textStyle(11),
-        )
-        .setOrigin(0.5, 0),
-    );
-    const { train } = gameData.rules.barracks;
+    const cost = soldierTrainCost(kind);
     card.add(
       new Button(scene, width / 2, cardH - 28, {
         width: Math.min(300, width - 32),
         height: 38,
         label: t('barracks.train', {
-          cost: costLabel({ gold: train.gold, food: train.food, wood: 0, stone: 0 }),
-          time: formatDuration(train.seconds),
+          cost: costLabel({ gold: cost.gold, food: cost.food, wood: 0, stone: 0 }),
+          time: formatDuration(cost.seconds),
         }),
         color: 0x3c9a5f,
         onClick: () => {
           const result = this.run((s, now) =>
-            trainSoldier(s, { buildingId: b.id, form: kind.form, element: kind.element }, now),
+            trainSoldier(s, { buildingId: b.id, rank: kind.rank }, now),
           );
-          if (result) toast(scene, t('barracks.started', { name: monsterName(kind) }), COLORS.good);
+          if (result) toast(scene, t('barracks.started', { name: soldierName(kind) }), COLORS.good);
         },
       }),
     );

@@ -4,10 +4,16 @@
  * Pure and deterministic, so it can be tested and compared between data changes.
  */
 import { spawnAnimals } from '../animals';
-import { trainingOptions, trainSoldier } from '../barracks';
+import {
+  hatchEgg,
+  soldierKindOf,
+  soldierTrainCost,
+  trainSoldier,
+  unlockedRanks,
+} from '../barracks';
 import { gameData, VILLAGE_RESOURCES, type GameData, type VillageAmount } from '../data';
 import { spawnEncounters } from '../encounters';
-import { isOnMission, sendTeam, winChance } from '../missions';
+import { isOnMission, sendTeam, teamUnits, winChance } from '../missions';
 import { formTierOf, foodToNextStage, isFinalStage } from '../monster';
 import {
   collectMix,
@@ -348,23 +354,13 @@ export function simulateEconomy(
     if (populationFree(s, data) > hatching && workers >= workerTarget) {
       for (const b of s.village.buildings) {
         if (data.buildingById.get(b.type)?.feature !== 'barracks' || b.level < 1) continue;
-        const { forms, elements } = trainingOptions(b.type, b.level, data);
-        if (!forms.length || !elements.length) continue;
-        const { train } = data.rules.barracks;
-        if (!affordable({ gold: train.gold, food: train.food, wood: 0, stone: 0 })) continue;
-        const pick = s.monsters.length + s.barracksQueue.length;
-        tryDo(
-          trainSoldier(
-            s,
-            {
-              buildingId: b.id,
-              form: forms[pick % forms.length]!,
-              element: elements[pick % elements.length]!,
-            },
-            now,
-            data,
-          ),
-        );
+        const def = soldierKindOf(b.type, data);
+        if (!def) continue;
+        // The best rank this barracks has opened.
+        const rank = unlockedRanks(b.level, data) - 1;
+        const cost = soldierTrainCost({ kind: def.id, rank }, data);
+        if (!affordable({ gold: cost.gold, food: cost.food, wood: 0, stone: 0 })) continue;
+        tryDo(trainSoldier(s, { buildingId: b.id, rank }, now, data));
         break;
       }
     }
@@ -392,22 +388,31 @@ export function simulateEconomy(
   function fight(now: number) {
     for (const e of s.village.encounters) {
       if (s.missions.some((m) => m.encounterId === e.id)) continue;
-      const free = s.monsters
-        .filter((m) => isFinalStage(m.stage, data) && !isOnMission(s, m.id))
-        .filter((m) => !s.mixQueue.some((q) => q.parents.some((p) => p.id === m.id)));
-      const team: typeof free = [];
-      for (const m of free) {
+      // Soldiers go first; adult monsters not in the mixer join when needed.
+      const free = [
+        ...s.soldiers.map((x) => x.id),
+        ...s.monsters
+          .filter((m) => isFinalStage(m.stage, data))
+          .filter((m) => !s.mixQueue.some((q) => q.parents.some((p) => p.id === m.id)))
+          .map((m) => m.id),
+      ].filter((id) => !isOnMission(s, id));
+      const team: string[] = [];
+      const odds = () => winChance(teamUnits(s, team, data), e, data);
+      for (const id of free) {
         if (team.length >= data.rules.skirmish.maxTeam) break;
-        team.push(m);
-        if (winChance(team, e, data) >= player.minWinChance) break;
+        team.push(id);
+        if (odds() >= player.minWinChance) break;
       }
-      if (team.length && winChance(team, e, data) >= player.minWinChance) {
-        tryDo(sendTeam(s, { monsterIds: team.map((m) => m.id), encounterId: e.id }, now, data));
+      if (team.length && odds() >= player.minWinChance) {
+        tryDo(sendTeam(s, { monsterIds: team, encounterId: e.id }, now, data));
       }
     }
   }
 
   function tickMixer(now: number) {
+    for (const egg of [...s.eggs]) {
+      if (egg.readyAt <= now) tryDo(hatchEgg(s, egg.id, now, data));
+    }
     for (const entry of [...s.mixQueue]) {
       if (mixRemaining(entry, now) === 0) tryDo(collectMix(s, entry.id, now, data));
     }

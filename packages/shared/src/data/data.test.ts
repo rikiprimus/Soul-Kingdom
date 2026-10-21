@@ -68,18 +68,28 @@ describe('game data', () => {
     );
   });
 
-  it('rejects recipe or starting monsters above the element cap of their form', () => {
+  it('rejects recipe results above the element cap of their form', () => {
     expectRejected(
       corrupt((raw) => {
         raw.recipes.monsterRecipes[0].result = 'naga:waktu';
       }),
       /batas tingkat 4/,
     );
+  });
+
+  it('rejects barracks without a known soldier and soldiers with an unknown role', () => {
     expectRejected(
       corrupt((raw) => {
-        raw.rules.economy.startingMonsters[0].element = 'uap';
+        raw.buildings.buildings.find((b: { id: string }) => b.id === 'petarung').trainsSoldier =
+          'ksatria';
       }),
-      /startingMonsters\[0\].*batas tingkat 1/,
+      /"petarung" \(barracks\) butuh trainsSoldier/,
+    );
+    expectRejected(
+      corrupt((raw) => {
+        raw.rules.barracks.soldiers[0].role = 'penyihir';
+      }),
+      /prajurit "prajurit" peran "penyihir"/,
     );
   });
 

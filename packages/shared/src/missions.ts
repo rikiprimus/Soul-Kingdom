@@ -1,5 +1,12 @@
+import { soldierPower } from './barracks';
 import { deepClone } from './clone';
-import { gameData, VILLAGE_RESOURCES, type GameData, type VillageAmount } from './data';
+import {
+  gameData,
+  VILLAGE_RESOURCES,
+  type ElementId,
+  type GameData,
+  type VillageAmount,
+} from './data';
 import { elementAdvantage } from './elements';
 import { getStage, powerPointsOf, type Monster, type MonsterKind } from './monster';
 import { createRng } from './rng';
@@ -24,6 +31,7 @@ export interface WildEncounter {
 export interface Mission {
   id: string;
   encounterId: string;
+  /** Monster and soldier ids (the field name predates soldiers). */
   monsterIds: string[];
   endsAt: number;
   won: boolean;
@@ -43,7 +51,7 @@ export function encounterGroup(e: WildEncounter, data: GameData = gameData): Enc
   return group;
 }
 
-/** A monster in a running mission cannot be used anywhere else. */
+/** A monster or soldier in a running mission cannot be used anywhere else. */
 export function isOnMission(state: PlayerState, monsterId: string): boolean {
   return state.missions.some((m) => m.monsterIds.includes(monsterId));
 }
@@ -64,38 +72,57 @@ export function monsterPower(m: MonsterKind & { stage: string }, data: GameData 
 
 const average = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 1);
 
-/** Team strength against an encounter, with each member's average element edge over the enemies. */
-export function teamPower(
-  team: (MonsterKind & { stage: string })[],
-  e: WildEncounter,
+/** One team member's strength and element; soldiers have no element (no edge either way). */
+export interface TeamUnit {
+  power: number;
+  element: ElementId | null;
+}
+
+/** The team members behind these ids (monsters and soldiers), unknown ids skipped. */
+export function teamUnits(
+  state: PlayerState,
+  ids: readonly string[],
   data: GameData = gameData,
-): number {
-  return team.reduce((sum, m) => {
-    const edge = average(e.enemies.map((x) => elementAdvantage(m.element, x.element, data)));
-    return sum + monsterPower(m, data) * edge;
+): TeamUnit[] {
+  const units: TeamUnit[] = [];
+  for (const id of ids) {
+    const m = state.monsters.find((x) => x.id === id);
+    if (m) units.push({ power: monsterPower(m, data), element: m.element });
+    const s = state.soldiers.find((x) => x.id === id);
+    if (s) units.push({ power: soldierPower(s, data), element: null });
+  }
+  return units;
+}
+
+/** Team strength against an encounter, with each member's average element edge over the enemies. */
+export function teamPower(team: TeamUnit[], e: WildEncounter, data: GameData = gameData): number {
+  return team.reduce((sum, u) => {
+    const edge =
+      u.element === null
+        ? 1
+        : average(e.enemies.map((x) => elementAdvantage(u.element!, x.element, data)));
+    return sum + u.power * edge;
   }, 0);
 }
 
 /** Enemy strength: bandits by head count, monsters with their element edge over the team. */
 export function encounterPower(
   e: WildEncounter,
-  team: (MonsterKind & { stage: string })[],
+  team: TeamUnit[],
   data: GameData = gameData,
 ): number {
   const group = encounterGroup(e, data);
   if (group.kind === 'bandit') return e.count * (group.banditPower ?? 0);
   return e.enemies.reduce((sum, x) => {
-    const edge = average(team.map((m) => elementAdvantage(x.element, m.element, data)));
+    const edge = average(
+      team.map((u) => (u.element === null ? 1 : elementAdvantage(x.element, u.element, data))),
+    );
     return sum + monsterPower(x, data) * edge;
   }, 0);
 }
 
 /** Chance that a team beats an encounter: t^k / (t^k + e^k). */
-export function winChance(
-  team: (MonsterKind & { stage: string })[],
-  e: WildEncounter,
-  data: GameData = gameData,
-): number {
+export function winChance(team: TeamUnit[], e: WildEncounter, data: GameData = gameData): number {
   if (team.length === 0) return 0;
   const k = data.rules.skirmish.sharpness;
   const t = teamPower(team, e, data) ** k;
@@ -119,22 +146,21 @@ export function sendTeam(
   if (ids.length < 1 || ids.length > maxTeam || new Set(ids).size !== ids.length) {
     return fail('invalidAmount');
   }
-  const team: Monster[] = [];
   for (const id of ids) {
-    const m = state.monsters.find((x) => x.id === id);
-    if (!m) return fail('monsterNotFound');
+    const known =
+      state.monsters.some((x) => x.id === id) || state.soldiers.some((x) => x.id === id);
+    if (!known) return fail('monsterNotFound');
     const inMixer = state.mixQueue.some((q) => q.parents.some((p) => p.id === id));
     if (inMixer || isOnMission(state, id)) return fail('monsterBusy');
-    team.push(m);
   }
-  const chance = winChance(team, e, data);
+  const chance = winChance(teamUnits(state, ids, data), e, data);
   const next = deepClone(state);
   const rng = createRng(next.rngState);
   const won = rng.chance(chance);
   let dead: string[] = [];
   if (!won) {
     dead = ids.filter(() => rng.chance(deathChanceOnLoss));
-    // A lost fight always costs at least one monster.
+    // A lost fight always costs at least one member.
     if (dead.length === 0) dead = [ids[rng.int(0, ids.length - 1)]!];
   }
   const group = encounterGroup(e, data);
@@ -180,6 +206,8 @@ export function settleMissions(state: PlayerState, now: number): PlayerState {
       next.village.encounters = next.village.encounters.filter((e) => e.id !== m.encounterId);
     } else {
       for (const id of m.dead) {
+        // Fallen soldiers are gone; fallen monsters wait in the Kuburan.
+        next.soldiers = next.soldiers.filter((x) => x.id !== id);
         const fallen = next.monsters.find((x) => x.id === id);
         if (!fallen) continue;
         next.monsters = next.monsters.filter((x) => x.id !== id);

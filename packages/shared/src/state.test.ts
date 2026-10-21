@@ -56,6 +56,7 @@ function unlocked(): PlayerState {
   const s = createInitialState(T0, 123);
   const adult = rules.growth.stages[rules.growth.stages.length - 1]!.id;
   for (const [id, form, element] of [
+    ['m1', 'kucing', 'api'],
     ['m2', 'anjing', 'air'],
     ['m3', 'landak', 'tanah'],
     ['m4', 'kelinci', 'angin'],
@@ -76,9 +77,11 @@ describe('createInitialState', () => {
       gameData.village.village.startingBuildings.map((b) => b.type),
     );
     expect(s.village.obstacles.length).toBe(gameData.village.village.initialObstacles);
-    expect(s.monsters).toHaveLength(rules.economy.startingMonsters.length);
+    // The first monster hatches from the starting egg (Tugas 1A.13).
+    expect(s.monsters).toEqual([]);
+    expect(s.eggs).toHaveLength(1);
     expect(s.mixerSlots).toBe(rules.mixer.initialSlots);
-    expect(s.pedia.monsters).toContain('kucing:api');
+    expect(s.pedia.monsters).toEqual([]);
   });
 });
 

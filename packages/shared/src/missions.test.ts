@@ -17,9 +17,11 @@ import {
   reviveMonster,
   sendTeam,
   teamPower,
+  teamUnits,
   winChance,
   type WildEncounter,
 } from './missions';
+import { soldierPower } from './barracks';
 import type { Monster } from './monster';
 import { createRng } from './rng';
 import { deserializeState, serializeState } from './save';
@@ -115,13 +117,15 @@ describe('encounter spawns', () => {
   });
 });
 
+const units = (ms: Monster[]) => ms.map((m) => ({ power: monsterPower(m), element: m.element }));
+
 describe('power and odds', () => {
   it('rises with team size, growth and element edge', () => {
     const one = [adult('a', 'kucing', 'api')];
     const two = [...one, adult('b', 'kucing', 'api')];
     const e = bandits(3);
-    expect(winChance(two, e)).toBeGreaterThan(winChance(one, e));
-    expect(winChance([], e)).toBe(0);
+    expect(winChance(units(two), e)).toBeGreaterThan(winChance(units(one), e));
+    expect(winChance(units([]), e)).toBe(0);
     const baby = [{ ...one[0]!, stage: growth.stages[0]!.id }];
     expect(monsterPower(baby[0]!)).toBeLessThan(monsterPower(one[0]!));
     const strong = {
@@ -131,25 +135,35 @@ describe('power and odds', () => {
       count: 1,
       enemies: [{ form: 'kucing', element: 'angin', stage: ADULT }],
     };
-    expect(teamPower(one, strong)).toBeCloseTo(
+    expect(teamPower(units(one), strong)).toBeCloseTo(
       monsterPower(one[0]!) * elementAdvantage('api', 'angin'),
     );
-    expect(encounterPower(bandits(4), one)).toBeCloseTo(
+    expect(encounterPower(bandits(4), units(one))).toBeCloseTo(
       4 * encounters.levels[0]!.groups[0]!.banditPower!,
     );
     const k = skirmish.sharpness;
-    const t = teamPower(two, e) ** k;
-    const f = encounterPower(e, two) ** k;
-    expect(winChance(two, e)).toBeCloseTo(t / (t + f));
+    const t = teamPower(units(two), e) ** k;
+    const f = encounterPower(e, units(two)) ** k;
+    expect(winChance(units(two), e)).toBeCloseTo(t / (t + f));
+  });
+
+  it('counts soldiers by power points with no element edge either way', () => {
+    const strong = {
+      ...bandits(1),
+      level: 1,
+      group: 1,
+      count: 1,
+      enemies: [{ form: 'kucing', element: 'angin', stage: ADULT }],
+    };
+    const soldier = { power: soldierPower({ kind: 'prajurit', rank: 1 }), element: null };
+    expect(teamPower([soldier], strong)).toBeCloseTo(soldier.power);
+    expect(encounterPower(strong, [soldier])).toBeCloseTo(monsterPower(strong.enemies[0]!));
   });
 
   it('wins and pays at the stated chance (Monte Carlo)', () => {
     const base = setup(4);
     const team = ['m1', 'm2'];
-    const chance = winChance(
-      base.monsters.filter((m) => team.includes(m.id)),
-      base.village.encounters[0]!,
-    );
+    const chance = winChance(teamUnits(base, team), base.village.encounters[0]!);
     expect(chance).toBeGreaterThan(0.2);
     expect(chance).toBeLessThan(0.8);
     // A bare state keeps 100 000 sends fast; sendTeam only reads these parts.

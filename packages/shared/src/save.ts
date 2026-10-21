@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { gameData, raritySchema } from './data';
+import { monsterKey } from './monster';
 import { createRng } from './rng';
 import type { PlayerState } from './state';
 import { createWorkers } from './workers';
@@ -8,7 +9,7 @@ import { encounterRespawnSeconds } from './encounters';
 import { canPlace, createVillage, levelDef, scatterObstacles, type Village } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 10;
+export const SAVE_SCHEMA_VERSION = 11;
 
 const int = z.number().int();
 const monsterSchema = z.object({
@@ -92,10 +93,14 @@ const playerStateSchema = z.object({
   barracksQueue: z.array(
     z.object({
       buildingId: z.string(),
-      form: z.string(),
-      element: z.string(),
+      kind: z.string(),
+      rank: int.min(0),
       endsAt: z.number(),
     }),
+  ),
+  soldiers: z.array(z.object({ id: z.string(), kind: z.string(), rank: int.min(0) })),
+  eggs: z.array(
+    z.object({ id: z.string(), form: z.string(), element: z.string(), readyAt: z.number() }),
   ),
   missions: z.array(
     z.object({
@@ -301,6 +306,30 @@ const migrations: Record<number, (state: unknown) => unknown> = {
     state.graveyard = [];
     state.village.encounters = [];
     state.village.encountersAt = state.village.animalsAt - encounterRespawnSeconds();
+    return state;
+  },
+  // v10 trained monsters in the barracks: those still in training join now as adult
+  // monsters (they already hold their slots); from v11 barracks train human soldiers.
+  10: (raw) => {
+    const state = raw as PlayerState;
+    const old = (raw as { barracksQueue: { form: string; element: string }[] }).barracksQueue;
+    const adult = gameData.rules.growth.stages[gameData.rules.growth.stages.length - 1]!.id;
+    for (const e of old) {
+      const monster = {
+        id: `m${state.nextId}`,
+        form: e.form,
+        element: e.element,
+        stage: adult,
+        food: 0,
+      };
+      state.nextId += 1;
+      state.monsters.push(monster);
+      const key = monsterKey(monster);
+      if (!state.pedia.monsters.includes(key)) state.pedia.monsters.push(key);
+    }
+    state.barracksQueue = [];
+    state.soldiers = [];
+    state.eggs = [];
     return state;
   },
 };

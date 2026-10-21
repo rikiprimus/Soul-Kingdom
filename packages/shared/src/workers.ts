@@ -1,3 +1,4 @@
+import { soldierPower } from './barracks';
 import { deepClone } from './clone';
 import { gameData, type GameData } from './data';
 import { formTierOf, type MonsterKind } from './monster';
@@ -39,11 +40,14 @@ export function populationCap(state: PlayerState, data: GameData = gameData): nu
   return total;
 }
 
-/** Slots used by workers and soldiers (also those in training) and monsters. */
+/** Slots used by workers, soldiers (also those in training) and monsters. */
 export function populationUsed(state: PlayerState, data: GameData = gameData): number {
   const { workerSlots } = data.rules.population;
   const workers = (state.workers.length + state.workerTraining.length) * workerSlots;
-  const soldiers = state.barracksQueue.reduce((sum, e) => sum + monsterSlots(e, data), 0);
+  const soldiers = [...state.soldiers, ...state.barracksQueue].reduce(
+    (sum, s) => sum + soldierPower(s, data),
+    0,
+  );
   return workers + soldiers + state.monsters.reduce((sum, m) => sum + monsterSlots(m, data), 0);
 }
 

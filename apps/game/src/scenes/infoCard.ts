@@ -21,7 +21,11 @@ import {
   missionFor,
   sendTeam,
   teamPower,
+  teamUnits,
   winChance,
+  hatchEgg,
+  monsterName,
+  soldierKindOf,
   barracksQueue,
   barracksRemaining,
   serbuPowerCap,
@@ -164,7 +168,7 @@ function encounterInfo(state: PlayerState, id: string, a: InfoActions): InfoCont
   if (!e) return null;
   const group = encounterGroup(e);
   const ids = a.team();
-  const members = state.monsters.filter((m) => ids.includes(m.id));
+  const members = teamUnits(state, ids);
   const mission = missionFor(state, e.id);
   const lines = [
     group.kind === 'bandit' ? t('enemy.banditInfo') : encounterMembers(e),
@@ -182,7 +186,7 @@ function encounterInfo(state: PlayerState, id: string, a: InfoActions): InfoCont
           time: formatDuration(Math.max(0, mission.endsAt - a.now())),
         });
       }
-      const power = encounterPower(e, members.length ? members : state.monsters.slice(0, 1));
+      const power = encounterPower(e, members);
       const parts = [t('enemy.power', { power: power.toFixed(1) })];
       if (members.length > 0) {
         parts.push(
@@ -487,6 +491,24 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
         break;
       case 'stable':
         statuses.push(() => populationLine(state));
+        // Eggs wait here until they hatch (the first monster comes from one).
+        for (const egg of state.eggs) {
+          const ready = egg.readyAt <= a.now();
+          statuses.push(() =>
+            egg.readyAt <= a.now()
+              ? t('egg.ready')
+              : t('egg.waiting', { time: formatDuration(egg.readyAt - a.now()) }),
+          );
+          buttons.push({
+            label: t('egg.hatch'),
+            color: 0x3c9a5f,
+            disabled: !ready,
+            onClick: () => {
+              const r = a.run((st, n) => hatchEgg(st, egg.id, n));
+              if (r) a.toast(t('egg.hatched', { name: monsterName(r.monster) }), COLORS.good);
+            },
+          });
+        }
         buttons.push({ label: t('info.openCollection'), onClick: () => a.openPanel('collection') });
         break;
       case 'mixer':
@@ -557,6 +579,10 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
       }
       case 'barracks': {
         content.lines.push(t('info.powerCap', { cap: serbuPowerCap(state) }));
+        const kind = soldierKindOf(b.type)?.id;
+        content.lines.push(
+          t('barracks.army', { n: state.soldiers.filter((x) => x.kind === kind).length }),
+        );
         statuses.push(() => {
           const left = barracksRemaining(state, b.id, a.now());
           const queued = barracksQueue(state, b.id).length;

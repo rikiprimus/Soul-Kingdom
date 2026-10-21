@@ -3,12 +3,20 @@ import {
   barracksQueue,
   barracksRemaining,
   combinedBarracksLevel,
+  hatchEgg,
+  rollEgg,
   serbuPowerCap,
+  soldierKindOf,
+  soldierName,
+  soldierPower,
+  soldierStats,
+  soldierTrainCost,
   trainSoldier,
-  trainingOptions,
+  unlockedRanks,
 } from './barracks';
 import { deepClone } from './clone';
 import { gameData } from './data';
+import { createRng } from './rng';
 import { deserializeState, serializeState } from './save';
 import { createInitialState, type ActionResult, type PlayerState } from './state';
 import { buildBuilding, canPlaceBuilding, levelDef, settleVillage } from './village';
@@ -16,8 +24,11 @@ import { populationFree, populationUsed } from './workers';
 
 const T0 = 1_000_000;
 const { barracks, battle, economy, growth } = gameData.rules;
-const ADULT = growth.stages[growth.stages.length - 1]!.id;
-const BARRACKS = ['barak', 'petarung', 'lapangan-panah'] as const;
+const BARRACKS = {
+  petarung: 'prajurit',
+  'lapangan-panah': 'pemanah',
+  'barak-berkuda': 'penombak-berkuda',
+} as const;
 
 function ok<T extends object>(result: ActionResult<T>) {
   if (!result.ok) throw new Error(`Aksi gagal: ${result.error}`);
@@ -44,123 +55,121 @@ function withBarracks(type: string, level = 1) {
   return { s, id: r.buildingId, at: T0 + levelDef(type, 1)!.seconds };
 }
 
-describe('training options', () => {
-  it('offers tier-1 forms of the barracks role and the unlocked base elements', () => {
-    for (const type of BARRACKS) {
-      const role = gameData.buildingById.get(type)!.trainsRole;
-      for (let level = 1; level <= barracks.unlocksByLevel.length; level++) {
-        const { forms, elements } = trainingOptions(type, level);
-        expect(forms).toHaveLength(barracks.unlocksByLevel[level - 1]!.forms);
-        for (const f of forms) {
-          const form = gameData.formById.get(f)!;
-          expect(form.tier).toBe(gameData.formTiers[0]);
-          expect(form.role).toBe(role);
-        }
-        expect(elements).toEqual(barracks.unlocksByLevel[level - 1]!.elements);
-        for (const el of elements) expect(gameData.baseUnits).toContain(el);
-      }
-      expect(trainingOptions(type, 0)).toEqual({ forms: [], elements: [] });
+describe('soldier kinds and ranks', () => {
+  it('each barracks trains its own soldier; the Guild trains nothing', () => {
+    for (const [type, kind] of Object.entries(BARRACKS)) {
+      expect(soldierKindOf(type)?.id).toBe(kind);
     }
-    // Higher levels never take options away.
-    const low = trainingOptions('barak', 1);
-    const high = trainingOptions('barak', barracks.unlocksByLevel.length);
-    for (const f of low.forms) expect(high.forms).toContain(f);
-    for (const e of low.elements) expect(high.elements).toContain(e);
+    expect(soldierKindOf('barak')).toBeUndefined();
+    expect(soldierKindOf('pasar')).toBeUndefined();
+  });
+
+  it('opens rank n at barracks level n, capped at the last rank', () => {
+    expect(unlockedRanks(0)).toBe(0);
+    expect(unlockedRanks(1)).toBe(1);
+    expect(unlockedRanks(2)).toBe(2);
+    expect(unlockedRanks(99)).toBe(barracks.ranks.length);
+  });
+
+  it('scales stats, power, cost and time by rank (speed and range stay)', () => {
+    const def = barracks.soldiers.find((x) => x.id === 'prajurit')!;
+    const top = barracks.ranks.length - 1;
+    const r = barracks.ranks[top]!;
+    const elite = { kind: 'prajurit', rank: top };
+    expect(soldierStats(elite)).toEqual({
+      hp: Math.round(def.stats.hp * r.statMultiplier),
+      atk: Math.round(def.stats.atk * r.statMultiplier),
+      def: Math.round(def.stats.def * r.statMultiplier),
+      spd: def.stats.spd,
+      range: def.stats.range,
+    });
+    expect(soldierPower(elite)).toBe(def.powerPoints + r.powerBonus);
+    expect(soldierTrainCost(elite)).toEqual({
+      gold: Math.round(def.train.gold * r.costMultiplier),
+      food: Math.round(def.train.food * r.costMultiplier),
+      seconds: Math.round(def.train.seconds * r.timeMultiplier),
+    });
+    expect(soldierName(elite)).toBe(`${def.name} ${r.name}`);
   });
 });
 
-describe('trainSoldier', () => {
-  it('pays, queues one after another and hatches adults', () => {
-    const { s, id, at } = withBarracks('petarung');
-    const { forms, elements } = trainingOptions('petarung', 1);
-    const kind = { buildingId: id, form: forms[0]!, element: elements[0]! };
-    const used = populationUsed(s);
+describe('training soldiers', () => {
+  it('pays, queues one after another, holds the slots and delivers soldiers', () => {
+    const { s, id, at } = withBarracks('barak-berkuda', 2);
+    const kind = { buildingId: id, rank: 1 };
+    const cost = soldierTrainCost({ kind: 'penombak-berkuda', rank: 1 });
+    const power = soldierPower({ kind: 'penombak-berkuda', rank: 1 });
+    const before = populationUsed(s);
     const a = ok(trainSoldier(s, kind, at));
-    expect(a.state.resources.gold).toBe(s.resources.gold - barracks.train.gold);
-    expect(a.state.resources.food).toBe(s.resources.food - barracks.train.food);
-    expect(a.endsAt).toBe(at + barracks.train.seconds);
-    // The soldier already holds its population slot.
-    expect(populationUsed(a.state)).toBe(used + battle.powerPoints['1']!);
+    expect(a.state.resources.gold).toBe(s.resources.gold - cost.gold);
+    expect(a.state.resources.food).toBe(s.resources.food - cost.food);
+    expect(a.endsAt).toBe(at + cost.seconds);
+    expect(populationUsed(a.state)).toBe(before + power);
     const b = ok(trainSoldier(a.state, kind, at));
-    expect(b.endsAt).toBe(at + 2 * barracks.train.seconds);
+    expect(b.endsAt).toBe(at + cost.seconds * 2);
     expect(barracksQueue(b.state, id)).toHaveLength(2);
-    expect(barracksRemaining(b.state, id, at)).toBe(barracks.train.seconds);
+    expect(barracksRemaining(b.state, id, at + 10)).toBe(cost.seconds - 10);
 
-    const one = settleVillage(b.state, at + barracks.train.seconds);
-    expect(one.monsters).toHaveLength(s.monsters.length + 1);
-    const soldier = one.monsters.at(-1)!;
-    expect(soldier).toMatchObject({ form: kind.form, element: kind.element, stage: ADULT });
-    expect(one.pedia.monsters).toContain(`${kind.form}:${kind.element}`);
-    expect(populationUsed(one)).toBe(populationUsed(b.state));
-    const two = settleVillage(one, at + 2 * barracks.train.seconds);
-    expect(two.monsters).toHaveLength(s.monsters.length + 2);
-    expect(two.barracksQueue).toHaveLength(0);
+    const done = settleVillage(b.state, at + cost.seconds * 2);
+    expect(done.barracksQueue).toEqual([]);
+    expect(done.soldiers.map((x) => [x.kind, x.rank])).toEqual([
+      ['penombak-berkuda', 1],
+      ['penombak-berkuda', 1],
+    ]);
+    // Soldiers are not monsters and still hold their slots.
+    expect(done.monsters).toEqual(s.monsters);
+    expect(populationUsed(done)).toBe(before + power * 2);
   });
 
-  it('refuses locked choices, a full queue, a full village and missing resources', () => {
-    const { s, id, at } = withBarracks('barak');
-    const opts = trainingOptions('barak', 1);
-    const kind = { buildingId: id, form: opts.forms[0]!, element: opts.elements[0]! };
-    const otherRole = trainingOptions('lapangan-panah', 1).forms[0]!;
-    expect(trainSoldier(s, { ...kind, form: otherRole }, at)).toEqual({
+  it('refuses locked ranks, a full queue, no room and too little gold or food', () => {
+    const { s, id, at } = withBarracks('petarung', 1);
+    expect(trainSoldier(s, { buildingId: id, rank: 1 }, at)).toEqual({
       ok: false,
       error: 'notUnlocked',
     });
-    const locked = gameData.baseUnits.find((u) => !opts.elements.includes(u))!;
-    expect(trainSoldier(s, { ...kind, element: locked }, at)).toEqual({
-      ok: false,
-      error: 'notUnlocked',
-    });
-    const hall = s.village.buildings.find((b) => b.type === gameData.townHallId)!;
-    expect(trainSoldier(s, { ...kind, buildingId: hall.id }, at)).toEqual({
-      ok: false,
-      error: 'notBarracks',
-    });
-
+    const kind = { buildingId: id, rank: 0 };
     let q = s;
     for (let i = 0; i < barracks.queueMax; i++) q = ok(trainSoldier(q, kind, at)).state;
     expect(trainSoldier(q, kind, at)).toEqual({ ok: false, error: 'trainingQueueFull' });
 
     const full = deepClone(s);
     while (populationFree(full) > 0) {
-      full.monsters.push({
-        ...economy.startingMonsters[0]!,
-        id: `f${full.monsters.length}`,
-        food: 0,
-      });
+      full.soldiers.push({ id: `f${full.soldiers.length}`, kind: 'prajurit', rank: 0 });
     }
     expect(trainSoldier(full, kind, at)).toEqual({ ok: false, error: 'populationFull' });
 
+    const cost = soldierTrainCost({ kind: 'prajurit', rank: 0 });
     const poor = deepClone(s);
-    poor.resources.gold = barracks.train.gold - 1;
+    poor.resources.gold = cost.gold - 1;
     expect(trainSoldier(poor, kind, at)).toEqual({ ok: false, error: 'notEnoughGold' });
-    poor.resources.gold = barracks.train.gold;
-    poor.resources.food = barracks.train.food - 1;
+    poor.resources.gold = cost.gold;
+    poor.resources.food = cost.food - 1;
     expect(trainSoldier(poor, kind, at)).toEqual({ ok: false, error: 'notEnoughFood' });
   });
 
-  it('cannot train before the barracks is first finished', () => {
+  it('cannot train in an unfinished barracks or in the Guild', () => {
     const s = createInitialState(T0, 52);
     s.village.obstacles = [];
     for (const r of ['gold', 'food', 'wood', 'stone'] as const) s.resources[r] = 1_000_000;
-    const r = ok(buildBuilding(s, { type: 'barak', ...freeSpot(s, 3) }, T0));
-    const opts = trainingOptions('barak', 1);
-    expect(
-      trainSoldier(
-        r.state,
-        { buildingId: r.buildingId, form: opts.forms[0]!, element: opts.elements[0]! },
-        T0,
-      ),
-    ).toEqual({ ok: false, error: 'underConstruction' });
+    const r = ok(buildBuilding(s, { type: 'petarung', ...freeSpot(s, 3) }, T0));
+    expect(trainSoldier(r.state, { buildingId: r.buildingId, rank: 0 }, T0)).toEqual({
+      ok: false,
+      error: 'underConstruction',
+    });
+    const guild = withBarracks('barak', 3);
+    expect(trainSoldier(guild.s, { buildingId: guild.id, rank: 0 }, guild.at)).toEqual({
+      ok: false,
+      error: 'notBarracks',
+    });
   });
 });
 
 describe('Serbu power cap', () => {
-  it('follows the combined level of all three barracks', () => {
-    let { s } = withBarracks('barak', 2);
+  it('follows the combined level of the three soldier barracks (not the Guild)', () => {
+    let { s } = withBarracks('petarung', 2);
     expect(combinedBarracksLevel(s)).toBe(2);
     expect(serbuPowerCap(s)).toBe(battle.powerCapByCombinedBarracksLevel[2]);
-    for (const type of ['petarung', 'lapangan-panah']) {
+    for (const type of ['lapangan-panah', 'barak-berkuda', 'barak']) {
       const r = ok(buildBuilding(s, { type, ...freeSpot(s, 3) }, T0));
       s = settleVillage(r.state, T0 + 10_000);
       s.village.buildings.find((b) => b.id === r.buildingId)!.level = 3;
@@ -172,22 +181,73 @@ describe('Serbu power cap', () => {
   });
 });
 
-describe('a new game', () => {
-  it('starts with a single monster', () => {
+describe('a new game and its egg', () => {
+  it('starts with no monster and one egg', () => {
     const s = createInitialState(T0, 1);
-    expect(economy.startingMonsters).toHaveLength(1);
-    expect(s.monsters).toHaveLength(1);
-    expect(s.monsters[0]).toMatchObject(economy.startingMonsters[0]!);
-    expect(s.barracksQueue).toEqual([]);
+    expect(s.monsters).toEqual([]);
+    expect(s.soldiers).toEqual([]);
+    expect(s.eggs).toHaveLength(1);
+    expect(s.eggs[0]!.readyAt).toBe(T0 + economy.startingEgg.hatchSeconds);
+  });
+
+  it('hatches the egg into a tier-1 baby with a base element once it is ready', () => {
+    const s = createInitialState(T0, 2);
+    const egg = s.eggs[0]!;
+    expect(hatchEgg(s, egg.id, egg.readyAt - 1)).toEqual({ ok: false, error: 'notReady' });
+    const r = ok(hatchEgg(s, egg.id, egg.readyAt));
+    expect(r.monster).toMatchObject({ form: egg.form, element: egg.element, food: 0 });
+    expect(r.monster.stage).toBe(growth.stages[0]!.id);
+    expect(gameData.formById.get(egg.form)!.tier).toBe(gameData.formTiers[0]);
+    expect(gameData.baseUnits).toContain(egg.element);
+    expect(r.state.monsters).toEqual([r.monster]);
+    expect(r.state.eggs).toEqual([]);
+    expect(r.state.pedia.monsters).toContain(`${egg.form}:${egg.element}`);
+    expect(hatchEgg(r.state, egg.id, egg.readyAt)).toEqual({ ok: false, error: 'entryNotFound' });
+  });
+
+  it('needs room in the village to hatch', () => {
+    const s = createInitialState(T0, 3);
+    while (populationFree(s) > 0)
+      s.soldiers.push({ id: `f${s.soldiers.length}`, kind: 'prajurit', rank: 0 });
+    const egg = s.eggs[0]!;
+    expect(hatchEgg(s, egg.id, egg.readyAt)).toEqual({ ok: false, error: 'populationFull' });
+  });
+
+  it('rolls every tier-1 form and base element about equally (Monte Carlo)', () => {
+    const rng = createRng(77);
+    const forms = new Map<string, number>();
+    const elements = new Map<string, number>();
+    const N = 100_000;
+    for (let i = 0; i < N; i++) {
+      const e = rollEgg(rng, 'e', 0);
+      forms.set(e.form, (forms.get(e.form) ?? 0) + 1);
+      elements.set(e.element, (elements.get(e.element) ?? 0) + 1);
+    }
+    const tier1 = gameData.formsByTier.get(gameData.formTiers[0]!)!;
+    expect([...forms.keys()].sort()).toEqual(tier1.map((f) => f.id).sort());
+    for (const n of forms.values()) expect(Math.abs(n / N - 1 / tier1.length)).toBeLessThan(0.01);
+    expect([...elements.keys()].sort()).toEqual([...gameData.baseUnits].sort());
+    for (const n of elements.values()) {
+      expect(Math.abs(n / N - 1 / gameData.baseUnits.length)).toBeLessThan(0.01);
+    }
   });
 });
 
-describe('save migration v8', () => {
-  it('adds an empty barracks queue', () => {
-    const v8 = deepClone(createInitialState(T0, 4)) as unknown as Record<string, unknown>;
-    delete v8.barracksQueue;
-    const loaded = deserializeState(JSON.stringify({ schemaVersion: 8, state: v8 }));
+describe('save migration v10', () => {
+  it('turns monsters still in barracks training into adult monsters', () => {
+    const v10 = deepClone(createInitialState(T0, 4)) as unknown as Record<string, unknown>;
+    delete v10.soldiers;
+    delete v10.eggs;
+    v10.barracksQueue = [{ buildingId: 'b1', form: 'anjing', element: 'air', endsAt: T0 + 50 }];
+    const loaded = deserializeState(JSON.stringify({ schemaVersion: 10, state: v10 }));
     expect(loaded.barracksQueue).toEqual([]);
+    expect(loaded.soldiers).toEqual([]);
+    expect(loaded.eggs).toEqual([]);
+    const adult = growth.stages[growth.stages.length - 1]!.id;
+    expect(loaded.monsters).toEqual([
+      { id: expect.any(String), form: 'anjing', element: 'air', stage: adult, food: 0 },
+    ]);
+    expect(loaded.pedia.monsters).toContain('anjing:air');
     expect(deserializeState(serializeState(loaded))).toEqual(loaded);
   });
 });

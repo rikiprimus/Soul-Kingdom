@@ -668,7 +668,7 @@ Semuanya nyaman dalam posisi horizontal.
 
 ---
 
-### - [ ] Tugas 1A.13 — Prajurit dari 3 barak, monster hanya dari telur
+### - [x] Tugas 1A.13 — Prajurit dari 3 barak, monster hanya dari telur
 
 Keputusan pemilik (2026-10-21): base awal memakai **prajurit manusia**, bukan monster. Monster tidak pernah lahir dari barak.
 
@@ -685,7 +685,15 @@ Keputusan pemilik (2026-10-21): base awal memakai **prajurit manusia**, bukan mo
 
 **Kriteria selesai:** tes latih prajurit per barak (biaya, antrean, populasi penuh, terkunci per level), barak tidak bisa menghasilkan monster, permainan baru = 0 monster + 1 telur, menetaskan telur awal menghasilkan bayi tingkat 1 berelemen dasar, migrasi simpanan lama, prajurit masuk perhitungan poin Serbu.
 
-**Perlu angka dari pemilik sebelum dikerjakan:** statistik (HP/serang/kecepatan), biaya & waktu latih, dan poin kekuatan tiap jenis prajurit; biaya/syarat Balai Barak Berkuda; waktu menetas telur awal.
+> **Ringkasan (selesai 2026-10-21):**
+>
+> - **Data:** `rules.barracks.soldiers` (Prajurit, Pemanah, Penombak Berkuda: statistik, poin kekuatan, biaya/waktu latih) dan `rules.barracks.ranks` (Rekrut ×1, Veteran ×1,6 +1 poin, Elit ×2,4 +2 poin; biaya ×1/2/4, waktu ×1/2/3), angka disetujui pemilik. `rules.economy.startingEgg.hatchSeconds` = 30 menggantikan `startingMonsters`. Bangunan: `petarung` → Barak Prajurit, `lapangan-panah` → Barak Panahan, baru `barak-berkuda` (Balai Lv 2, 5 level), Guild (`barak`) tanpa fitur. Bangunan barak memakai `trainsSoldier`; validasi zod + cek silang (prajurit ada, peran ada).
+> - **Shared (`barracks.ts`):** `Soldier`, `soldierStats/Power/TrainCost/Name`, `unlockedRanks`, `trainSoldier({ buildingId, rank })`, `settleBarracks` menghasilkan prajurit (bukan monster); `Egg`, `rollEgg`, `hatchEgg` (bayi tingkat 1, elemen dasar). Populasi menghitung prajurit (slot = poin kekuatan). Misi memakai `TeamUnit` (`teamUnits`): prajurit tanpa elemen ikut tim; prajurit yang gugur hilang, monster ke Kuburan. Batas Serbu = gabungan level tiga barak prajurit.
+> - **Game baru:** 0 monster + 1 telur (30 detik). **Simpanan v11:** migrasi 10 menyelesaikan monster yang masih dilatih di barak lama menjadi monster Dewasa.
+> - **Client:** panel latih per pangkat (pangkat terkunci menampilkan level syarat), gambar prajurit buatan kode (`art/soldierArt.ts`), Barak Berkuda buatan kode, jumlah pasukan di kartu barak, telur di kartu Kandang + gelembung + ketuk untuk menetas, prajurit bisa dipilih di panel Pilih tim. Simulasi ekonomi ikut melatih prajurit dan menetaskan telur.
+> - **Tes:** `barracks.test.ts` ditulis ulang (jenis per barak, pangkat, latih/antrean/populasi/terkunci, Guild tidak melatih, batas Serbu, game baru = telur, menetas, Monte Carlo 100.000 telur, migrasi v10), tes prajurit tanpa keunggulan elemen di `missions.test.ts`, validasi data. Total 216 tes lulus.
+> - **Dicek di browser:** game baru tanpa monster; ketuk Kandang → "Anjing Air menetas!"; menu Bangun menampilkan Guild, Barak Prajurit, Barak Panahan, Barak Berkuda (butuh Balai Lv 2); panel latih Barak Prajurit (Rekrut, Veteran Lv 2, Elit Lv 3); latih 1 Prajurit Rekrut → selesai, populasi bertambah.
+> - **Belum:** gambar SpriteCook untuk tiga barak dan prajurit; gelembung telur bisa tertutup HUD kalau Kandang di tepi atas layar.
 
 ## Fase 1B — Konten & retensi (4–5 minggu)
 

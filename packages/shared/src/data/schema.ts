@@ -166,12 +166,39 @@ export const rulesFileSchema = z.object({
     missionSeconds: z.number().positive(),
   }),
   barracks: z.object({
-    /** Cost and time of one soldier. */
-    train: z.object({ gold: nonNegInt, food: nonNegInt, seconds: z.number().positive() }),
     queueMax: z.number().int().min(1),
-    /** Per barracks level: how many tier-1 forms of its role, and which base elements. */
-    unlocksByLevel: z
-      .array(z.object({ forms: z.number().int().min(1), elements: z.array(z.string()).min(1) }))
+    /** Human soldiers, one kind per barracks (buildings.json → trainsSoldier). */
+    soldiers: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          name: z.string().min(1),
+          role: z.string().min(1),
+          stats: z.object({
+            hp: z.number().positive(),
+            atk: z.number().positive(),
+            def: z.number().nonnegative(),
+            spd: z.number().positive(),
+            range: z.number().int().min(1),
+          }),
+          powerPoints: z.number().int().min(1),
+          /** Cost and time of one Rekrut; higher ranks multiply them. */
+          train: z.object({ gold: nonNegInt, food: nonNegInt, seconds: z.number().positive() }),
+        }),
+      )
+      .min(1),
+    /** Rank n (1-based) opens at barracks level n. */
+    ranks: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          name: z.string().min(1),
+          statMultiplier: z.number().positive(),
+          powerBonus: nonNegInt,
+          costMultiplier: z.number().positive(),
+          timeMultiplier: z.number().positive(),
+        }),
+      )
       .min(1),
   }),
   workers: z.object({
@@ -185,9 +212,8 @@ export const rulesFileSchema = z.object({
   economy: z.object({
     startingResources: resourcesSchema,
     startingTownHallLevel: z.number().int().min(1),
-    startingMonsters: z.array(
-      z.object({ form: z.string(), element: z.string(), stage: z.string() }),
-    ),
+    /** The first monster hatches from this egg (random tier-1 form, base element). */
+    startingEgg: z.object({ hatchSeconds: nonNegInt }),
   }),
   debug: z.object({ enabledInDev: z.boolean(), skipMixerUnlock: z.boolean() }),
 });
@@ -246,8 +272,8 @@ export const buildingDefSchema = z.object({
   lineBuild: z.boolean().optional(),
   /** Data exists but the building cannot be built yet (its feature is still to come). */
   hidden: z.boolean().optional(),
-  /** Barracks: the monster role this building trains. */
-  trainsRole: z.string().optional(),
+  /** Barracks: the soldier kind this building trains (rules.barracks.soldiers). */
+  trainsSoldier: z.string().optional(),
   size: z.number().int().min(1),
   maxCount: z.array(nonNegInt).min(1),
   levels: z.array(buildingLevelSchema).min(1),

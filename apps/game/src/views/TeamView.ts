@@ -4,8 +4,11 @@ import {
   encounterGroup,
   gameData,
   isMonsterBusy,
+  isOnMission,
   missionFor,
   sendTeam,
+  soldierName,
+  teamUnits,
   winChance,
 } from '@soul-monster/shared';
 import { t } from '../text';
@@ -30,8 +33,7 @@ export class TeamView extends View {
       return 60;
     }
     const ids = team.ids();
-    const members = this.state.monsters.filter((m) => ids.includes(m.id));
-    const chance = winChance(members, e);
+    const chance = winChance(teamUnits(this.state, ids), e);
     const { maxTeam } = gameData.rules.skirmish;
 
     let y = 10;
@@ -77,6 +79,39 @@ export class TeamView extends View {
     );
     content.add(hint);
     y += hint.height + 10;
+
+    const heading = (label: string) => {
+      content.add(
+        scene.add.text(left, y, label, textStyle(13, COLORS.text, { fontStyle: 'bold' })),
+      );
+      y += 22;
+    };
+    // Soldiers first: one chip each, gold when picked, faded while away fighting.
+    if (this.state.soldiers.length > 0) {
+      heading(t('team.soldiers'));
+      const grid = gridColumns(width, 120, 3);
+      this.state.soldiers.forEach((sd, i) => {
+        const x = left + (i % grid.cols) * (grid.cardW + GAP) + grid.cardW / 2;
+        const cy = y + Math.floor(i / grid.cols) * 42 + 18;
+        const away = isOnMission(this.state, sd.id);
+        content.add(
+          new Button(scene, x, cy, {
+            width: grid.cardW,
+            height: 34,
+            label: soldierName(sd),
+            fontSize: 12,
+            color: ids.includes(sd.id) ? COLORS.gold : COLORS.panelLight,
+            disabled: away,
+            onClick: () => {
+              team.toggle(sd.id);
+              this.render();
+            },
+          }),
+        );
+      });
+      y += Math.ceil(this.state.soldiers.length / grid.cols) * 42 + 10;
+      heading(t('team.monsters'));
+    }
 
     const monsters = [...this.state.monsters].sort((a, b) => compareMonsters(a, b));
     const { cols, cardW } = gridColumns(width, 120, 3);
