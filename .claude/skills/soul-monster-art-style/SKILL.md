@@ -48,6 +48,11 @@ Pakai warna yang sudah ada agar aset baru menyatu dengan UI dan gambar buatan ko
 
 - Bangunan: siluet jelas dan unik per jenis (bisa dikenali dari bentuk saja). Level lebih tinggi = sedikit lebih tinggi/megah, tambahan detail (bendera, menara, hiasan emas), **bukan** bangunan berbeda total.
 - Monster: proporsi chibi (kepala besar, badan bulat), ramah. Tingkat 1 kecil dan imut → tingkat 5 besar dan megah. Peran terlihat: penahan kekar, petarung lincah, penembak ramping.
+- **Tiga tahap per wujud, satu gambar per tahap** (keputusan pemilik 2026-10-21). Semua gambar monster yang sudah ada adalah tahap **bayi**.
+  - **Bayi** (`bayi`): didapat dari menetas telur (Sarang Telur Jiwa) atau Soul Mixer. Kecil, chibi, sangat imut.
+  - **Remaja** (`remaja`), evolusi pertama: lebih besar, terlihat seperti remaja; keimutan dikurangi (kepala lebih kecil, badan dan kaki lebih panjang).
+  - **Dewasa** (`dewasa`), evolusi terakhir: paling besar, keren dan sangar, **tanpa kesan imut**.
+  - Wujud, siluet dasar, dan arah hadap tetap sama di ketiga tahap agar evolusi mudah dikenali. Tubuh tetap abu netral (lihat bagian 5).
 - Pekerja: manusia kecil dengan topi kuning; bandit: manusia dengan ikat kepala merah.
 - Ikon UI: tebal, sederhana, terbaca pada 16–24 px.
 
@@ -58,6 +63,7 @@ Pakai warna yang sudah ada agar aset baru menyatu dengan UI dan gambar buatan ko
    - Varian keadaan: `art/buildings/<id>/lv<level>-<varian>.png` — varian yang dipakai game: `crop-growing`, `crop-ready` (Ladang; `lv<n>.png` = kosong), `ranch-<jumlah hewan>` (Peternakan; tanpa gambar ini hewan digambar kode di atas `lv<n>.png`).
    - **Tembok (dibangun sebaris):** bukan 16 gambar per sambungan, melainkan potongan `lv<n>-post`, `lv<n>-seg-xn/xp/yn/yp` yang disambung game. Minta satu gambar berisi tiang + ruas tembok lurus (dari kiri atas ke kanan bawah) per level, lalu `pnpm art:wall <gambar> apps/game/art/tembok-pieces.json apps/game/art/buildings/tembok` (atur kotak sel per level di config).
    - `id` = id di `data/buildings.json` / `data/wilds.json`.
+   - **Monster** → atlas `monsters`: `art/monsters/<wujud>/<tahap>.png` (mis. `kucing/bayi.png`, `kucing/remaja.png`), `<wujud>` = id di `data/forms.json`, `<tahap>` = id di `rules.growth.stages`. Tubuh digambar **abu-abu netral tanpa warna** (hanya mata/mulut gelap); game mewarnainya dengan warna elemen. PNG persegi 256 px, kaki rata bawah, margin transparan ±4 % (tidak boleh menyentuh tepi). Tahap tanpa gambar memakai gambar `bayi` yang diperbesar.
 2. **Normalisasi dulu** hasil generator: `pnpm art:iso <mentah.png> <ukuran ubin> apps/game/art/buildings/<id>/lv<n>.png` (dari `soul-monster-starter`). Skrip ini membuang alpha tipis, membersihkan warna tersembunyi di piksel transparan, mengukur berlian tapak, lalu menskalakannya tepat ke 2:1 (generator cenderung menggambar ±1,7:1) dengan ujung bawah di tengah bawah.
 3. Jalankan `pnpm atlas` (dari `soul-monster-starter`). Ini menulis `apps/game/public/atlas/<atlas>.png/.json` dan `atlases.json`.
 4. Game otomatis memakai frame atlas bila ada; level yang belum punya gambar memakai level di bawahnya, lalu gambar buatan kode sebagai cadangan.

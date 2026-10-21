@@ -411,25 +411,40 @@ function drawToTexture(
 export function monsterTexture(scene: Phaser.Scene, spec: MonsterArtSpec, size: number): string {
   const key = `mon:${spec.form}:${spec.element}:${spec.stage}:${size}`;
   if (scene.textures.exists(key)) return key;
-  if (scene.textures.exists(MONSTER_ATLAS) && scene.textures.get(MONSTER_ATLAS).has(spec.form)) {
-    return paintedMonster(scene, spec, key, Math.round(size * ART_RES));
-  }
+  const frame = paintedFrame(scene, spec);
+  if (frame) return paintedMonster(scene, spec, frame, key, Math.round(size * ART_RES));
   return drawToTexture(scene, key, size, (g, S) => drawMonster(g, spec, S));
 }
 
 const MONSTER_ATLAS = 'monsters';
 
 /**
- * Painted art from the monsters atlas: one neutral grey sprite per form, tinted with the
- * element's main colour and scaled by growth stage like the code-drawn art.
+ * Painted frame "<form>/<stage>"; a stage without its own art yet uses the baby art
+ * ("<form>/bayi"), still scaled up by growth stage.
+ */
+function paintedFrame(scene: Phaser.Scene, spec: MonsterArtSpec): string | undefined {
+  if (!scene.textures.exists(MONSTER_ATLAS)) return undefined;
+  const atlas = scene.textures.get(MONSTER_ATLAS);
+  return [`${spec.form}/${spec.stage}`, `${spec.form}/bayi`].find((name) => atlas.has(name));
+}
+
+/**
+ * Painted art from the monsters atlas: one neutral grey sprite per form and stage, tinted
+ * with the element's main colour and scaled by growth stage like the code-drawn art.
  * ponytail: only the first element colour tints the body; mixed elements show the rest via
  * aura and particles. Per-unit colour masks if that reads too flat.
  */
-function paintedMonster(scene: Phaser.Scene, spec: MonsterArtSpec, key: string, S: number) {
+function paintedMonster(
+  scene: Phaser.Scene,
+  spec: MonsterArtSpec,
+  frame: string,
+  key: string,
+  S: number,
+) {
   const stages = gameData.rules.growth.stages.length;
   const grow = stages > 1 ? getStage(spec.stage).index / (stages - 1) : 1;
   const tierScale = [1, 1, 1.03, 1.07, 1.12][getForm(spec.form).tier - 1] ?? 1;
-  const image = scene.make.image({ key: MONSTER_ATLAS, frame: spec.form }, false);
+  const image = scene.make.image({ key: MONSTER_ATLAS, frame }, false);
   image
     .setOrigin(0.5, 1)
     .setScale(((0.62 + 0.38 * grow) * tierScale * S * 0.86) / image.width)

@@ -324,32 +324,32 @@
       "source_sha12": "6d8b00d0424b",
       "crops": [
         {
-          "path": "art/monsters/kucing.png",
+          "path": "art/monsters/kucing/bayi.png",
           "crop": [0, 0, 682, 576],
           "sha12": "346d55d64c91"
         },
         {
-          "path": "art/monsters/anjing.png",
+          "path": "art/monsters/anjing/bayi.png",
           "crop": [682, 0, 682, 576],
           "sha12": "c6383981cc14"
         },
         {
-          "path": "art/monsters/landak.png",
+          "path": "art/monsters/landak/bayi.png",
           "crop": [1364, 0, 682, 576],
           "sha12": "db2a7412c778"
         },
         {
-          "path": "art/monsters/kelinci.png",
+          "path": "art/monsters/kelinci/bayi.png",
           "crop": [0, 576, 682, 576],
           "sha12": "78d4bcb5a7e9"
         },
         {
-          "path": "art/monsters/tupai.png",
+          "path": "art/monsters/tupai/bayi.png",
           "crop": [682, 576, 682, 576],
           "sha12": "6ee8d3d4bf02"
         },
         {
-          "path": "art/monsters/katak.png",
+          "path": "art/monsters/katak/bayi.png",
           "crop": [1364, 576, 682, 576],
           "sha12": "9d9fee6a7e7f"
         }
@@ -361,32 +361,32 @@
       "source_sha12": "8503d37c2775",
       "crops": [
         {
-          "path": "art/monsters/serigala.png",
+          "path": "art/monsters/serigala/bayi.png",
           "crop": [0, 0, 341, 512],
           "sha12": "514400e4f5f5"
         },
         {
-          "path": "art/monsters/babi-hutan.png",
+          "path": "art/monsters/babi-hutan/bayi.png",
           "crop": [341, 0, 341, 512],
           "sha12": "68a50602d0fe"
         },
         {
-          "path": "art/monsters/ular.png",
+          "path": "art/monsters/ular/bayi.png",
           "crop": [682, 0, 341, 512],
           "sha12": "d93200259c2d"
         },
         {
-          "path": "art/monsters/kera.png",
+          "path": "art/monsters/kera/bayi.png",
           "crop": [0, 512, 341, 512],
           "sha12": "9b490d901f5c"
         },
         {
-          "path": "art/monsters/kura-kura.png",
+          "path": "art/monsters/kura-kura/bayi.png",
           "crop": [341, 512, 341, 512],
           "sha12": "adde79e780fd"
         },
         {
-          "path": "art/monsters/elang.png",
+          "path": "art/monsters/elang/bayi.png",
           "crop": [682, 512, 341, 512],
           "sha12": "77dcaef1f3e9"
         }
@@ -398,32 +398,32 @@
       "source_sha12": "8639b3e85fcc",
       "crops": [
         {
-          "path": "art/monsters/harimau.png",
+          "path": "art/monsters/harimau/bayi.png",
           "crop": [0, 0, 341, 512],
           "sha12": "8f3135036f34"
         },
         {
-          "path": "art/monsters/buaya.png",
+          "path": "art/monsters/buaya/bayi.png",
           "crop": [341, 0, 341, 512],
           "sha12": "e329e5b33abf"
         },
         {
-          "path": "art/monsters/hantu.png",
+          "path": "art/monsters/hantu/bayi.png",
           "crop": [682, 0, 341, 512],
           "sha12": "58cd7290482d"
         },
         {
-          "path": "art/monsters/golem.png",
+          "path": "art/monsters/golem/bayi.png",
           "crop": [0, 512, 341, 512],
           "sha12": "a0f31305cc69"
         },
         {
-          "path": "art/monsters/naga.png",
+          "path": "art/monsters/naga/bayi.png",
           "crop": [341, 512, 341, 512],
           "sha12": "c1943a405325"
         },
         {
-          "path": "art/monsters/raksasa.png",
+          "path": "art/monsters/raksasa/bayi.png",
           "crop": [682, 512, 341, 512],
           "sha12": "30533d98e8ef"
         }
@@ -435,27 +435,27 @@
       "source_sha12": "8179a80f47ac",
       "crops": [
         {
-          "path": "art/monsters/burung-agung.png",
+          "path": "art/monsters/burung-agung/bayi.png",
           "crop": [0, 0, 350, 520],
           "sha12": "77660e0be77c"
         },
         {
-          "path": "art/monsters/siluman.png",
+          "path": "art/monsters/siluman/bayi.png",
           "crop": [362, 60, 318, 460],
           "sha12": "b8b6051ffa23"
         },
         {
-          "path": "art/monsters/naga-purba.png",
+          "path": "art/monsters/naga-purba/bayi.png",
           "crop": [680, 0, 344, 520],
           "sha12": "fce9750dc1b3"
         },
         {
-          "path": "art/monsters/titan.png",
+          "path": "art/monsters/titan/bayi.png",
           "crop": [0, 520, 374, 504],
           "sha12": "2d8c8e8f9300"
         },
         {
-          "path": "art/monsters/penjaga-abadi.png",
+          "path": "art/monsters/penjaga-abadi/bayi.png",
           "crop": [385, 520, 320, 504],
           "sha12": "74c61faf57ef"
         }
