@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { gameData, raritySchema } from './data';
 import { monsterKey } from './monster';
 import { createRng } from './rng';
+import type { Mission } from './missions';
 import type { PlayerState } from './state';
 import { createWorkers } from './workers';
 import { animalRespawnSeconds } from './animals';
@@ -9,7 +10,7 @@ import { encounterRespawnSeconds } from './encounters';
 import { canPlace, createVillage, levelDef, scatterObstacles, type Village } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 12;
+export const SAVE_SCHEMA_VERSION = 14;
 
 const int = z.number().int();
 const monsterSchema = z.object({
@@ -99,6 +100,16 @@ const playerStateSchema = z.object({
     }),
   ),
   soldiers: z.array(z.object({ id: z.string(), kind: z.string(), rank: int.min(0) })),
+  units: z.record(
+    z.string(),
+    z.object({
+      x: int,
+      y: int,
+      path: z.array(z.object({ x: int, y: int })),
+      departAt: z.number(),
+      guard: z.string().nullable(),
+    }),
+  ),
   eggs: z.array(
     z.object({ id: z.string(), form: z.string(), element: z.string(), readyAt: z.number() }),
   ),
@@ -107,18 +118,24 @@ const playerStateSchema = z.object({
       id: z.string(),
       encounterId: z.string(),
       monsterIds: z.array(z.string()),
-      endsAt: z.number(),
-      won: z.boolean(),
-      dead: z.array(z.string()),
-      hpLeft: z.record(z.string(), z.number().min(0).max(1)),
-      enemyHpLeft: z.array(z.number().min(0).max(1)),
-      reward: z.object({
-        gold: int.min(0),
-        food: int.min(0),
-        wood: int.min(0),
-        stone: int.min(0),
-      }),
-      soulCrystal: int.min(0),
+      arriveAt: z.number(),
+      fight: z
+        .object({
+          startsAt: z.number(),
+          endsAt: z.number(),
+          won: z.boolean(),
+          dead: z.array(z.string()),
+          hpLeft: z.record(z.string(), z.number().min(0).max(1)),
+          enemyHpLeft: z.array(z.number().min(0).max(1)),
+          reward: z.object({
+            gold: int.min(0),
+            food: int.min(0),
+            wood: int.min(0),
+            stone: int.min(0),
+          }),
+          soulCrystal: int.min(0),
+        })
+        .nullable(),
     }),
   ),
   graveyard: z.array(monsterSchema),
@@ -336,7 +353,7 @@ const migrations: Record<number, (state: unknown) => unknown> = {
   },
   // v11 missions came from the odds formula: give them HP left for the fight display.
   11: (raw) => {
-    const state = raw as PlayerState;
+    const state = raw as { missions: OldMission[]; village: PlayerState['village'] };
     for (const m of state.missions) {
       m.hpLeft = Object.fromEntries(m.monsterIds.map((id) => [id, m.dead.includes(id) ? 0 : 0.5]));
       const e = state.village.encounters.find((x) => x.id === m.encounterId);
@@ -344,7 +361,52 @@ const migrations: Record<number, (state: unknown) => unknown> = {
     }
     return state;
   },
+  // v12 settled the whole fight at departure: those missions become fights already
+  // under way that end when the old mission did (arrival = old end minus the march).
+  12: (raw) => {
+    const state = raw as { missions: (OldMission | Mission)[] };
+    state.missions = state.missions.map((old) => {
+      const m = old as OldMission;
+      return {
+        id: m.id,
+        encounterId: m.encounterId,
+        monsterIds: m.monsterIds,
+        arriveAt: m.endsAt,
+        fight: {
+          startsAt: m.endsAt,
+          endsAt: m.endsAt,
+          won: m.won,
+          dead: m.dead,
+          hpLeft: m.hpLeft,
+          enemyHpLeft: m.enemyHpLeft,
+          reward: m.reward,
+          soulCrystal: m.soulCrystal,
+        },
+      };
+    });
+    return state;
+  },
+  // v13 had no unit positions: everyone gets a spot near the Kandang on the next settle.
+  13: (raw) => {
+    const state = raw as PlayerState;
+    state.units = {};
+    return state;
+  },
 };
+
+/** Mission shape up to save v12 (outcome rolled at departure). */
+interface OldMission {
+  id: string;
+  encounterId: string;
+  monsterIds: string[];
+  endsAt: number;
+  won: boolean;
+  dead: string[];
+  hpLeft: Record<string, number>;
+  enemyHpLeft: number[];
+  reward: { gold: number; food: number; wood: number; stone: number };
+  soulCrystal: number;
+}
 
 function findFreeSpot(village: Village, size: number) {
   const { mapSize } = gameData.village.village;

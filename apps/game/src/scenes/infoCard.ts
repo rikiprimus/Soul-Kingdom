@@ -183,10 +183,13 @@ function encounterInfo(state: PlayerState, id: string, a: InfoActions): InfoCont
     lines,
     status: () => {
       if (mission) {
-        return t('team.fighting', {
-          n: mission.monsterIds.length,
-          time: formatDuration(Math.max(0, mission.endsAt - a.now())),
-        });
+        // Marching to the enemy; once there they fight with no time limit.
+        return mission.fight
+          ? t('team.fighting', { n: mission.monsterIds.length })
+          : t('team.marching', {
+              n: mission.monsterIds.length,
+              time: formatDuration(Math.max(0, mission.arriveAt - a.now())),
+            });
       }
       const power = encounterPower(e, members);
       const parts = [t('enemy.power', { power: power.toFixed(1) })];

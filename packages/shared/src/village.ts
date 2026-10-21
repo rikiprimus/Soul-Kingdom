@@ -13,6 +13,7 @@ import {
 import type { Rng } from './rng';
 import type { RanchAnimal, WildAnimal } from './animals';
 import { settleMissions, type WildEncounter } from './missions';
+import { settleUnits } from './units';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { settleBarracks } from './barracks';
 import { assignWorkers, idleWorkers, releaseWorkers, settleTraining } from './workers';
@@ -310,7 +311,10 @@ export function buyPlot(
  * Returns the same object when nothing changed.
  */
 export function settleVillage(state: PlayerState, now: number): PlayerState {
-  const trained = settleMissions(settleBarracks(settleTraining(state, now), now), now);
+  const trained = settleUnits(
+    settleMissions(settleBarracks(settleTraining(state, now), now), now),
+    now,
+  );
   const done = trained.village.buildings.some(
     (b) => b.construction && b.construction.endsAt <= now,
   );

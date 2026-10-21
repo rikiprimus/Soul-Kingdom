@@ -43,6 +43,11 @@ export interface BattleResult {
   events: BattleEvent[];
 }
 
+const EPS = 1e-6;
+
+/** Safety net for untilDefeat fights (about 14 hours of battle at 20 ticks/s). */
+const HARD_STOP = 1_000_000;
+
 interface Live {
   f: Fighter;
   side: Side;
@@ -66,6 +71,7 @@ export function simulateBattle(
   defenders: readonly Fighter[],
   seed: RngState,
   data: GameData = gameData,
+  opts: { untilDefeat?: boolean } = {},
 ): BattleResult {
   const { grid, maxTicks, ticksPerSecond, sim } = data.rules.battle;
   const rng = createRng(seed);
@@ -99,8 +105,11 @@ export function simulateBattle(
   const alive = (side: Side) => units.some((u) => u.side === side && u.hp > 0);
   const interval = (u: Live) => (sim.attackSecondsAtSpd10 * 10) / u.f.stats.spd;
 
+  // Wild fights (untilDefeat) have no time limit: one side must fall. Every hit does at
+  // least minDamage, so they always end; HARD_STOP only guards against broken data.
+  const limit = opts.untilDefeat ? HARD_STOP : maxTicks;
   let tick = 0;
-  while (alive('attackers') && alive('defenders') && tick < maxTicks) {
+  while (alive('attackers') && alive('defenders') && tick < limit) {
     tick += 1;
     for (const u of units) {
       if (u.hp <= 0) continue;
@@ -116,7 +125,8 @@ export function simulateBattle(
       }
       if (!target) break;
       u.cooldown = Math.max(0, u.cooldown - dt);
-      if (best > u.f.stats.range) {
+      // EPS: walking stops exactly at range, and rounding must not leave it a hair short.
+      if (best > u.f.stats.range + EPS) {
         // Walk straight at the target, stopping once it is in range.
         const step = Math.min(u.f.stats.spd * sim.moveTilesPerSpd * dt, best - u.f.stats.range);
         u.x += ((target.x - u.x) / best) * step;
@@ -161,11 +171,12 @@ export function estimateWinChance(
   defenders: readonly Fighter[],
   runs: number = gameData.rules.battle.sim.previewRuns,
   data: GameData = gameData,
+  opts: { untilDefeat?: boolean } = {},
 ): number {
   if (attackers.length === 0) return 0;
   let wins = 0;
   for (let seed = 1; seed <= runs; seed++) {
-    if (simulateBattle(attackers, defenders, seed, data).winner === 'attackers') wins += 1;
+    if (simulateBattle(attackers, defenders, seed, data, opts).winner === 'attackers') wins += 1;
   }
   return wins / runs;
 }

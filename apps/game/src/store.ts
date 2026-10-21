@@ -78,6 +78,11 @@ export class GameStore {
     return this._state;
   }
 
+  /** Game clock with fractions of a second (smooth walking between whole seconds). */
+  nowExact(): number {
+    return Date.now() / 1000 + this.clockOffset;
+  }
+
   /** Game clock in whole seconds. */
   now(): number {
     return Math.floor(Date.now() / 1000) + this.clockOffset;

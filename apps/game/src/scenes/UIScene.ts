@@ -61,6 +61,9 @@ let openPanelTarget: string | undefined;
 let team: string[] = [];
 
 /** Whether the floating tab bar is shown (remembered per browser). */
+/** Pilih mode: dragging the map picks units instead of moving the camera. */
+let selectMode = false;
+
 let dockVisible = (() => {
   try {
     return localStorage.getItem(DOCK_KEY) !== '0';
@@ -165,6 +168,8 @@ export class UIScene extends Phaser.Scene {
     };
     const onOpenPanel = (kind: PanelKind) => this.openPanel(kind);
     const onTeamToggle = (id: string) => this.toggleTeam(id);
+    const onTeamSet = (ids: string[]) => this.setTeam(ids);
+    ev.on(EVT.teamSet, onTeamSet);
     ev.on(EVT.teamToggle, onTeamToggle);
     const onCollectFx = (fx: CollectFx) => this.flyToHud(fx);
     ev.on(EVT.collectFx, onCollectFx);
@@ -193,6 +198,7 @@ export class UIScene extends Phaser.Scene {
       window.clearTimeout(resizeTimer);
       this.scale.off('resize', onResize);
       ev.off(EVT.select, onSelect);
+      ev.off(EVT.teamSet, onTeamSet);
       ev.off(EVT.placement, onPlacement);
       ev.off(EVT.toast, onToast);
       ev.off(EVT.openPanel, onOpenPanel);
@@ -315,7 +321,11 @@ export class UIScene extends Phaser.Scene {
   /** Drops monsters that died, left, or got busy from the picked team. */
   private pruneTeam(): void {
     const s = this.store.state;
-    const kept = team.filter((id) => s.monsters.some((m) => m.id === id) && !isMonsterBusy(s, id));
+    const kept = team.filter(
+      (id) =>
+        (s.monsters.some((m) => m.id === id) || s.soldiers.some((x) => x.id === id)) &&
+        !isMonsterBusy(s, id),
+    );
     if (kept.length !== team.length) this.setTeam(kept);
   }
 
@@ -555,6 +565,24 @@ export class UIScene extends Phaser.Scene {
     });
     layer.add(toggle);
     if (!dockVisible) return;
+    // Pilih: while on, dragging the map draws a box that picks units (Tugas 1A.15).
+    const sx = d.x + d.toggleW + d.gap + DOCK_TABS.length * (d.buttonW + d.gap);
+    layer.add(
+      new Button(this, sx + d.buttonW / 2, d.y + d.buttonH / 2, {
+        width: d.buttonW,
+        height: d.buttonH,
+        label: t('nav.select'),
+        fontSize: 13,
+        color: selectMode ? COLORS.gold : COLORS.panel,
+        onClick: () => {
+          selectMode = !selectMode;
+          this.game.events.emit(EVT.selectMode, selectMode);
+          if (selectMode) toast(this, t('select.hint'), COLORS.accent);
+          else this.setTeam([]);
+          this.buildDock();
+        },
+      }),
+    );
     DOCK_TABS.forEach((kind, i) => {
       const x = d.x + d.toggleW + d.gap + i * (d.buttonW + d.gap);
       const active = this.panel?.kind === kind;

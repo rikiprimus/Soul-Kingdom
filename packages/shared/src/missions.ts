@@ -28,21 +28,32 @@ export interface WildEncounter {
   enemies: (MonsterKind & { stage: string })[];
 }
 
-/** A team sent against an encounter; the outcome is rolled at departure and applied at `endsAt`. */
-export interface Mission {
-  id: string;
-  encounterId: string;
-  /** Monster and soldier ids (the field name predates soldiers). */
-  monsterIds: string[];
+/** A fight that has been simulated: when it runs and what it left behind. */
+export interface MissionFight {
+  startsAt: number;
   endsAt: number;
   won: boolean;
-  /** Team members that fall in the fight (winners can lose members too). */
+  /** Team members that fall (winners can lose members too). */
   dead: string[];
   /** HP left after the fight, 0–1: per team member id, and per enemy (same order as shown). */
   hpLeft: Record<string, number>;
   enemyHpLeft: number[];
   reward: VillageAmount;
   soulCrystal: number;
+}
+
+/**
+ * A team sent against an encounter. It marches until `arriveAt`; the fight is simulated
+ * when it gets there (no time limit: it lasts until one side has fallen) and its outcome
+ * is applied when the fight ends.
+ */
+export interface Mission {
+  id: string;
+  encounterId: string;
+  /** Monster and soldier ids (the field name predates soldiers). */
+  monsterIds: string[];
+  arriveAt: number;
+  fight: MissionFight | null;
 }
 
 const fail = (error: ActionError): { ok: false; error: ActionError } => ({ ok: false, error });
@@ -165,7 +176,7 @@ export function encounterFighters(e: WildEncounter, data: GameData = gameData): 
   }));
 }
 
-/** Preview of the odds: the share of fixed-seed simulations this team wins. */
+/** Preview of the odds: the share of fixed-seed fights to the end this team wins. */
 export function previewWinChance(
   state: PlayerState,
   ids: readonly string[],
@@ -173,7 +184,9 @@ export function previewWinChance(
   runs: number = gameData.rules.battle.sim.previewRuns,
   data: GameData = gameData,
 ): number {
-  return estimateWinChance(teamFighters(state, ids, data), encounterFighters(e, data), runs, data);
+  return estimateWinChance(teamFighters(state, ids, data), encounterFighters(e, data), runs, data, {
+    untilDefeat: true,
+  });
 }
 
 // ---------- Sending a team ----------
@@ -188,7 +201,7 @@ export function sendTeam(
   if (!e) return fail('encounterNotFound');
   if (missionFor(state, e.id)) return fail('encounterBusy');
   const ids = params.monsterIds;
-  const { maxTeam, missionSeconds } = data.rules.skirmish;
+  const { maxTeam, marchSeconds } = data.rules.skirmish;
   if (ids.length < 1 || ids.length > maxTeam || new Set(ids).size !== ids.length) {
     return fail('invalidAmount');
   }
@@ -200,36 +213,14 @@ export function sendTeam(
     if (inMixer || isOnMission(state, id)) return fail('monsterBusy');
   }
   const next = deepClone(state);
-  const rng = createRng(next.rngState);
-  // The whole fight is simulated now; its outcome is applied when the mission ends.
-  const team = teamFighters(state, ids, data);
-  const enemies = encounterFighters(e, data);
-  const battle = simulateBattle(team, enemies, rng.int(0, 0x7fffffff), data);
-  const won = battle.winner === 'attackers';
-  const dead = ids.filter((id) => (battle.hp[id] ?? 0) <= 0);
-  const hpLeft = Object.fromEntries(team.map((f) => [f.id, battle.hp[f.id]! / f.stats.hp]));
-  const enemyHpLeft = enemies.map((f) => battle.hp[f.id]! / f.stats.hp);
-  const group = encounterGroup(e, data);
-  const reward: VillageAmount = { gold: 0, food: 0, wood: 0, stone: 0 };
-  let soulCrystal = 0;
-  if (won) {
-    for (const r of VILLAGE_RESOURCES) reward[r] = group.reward[r];
-    soulCrystal = rng.chance(group.reward.soulCrystalChance) ? 1 : 0;
-  }
-  next.rngState = rng.getState();
   const missionId = `t${next.nextId}`;
   next.nextId += 1;
   next.missions.push({
     id: missionId,
     encounterId: e.id,
     monsterIds: [...ids],
-    endsAt: now + missionSeconds,
-    won,
-    dead,
-    hpLeft,
-    enemyHpLeft,
-    reward,
-    soulCrystal,
+    arriveAt: now + marchSeconds,
+    fight: null,
   });
   return { ok: true, state: next, missionId };
 }
@@ -244,17 +235,62 @@ export interface MissionDone {
  * Applies finished missions: a win pays the reward and clears the encounter; a loss
  * moves the fallen monsters to the graveyard. Same object when nothing finished.
  */
-export function settleMissions(state: PlayerState, now: number): PlayerState {
-  if (!state.missions.some((m) => m.endsAt <= now)) return state;
+/** Simulates the fight of a team that has arrived (seeded from the state's RNG). */
+function startFight(next: PlayerState, m: Mission, e: WildEncounter, data: GameData): void {
+  const rng = createRng(next.rngState);
+  const team = teamFighters(next, m.monsterIds, data);
+  const enemies = encounterFighters(e, data);
+  const battle = simulateBattle(team, enemies, rng.int(0, 0x7fffffff), data, {
+    untilDefeat: true,
+  });
+  const won = battle.winner === 'attackers';
+  const group = encounterGroup(e, data);
+  const reward: VillageAmount = { gold: 0, food: 0, wood: 0, stone: 0 };
+  let soulCrystal = 0;
+  if (won) {
+    for (const r of VILLAGE_RESOURCES) reward[r] = group.reward[r];
+    soulCrystal = rng.chance(group.reward.soulCrystalChance) ? 1 : 0;
+  }
+  next.rngState = rng.getState();
+  m.fight = {
+    startsAt: m.arriveAt,
+    endsAt: m.arriveAt + Math.ceil(battle.ticks / data.rules.battle.ticksPerSecond),
+    won,
+    dead: m.monsterIds.filter((id) => (battle.hp[id] ?? 0) <= 0),
+    hpLeft: Object.fromEntries(team.map((f) => [f.id, battle.hp[f.id]! / f.stats.hp])),
+    enemyHpLeft: enemies.map((f) => battle.hp[f.id]! / f.stats.hp),
+    reward,
+    soulCrystal,
+  };
+}
+
+/**
+ * Teams that have arrived start fighting (simulated now, in mission order); fights that
+ * are over pay out or bury their fallen. A team whose enemy is gone just comes home.
+ */
+export function settleMissions(
+  state: PlayerState,
+  now: number,
+  data: GameData = gameData,
+): PlayerState {
+  const done = (m: Mission) => (m.fight ? m.fight.endsAt <= now : m.arriveAt <= now);
+  if (!state.missions.some(done)) return state;
   const next = deepClone(state);
-  for (const m of next.missions.filter((x) => x.endsAt <= now)) {
-    if (m.won) {
-      for (const r of VILLAGE_RESOURCES) next.resources[r] += m.reward[r];
-      next.resources.soulCrystal += m.soulCrystal;
+  for (const m of next.missions) {
+    if (m.fight || m.arriveAt > now) continue;
+    const e = next.village.encounters.find((x) => x.id === m.encounterId);
+    if (e) startFight(next, m, e, data);
+  }
+  for (const m of next.missions.filter(done)) {
+    const f = m.fight;
+    if (!f) continue;
+    if (f.won) {
+      for (const r of VILLAGE_RESOURCES) next.resources[r] += f.reward[r];
+      next.resources.soulCrystal += f.soulCrystal;
       next.village.encounters = next.village.encounters.filter((e) => e.id !== m.encounterId);
     }
     // Members who fell (on either outcome): soldiers are gone, monsters go to the Kuburan.
-    for (const id of m.dead) {
+    for (const id of f.dead) {
       next.soldiers = next.soldiers.filter((x) => x.id !== id);
       const fallen = next.monsters.find((x) => x.id === id);
       if (!fallen) continue;
@@ -262,7 +298,7 @@ export function settleMissions(state: PlayerState, now: number): PlayerState {
       next.graveyard.push(fallen);
     }
   }
-  next.missions = next.missions.filter((x) => x.endsAt > now);
+  next.missions = next.missions.filter((m) => !done(m));
   return next;
 }
 

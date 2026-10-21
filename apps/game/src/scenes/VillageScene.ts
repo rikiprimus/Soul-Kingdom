@@ -20,6 +20,7 @@ import {
   encounterGroup,
   isOnMission,
   type Mission,
+  type MissionFight,
   gatherWorkers,
   obstacleDef,
   animalWorkers,
@@ -35,6 +36,10 @@ import {
   levelDef,
   mixRemaining,
   moveBuilding,
+  moveUnits,
+  guardNode,
+  sendTeam,
+  unitPoint,
   hashSeed,
   hatchEgg,
   soldierName,
@@ -47,6 +52,7 @@ import {
   sizeOf,
   type Building,
   type Monster,
+  type Soldier,
 } from '@soul-monster/shared';
 import {
   BUILDING_RES,
@@ -137,10 +143,11 @@ interface Placement {
 }
 
 interface Walker {
+  /** Monster or soldier id (soldiers walk the village too). */
   monsterId: string;
   /** Out on (or coming back from) a mission, off the open land. */
   away?: boolean;
-  view: MonsterView;
+  view: Phaser.GameObjects.Container;
   /** Tile centre the walker is standing on (or walking from). */
   u: number;
   v: number;
@@ -151,7 +158,7 @@ interface Walker {
   nextMoveAt: number;
 }
 
-const MAX_WALKERS = 8;
+const MAX_WALKERS = 30;
 
 /** A worker drawn as a little person: wanders near the Balai or walks to its job. */
 /** Something that walks tile to tile (workers, animals). */
@@ -214,11 +221,13 @@ export class VillageScene extends Phaser.Scene {
   private teamGfx?: Phaser.GameObjects.Graphics;
   /** Health bars of running fights, redrawn every frame. */
   private fightGfx?: Phaser.GameObjects.Graphics;
-  /** Per mission: when its fight started and ends (scene ms), and its soldier figures. */
-  private fights = new Map<
-    string,
-    { start: number; end: number; soldiers: { id: string; image: Phaser.GameObjects.Image }[] }
-  >();
+  /** Per mission: when its fight started and ends (scene ms). */
+  private fights = new Map<string, { start: number; end: number }>();
+  /** Pilih mode (dock button): dragging draws a box that picks units. */
+  private selectMode = false;
+  private selectBox?: Phaser.GameObjects.Graphics;
+  /** Last known fight of each mission, for the report once it has left the state. */
+  private lastFights = new Map<string, MissionFight>();
   /** Active play time not yet added to gathering (committed in small batches). */
   private pendingGather = 0;
   private lastTickAt = 0;
@@ -336,6 +345,11 @@ export class VillageScene extends Phaser.Scene {
     const onDeselect = () => this.select(null);
     const onFocus = (id: string) => this.focusOn(id);
     const onTeam = (ids: string[]) => (this.team = new Set(ids));
+    const onSelectMode = (on: boolean) => {
+      this.selectMode = on;
+      this.selectBox?.clear();
+    };
+    ev.on(EVT.selectMode, onSelectMode);
     ev.on(EVT.startPlacement, onStart);
     ev.on(EVT.confirmPlacement, onConfirm);
     ev.on(EVT.cancelPlacement, onCancel);
@@ -352,10 +366,12 @@ export class VillageScene extends Phaser.Scene {
       ev.off(EVT.deselect, onDeselect);
       ev.off(EVT.focus, onFocus);
       ev.off(EVT.teamChanged, onTeam);
+      ev.off(EVT.selectMode, onSelectMode);
     });
   }
 
   override update(_time: number, delta: number): void {
+    this.placeWalkers();
     this.drawFights();
     const cam = this.cameras.main;
     this.lastMid = { x: cam.midPoint.x, y: cam.midPoint.y };
@@ -946,6 +962,10 @@ export class VillageScene extends Phaser.Scene {
       this.moveGhost(Math.round(u - this.dragGhost.du), Math.round(v - this.dragGhost.dv));
       return;
     }
+    if (this.selectMode && !this.placement) {
+      this.drawSelectBox(p);
+      return;
+    }
     cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
     cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
   }
@@ -958,9 +978,83 @@ export class VillageScene extends Phaser.Scene {
     if (this.downAt && !this.moved) {
       const w = this.worldPoint(p);
       this.tap(w.x, w.y);
+    } else if (this.downAt && this.selectMode && !this.placement) {
+      this.pickInBox(p);
     }
     this.downAt = null;
     this.dragGhost = null;
+  }
+
+  /** The world rectangle from where the drag started to the pointer. */
+  private dragRect(p: Phaser.Input.Pointer) {
+    const a = this.cameras.main.getWorldPoint(this.downAt!.x, this.downAt!.y);
+    const b = this.worldPoint(p);
+    return new Phaser.Geom.Rectangle(
+      Math.min(a.x, b.x),
+      Math.min(a.y, b.y),
+      Math.abs(a.x - b.x),
+      Math.abs(a.y - b.y),
+    );
+  }
+
+  /** Pilih mode: show the box being dragged. */
+  private drawSelectBox(p: Phaser.Input.Pointer) {
+    if (!this.downAt) return;
+    if (!this.selectBox) this.selectBox = this.add.graphics().setDepth(1_600_000);
+    const r = this.dragRect(p);
+    this.selectBox
+      .clear()
+      .fillStyle(COLORS.gold, 0.15)
+      .fillRectShape(r)
+      .lineStyle(2, COLORS.gold, 0.9)
+      .strokeRectShape(r);
+  }
+
+  /** Pilih mode: every unit standing inside the dragged box becomes the team. */
+  private pickInBox(p: Phaser.Input.Pointer) {
+    this.selectBox?.clear();
+    if (!this.downAt) return;
+    const r = this.dragRect(p);
+    const ids = this.walkers
+      .filter((w) => !w.away && r.contains(w.view.x, w.view.y + 16))
+      .map((w) => w.monsterId);
+    this.game.events.emit(EVT.teamSet, ids);
+  }
+
+  /**
+   * Pilih mode with units picked: tap an enemy to attack, a tree/rock/bush to guard the
+   * workers there, or open land to walk there. Returns false when the tap was not a command.
+   */
+  private command(wx: number, wy: number): boolean {
+    const ids = [...this.team];
+    const say = (message: string, good: boolean) =>
+      this.game.events.emit(EVT.toast, good ? { message, color: COLORS.good } : { message });
+    for (const [id, view] of this.enemies) {
+      if (!view.getBounds().contains(wx, wy)) continue;
+      const r = this.store.apply((s, n) => sendTeam(s, { monsterIds: ids, encounterId: id }, n));
+      if (!r.ok) say(errorText(r.error), false);
+      else {
+        playSfx(this, 'march');
+        say(t('team.sent', { n: ids.length }), true);
+        this.game.events.emit(EVT.teamSet, []);
+      }
+      return true;
+    }
+    const hit = this.pick(wx, wy);
+    if (hit?.kind === 'obstacle') {
+      const r = this.store.apply((s, n) => guardNode(s, { ids, obstacleId: hit.id }, n));
+      if (!r.ok) say(errorText(r.error), false);
+      else say(t('select.guarding', { n: r.moved.length }), true);
+      return true;
+    }
+    if (hit) return false;
+    const { u, v } = worldToIso(wx, wy);
+    const r = this.store.apply((s, n) =>
+      moveUnits(s, { ids, x: Math.floor(u), y: Math.floor(v) }, n),
+    );
+    if (!r.ok) say(errorText(r.error), false);
+    else say(t('select.moved', { n: r.moved.length }), true);
+    return true;
   }
 
   private onWheel(p: Phaser.Input.Pointer, _objects: unknown, _dx: number, dy: number) {
@@ -1064,6 +1158,7 @@ export class VillageScene extends Phaser.Scene {
       this.game.events.emit(EVT.teamToggle, walker.monsterId);
       return;
     }
+    if (this.selectMode && this.team.size > 0 && this.command(wx, wy)) return;
     for (const [id, view] of this.enemies) {
       if (view.getBounds().contains(wx, wy)) {
         this.select({ kind: 'encounter', id });
@@ -1631,35 +1726,28 @@ export class VillageScene extends Phaser.Scene {
           getStage(b.stage).index - getStage(a.stage).index,
       )
       .slice(0, MAX_WALKERS);
-    const ids = new Set(monsters.map((m) => m.id));
+    // Soldiers walk too, after the monsters, within the same cap.
+    const soldiers = [...state.soldiers]
+      .sort((a, b) => Number(isOnMission(state, b.id)) - Number(isOnMission(state, a.id)))
+      .slice(0, Math.max(0, MAX_WALKERS - monsters.length));
+    // The look a walker was drawn with: growth stage for monsters, rank for soldiers.
+    const looks = new Map<string, string>([
+      ...monsters.map((m) => [m.id, m.stage] as const),
+      ...soldiers.map((x) => [x.id, `${x.kind}:${x.rank}`] as const),
+    ]);
     this.walkers = this.walkers.filter((w) => {
-      const keep =
-        ids.has(w.monsterId) &&
-        this.store.state.monsters.some(
-          (m) => m.id === w.monsterId && m.stage === w.view.getData('stage'),
-        );
+      const keep = looks.get(w.monsterId) === w.view.getData('look');
       if (!keep) {
         w.tween?.stop();
         w.view.destroy();
       }
       return keep;
     });
-    // A building placed on top of a walker pushes it to a free tile.
-    const village = this.store.state.village;
-    for (const w of this.walkers) {
-      if (w.away || canPlaceBuilding(village, 1, Math.floor(w.u), Math.floor(w.v))) continue;
-      const spot = this.randomFreeTile({ u: w.u, v: w.v }, 3) ?? this.randomFreeTile();
-      if (!spot) continue;
-      w.tween?.stop();
-      w.u = w.cu = spot.u;
-      w.v = w.cv = spot.v;
-      const p = isoToWorld(spot.u, spot.v);
-      w.view.setPosition(p.x, p.y - 16);
-    }
-    for (const m of monsters) {
-      if (this.walkers.some((w) => w.monsterId === m.id)) continue;
-      const spot = this.randomFreeTile();
-      if (spot) this.walkers.push(this.createWalker(m, spot.u, spot.v));
+    for (const unit of [...monsters, ...soldiers]) {
+      if (this.walkers.some((w) => w.monsterId === unit.id)) continue;
+      const place = this.store.state.units[unit.id];
+      const spot = place ? { u: place.x + 0.5, v: place.y + 0.5 } : this.randomFreeTile();
+      if (spot) this.walkers.push(this.createWalker(unit, spot.u, spot.v));
     }
   }
 
@@ -1701,12 +1789,21 @@ export class VillageScene extends Phaser.Scene {
     return options.length ? options[Math.floor(Math.random() * options.length)]! : null;
   }
 
-  private createWalker(m: Monster, u: number, v: number): Walker {
+  private createWalker(unit: Monster | Soldier, u: number, v: number): Walker {
     const p = isoToWorld(u, v);
-    const view = new MonsterView(this, p.x, p.y - 16, m, 40);
-    view.setData('stage', m.stage);
+    let view: Phaser.GameObjects.Container;
+    if ('form' in unit) {
+      view = new MonsterView(this, p.x, p.y - 16, unit, 40);
+      view.setData('look', unit.stage);
+    } else {
+      // Soldiers: the code-drawn figure, feet on the tile like a monster's.
+      view = this.add.container(p.x, p.y - 16, [
+        this.add.image(0, 18, soldierTexture(this, unit)).setOrigin(0.5, 1).setScale(0.6),
+      ]);
+      view.setData('look', `${unit.kind}:${unit.rank}`);
+    }
     return {
-      monsterId: m.id,
+      monsterId: unit.id,
       view,
       u,
       v,
@@ -1716,35 +1813,35 @@ export class VillageScene extends Phaser.Scene {
     };
   }
 
+  /** Walkers off on a mission are driven by moveOnMission; the rest follow placeWalkers. */
   private moveWalkers() {
     for (const w of this.walkers) {
       if (this.time.now < w.nextMoveAt || w.tween?.isPlaying()) continue;
-      if (this.moveOnMission(w)) continue;
-      const target = this.neighbourTile(w.u, w.v);
-      w.nextMoveAt = this.time.now + 2000 + Math.random() * 4000;
-      if (!target) continue;
-      const from = isoToWorld(w.u, w.v);
-      const to = isoToWorld(target.u, target.v);
-      const dist = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
-      w.view.setScale(to.x < from.x ? -1 : 1, 1);
-      const state = { t: 0 };
-      w.tween = this.tweens.add({
-        targets: state,
-        t: 1,
-        duration: (dist / 28) * 1000,
-        onUpdate: () => {
-          const u = w.u + (target.u - w.u) * state.t;
-          const v = w.v + (target.v - w.v) * state.t;
-          const p = isoToWorld(u, v);
-          w.view.setPosition(p.x, p.y - 16 - Math.abs(Math.sin(state.t * Math.PI * 4)) * 3);
-          w.cu = u;
-          w.cv = v;
-        },
-        onComplete: () => {
-          w.u = w.cu = target.u;
-          w.v = w.cv = target.v;
-        },
-      });
+      this.moveOnMission(w);
+    }
+  }
+
+  /**
+   * Monsters and soldiers stand where the state says (`state.units`), and walk along their
+   * ordered path smoothly between game-clock seconds (Tugas 1A.15).
+   */
+  private placeWalkers() {
+    const units = this.store.state.units;
+    const now = this.store.nowExact();
+    for (const w of this.walkers) {
+      if (w.away || w.tween?.isPlaying()) continue;
+      const place = units[w.monsterId];
+      if (!place) continue;
+      const pt = unitPoint(place, now);
+      const u = pt.x + 0.5;
+      const v = pt.y + 0.5;
+      const walking = Math.abs(u - w.cu) + Math.abs(v - w.cv) > 1e-3;
+      const p = isoToWorld(u, v);
+      if (walking) w.view.setScale(isoToWorld(w.cu, w.cv).x > p.x ? -1 : 1, 1);
+      const hop = walking ? Math.abs(Math.sin(now * Math.PI * 4)) * 3 : 0;
+      w.view.setPosition(p.x, p.y - 16 - hop);
+      w.u = w.cu = u;
+      w.v = w.cv = v;
     }
   }
 
@@ -2131,7 +2228,8 @@ export class VillageScene extends Phaser.Scene {
     }
     if (w.away) {
       w.away = false;
-      const home = this.randomFreeTile();
+      const place = this.store.state.units[w.monsterId];
+      const home = place ? { u: place.x + 0.5, v: place.y + 0.5 } : this.randomFreeTile();
       if (home) this.walkWalker(w, home, 60);
       w.nextMoveAt = this.time.now + 1000;
       return true;
@@ -2165,53 +2263,32 @@ export class VillageScene extends Phaser.Scene {
   }
 
   /**
-   * Health bars while a team fights: they appear when the first member reaches the enemy
-   * and drain over the rest of the mission to the HP left in the battle simulated at
-   * departure (`Mission.hpLeft` / `enemyHpLeft`).
+   * Health bars while a team fights: the fight is simulated when the team arrives, and the
+   * bars drain over its length to the HP each side was left with (`Mission.fight`).
    */
   private drawFights() {
     if (!this.fightGfx) this.fightGfx = this.add.graphics().setDepth(1_400_000);
     const g = this.fightGfx.clear();
     const state = this.store.state;
     const live = new Set(state.missions.map((m) => m.id));
-    for (const [id, f] of this.fights) {
+    for (const id of this.fights.keys()) {
       if (live.has(id)) continue;
-      for (const sd of f.soldiers) sd.image.destroy();
       this.fights.delete(id);
     }
     for (const m of state.missions) {
       const e = state.village.encounters.find((x) => x.id === m.encounterId);
       const view = this.enemies.get(m.encounterId);
       if (!e || !view) continue;
+      // Bars only once the fight has been simulated (when the team arrived).
+      const result = m.fight;
+      if (!result || this.store.now() < result.startsAt) continue;
+      this.lastFights.set(m.id, result);
       let fight = this.fights.get(m.id);
       if (!fight) {
-        const walkers = this.walkers.filter((w) => m.monsterIds.includes(w.monsterId));
-        // The fight shows from the team's arrival, or from half-time if the walk is long.
-        const halfway = m.endsAt - this.store.now() <= gameData.rules.skirmish.missionSeconds / 2;
-        const arrived =
-          walkers.length === 0 ||
-          halfway ||
-          walkers.some((w) => {
-            const p = isoToWorld(w.cu, w.cv);
-            return Phaser.Math.Distance.Between(p.x, p.y, view.x, view.y) < 60;
-          });
-        if (!arrived) continue;
-        const left = Math.max(1, m.endsAt - this.store.now()) * 1000;
-        fight = { start: this.time.now, end: this.time.now + left, soldiers: [] };
-        // Soldiers have no walkers in the village: they stand in front of the enemy.
-        const soldiers = state.soldiers.filter((x) => m.monsterIds.includes(x.id));
-        soldiers.forEach((sd, i) => {
-          const pos = isoToWorld(e.x + 0.5 + (i - (soldiers.length - 1) / 2) * 0.55, e.y + 1.5);
-          fight!.soldiers.push({
-            id: sd.id,
-            image: this.add
-              .image(pos.x, pos.y, soldierTexture(this, sd))
-              .setOrigin(0.5, 1)
-              .setScale(0.6)
-              .setFlipX(true)
-              .setDepth(view.depth + 1),
-          });
-        });
+        // Scene time of the fight, so the bars drain smoothly between game-clock seconds.
+        const start = this.time.now - (this.store.now() - result.startsAt) * 1000;
+        const end = start + Math.max(1, result.endsAt - result.startsAt) * 1000;
+        fight = { start, end };
         this.fights.set(m.id, fight);
       }
       const t = Phaser.Math.Clamp((this.time.now - fight.start) / (fight.end - fight.start), 0, 1);
@@ -2226,15 +2303,12 @@ export class VillageScene extends Phaser.Scene {
         if (!(child instanceof MonsterView) && !(child instanceof Phaser.GameObjects.Image))
           continue;
         const top = child instanceof MonsterView ? child.y - 30 : child.y - 34;
-        bar(view.x + child.x, view.y + top, drain(m.enemyHpLeft[shown++]), COLORS.danger);
+        bar(view.x + child.x, view.y + top, drain(result.enemyHpLeft[shown++]), COLORS.danger);
       }
-      const team = (id: string) => drain(m.hpLeft[id]);
+      const team = (id: string) => drain(result.hpLeft[id]);
       for (const w of this.walkers) {
         if (m.monsterIds.includes(w.monsterId))
           bar(w.view.x, w.view.y - 30, team(w.monsterId), COLORS.good);
-      }
-      for (const sd of fight.soldiers) {
-        bar(sd.image.x, sd.image.y - 38, team(sd.id), COLORS.good);
       }
     }
   }
@@ -2244,22 +2318,26 @@ export class VillageScene extends Phaser.Scene {
     const now = this.store.state.missions;
     for (const m of before) {
       if (now.some((x) => x.id === m.id)) continue;
+      const fight = m.fight ?? this.lastFights.get(m.id);
+      this.lastFights.delete(m.id);
+      // No fight: the enemy was already gone and the team simply came home.
+      if (!fight) continue;
       const spot = enemySpots.get(m.encounterId);
-      playSfx(this, m.won ? 'win' : 'lose');
-      if (m.won && spot) {
+      playSfx(this, fight.won ? 'win' : 'lose');
+      if (fight.won && spot) {
         burst(this, spot.x, spot.y, 'sparkle', 'large');
-        this.flyResources({ ...m.reward, soulCrystal: m.soulCrystal }, spot.x, spot.y - 30);
+        this.flyResources({ ...fight.reward, soulCrystal: fight.soulCrystal }, spot.x, spot.y - 30);
       }
-      const message = m.won
+      const message = fight.won
         ? t('mission.won', {
             reward:
-              costLabel(m.reward) +
-              (m.soulCrystal ? ` + ${m.soulCrystal} ${t('res.soulCrystal')}` : ''),
+              costLabel(fight.reward) +
+              (fight.soulCrystal ? ` + ${fight.soulCrystal} ${t('res.soulCrystal')}` : ''),
           })
-        : t('mission.lost', { n: m.dead.length });
+        : t('mission.lost', { n: fight.dead.length });
       this.game.events.emit(EVT.toast, {
         message,
-        color: m.won ? COLORS.good : COLORS.danger,
+        color: fight.won ? COLORS.good : COLORS.danger,
         sound: null,
       });
     }

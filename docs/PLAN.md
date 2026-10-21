@@ -709,6 +709,28 @@ Ide pemilik (2026-10-21): sumber emas dari alam liar.
 
 **Kriteria selesai:** tes jumlah gugus (1–3) dan bentuk 2×2, menambang memberi emas lalu petak jadi kosong, kosong tidak bisa ditambang, terisi lagi tepat setelah waktunya (juga setelah lama tidak main), migrasi simpanan; gambar SpriteCook (batu emas + batu kosong) dengan cadangan gambar kode.
 
+### - [x] Tugas 1A.15 — Pilih area & perintah unit (inti strategi)
+
+Keputusan pemilik (2026-10-21): memilih prajurit/monster di desa adalah inti strategi game.
+
+- **Mode Pilih:** tombol "Pilih" di dock. Saat aktif, seret = kotak pilihan (bukan geser kamera); ketuk tombol lagi untuk keluar. Unit di dalam kotak terpilih (cincin emas), bisa ditambah/dikurangi dengan ketuk unit.
+- **Perintah setelah memilih:**
+  - **ketuk tanah** → unit berjalan ke petak itu dalam formasi rapat dan berjaga di sana;
+  - **ketuk musuh** → unit dikirim sebagai tim melawan musuh itu (berjalan lalu bertarung sampai salah satu habis, seperti misi sekarang);
+  - **ketuk pohon/batu/semak** → unit **mengawal pekerja** yang mengumpulkan di sana (dasar untuk ide penyergapan & eksplorasi; efek kawal aktif saat penyergapan dibuat).
+- **Posisi unit di state game** (`packages/shared`, ikut simpanan): petak tiap monster/prajurit, tujuan dan perintahnya; gerak dihitung deterministik dari waktu (bukan acak di client), siap untuk musuh mengejar dan server nanti. Pengganti jalan-jalan acak monster di client.
+- Batas: jumlah unit terpilih untuk serangan tetap `skirmish.maxTeam`.
+
+**Kriteria selesai:** tes shared untuk perintah pindah (petak bebas, formasi, tidak menembus bangunan/wilayah terkunci), serang (sama dengan kirim tim), kawal (terkait pekerja yang sedang mengumpulkan), posisi bertahan setelah simpan/muat dan migrasi; di browser: mode Pilih, kotak pilihan di HP dan PC, ketiga perintah.
+
+> **Ringkasan (selesai 2026-10-21):**
+>
+> - **Shared (`units.ts`, baru):** `state.units` menyimpan petak tiap monster/prajurit, jalur, waktu berangkat, dan node yang dikawal. Gerak dihitung dari jam (`unitPoint`, `unitTile`) dengan `rules.units.walkTilesPerSecond` = 1,5 (angka baru, bisa diubah). `settleUnits` (lewat `settleVillage` dan game baru) memberi unit baru petak bebas dekat Kandang, membuang unit yang hilang, melipat jalan yang selesai, dan melepas kawal bila node habis. `moveUnits` (jalur BFS 4 arah di petak bebas & terbuka, formasi melingkar di sekitar tujuan; tolak wilayah terkunci/terhalang/di luar peta/unit sedang misi/tim kosong), `guardNode` + `guardsOf` (dasar penyergapan nanti). Serang = `sendTeam` yang sudah ada. **Simpanan v14.**
+> - **Client:** tombol **Pilih** di dock (emas saat aktif, petunjuk singkat). Saat aktif, seret = kotak pilihan (bukan geser kamera); unit di dalam kotak menjadi tim (cincin emas); ketuk unit tetap menambah/mengurangi. Dengan unit terpilih: ketuk musuh = serang, ketuk pohon/batu/semak = kawal, ketuk tanah = pindah. Monster dan prajurit kini berdiri/berjalan sesuai `state.units` (tidak lagi jalan-jalan acak), kembali ke petaknya setelah misi. Diperbaiki: tim yang dipilih membuang prajurit setiap state berubah.
+> - **Tes:** `units.test.ts` (penempatan awal unik & bebas, jalur satu petak per langkah di tanah terbuka, formasi, posisi saat berjalan, lipat setelah tiba, penolakan, simpan/muat, kawal + lepas saat node hilang, migrasi v13).
+> - **Dicek di browser:** mode Pilih → kotak memilih 3 unit → ketuk tanah: 3 unit berjalan (1,5 petak/detik) ke 3 petak berbeda; posisi bertahan setelah dimuat ulang; pilih 2 prajurit → ketuk pohon: "2 unit mengawal di sana".
+> - **Belum:** kotak pilihan belum dicoba di HP sungguhan; bangunan yang dibangun di atas unit belum memindahkan unit itu.
+
 ## Fase 1B — Konten & retensi (4–5 minggu)
 
 ### - [ ] Tugas 1B.1 — Level & XP pemain
@@ -800,6 +822,7 @@ Ide pemilik (2026-10-21): sumber emas dari alam liar.
 > - **Client:** peluang menang di kartu musuh dan panel Pilih tim dari simulator (dihitung sekali per kartu); health bar memakai sisa HP sungguhan dan tampil paling lambat di separuh waktu misi bila tim masih berjalan.
 > - **Tes:** `battle.test.ts` (deterministik, selesai ≤ `maxTicks` dan waktu habis = kalah, rumus kerusakan + keunggulan elemen + varians, jurus tiap serangan ke-4 dan prajurit tanpa jurus, posisi awal per sisi, Monte Carlo tim lebih kuat lebih sering menang, cermin ≈ 50 %); `missions.test.ts` Monte Carlo 4.000 kiriman cocok dengan perkiraan simulator.
 > - **Dicek di browser:** Kucing Api Dewasa vs 2 bandit (perkiraan menang 37 %) → menang dengan sisa HP 10 %; bar merah bandit muncul dan habis, hadiah masuk.
+> - **Revisi pemilik (2026-10-21): pertarungan liar tanpa batas waktu.** Tim berjalan selama `skirmish.marchSeconds` (dulu `missionSeconds`), lalu pertarungan **disimulasikan saat tim tiba** (`settleMissions` → `Mission.fight`) dan berlangsung sampai musuh habis atau seluruh tim mati (`simulateBattle(..., { untilDefeat: true })`; `maxTicks` tetap berlaku untuk Serbu). Lama pertarungan = lama simulasi. Kartu musuh: "menuju musuh, tiba dalam …" lalu "sedang bertarung sampai salah satu pihak habis". **Simpanan v13** (migrasi 12 mengubah misi lama menjadi pertarungan yang sudah berjalan). Diperbaiki: unit bisa macet tepat di batas jangkauan karena pembulatan (toleransi 1e-6; tes regresi 300 benih).
 > - **Catatan penyeimbangan:** di simulasi ekonomi 14 hari, bot kini sering kalah melawan bandit (hari 3: 1 menang/10 kalah) — bandit simulator lebih kuat dari rumus lama. Perlu ditinjau bersama Tugas 1A.11 (angka bandit / `banditPower`).
 
 ### - [ ] Tugas 1.4 — Mode Serbu

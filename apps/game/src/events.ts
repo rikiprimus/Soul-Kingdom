@@ -24,6 +24,10 @@ export const EVT = {
   teamToggle: 'team:toggle',
   /** UI → village: the chosen team changed (monster ids), for the highlight rings. */
   teamChanged: 'team:changed',
+  /** UI → village: the Pilih (select) mode was switched on or off. */
+  selectMode: 'village:select-mode',
+  /** Village → UI: a drag box picked these units as the team. */
+  teamSet: 'team:set',
   /** Village → UI: resources were earned at a screen point; icons fly to the HUD. */
   collectFx: 'ui:collect-fx',
 } as const;

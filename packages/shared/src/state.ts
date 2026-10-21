@@ -25,6 +25,7 @@ import { encounterRespawnSeconds, spawnEncounters } from './encounters';
 import { isOnMission, type Mission } from './missions';
 import { deepClone } from './clone';
 import { createRng, type RngState } from './rng';
+import { settleUnits, type UnitPlace } from './units';
 import { createVillage, hasFeature, townHallLevel, type Village } from './village';
 import { createWorkers, hasRoomFor, type Worker, type WorkerTraining } from './workers';
 
@@ -73,6 +74,8 @@ export interface PlayerState {
   soldiers: Soldier[];
   /** Unhatched monster eggs (the first monster comes from one). */
   eggs: Egg[];
+  /** Where each monster and soldier stands or walks in the village, by id. */
+  units: Record<string, UnitPlace>;
   /** Teams out fighting wild encounters. */
   missions: Mission[];
   /** Fallen monsters, waiting in the Kuburan to be revived (they take no population). */
@@ -195,6 +198,7 @@ export function createInitialState(
     barracksQueue: [],
     soldiers: [],
     eggs: [],
+    units: {},
     missions: [],
     graveyard: [],
     bossesDefeated: 0,
@@ -215,7 +219,7 @@ export function createInitialState(
   // The first animals are there from the start.
   state.village.animalsAt = now - animalRespawnSeconds(data);
   state.village.encountersAt = now - encounterRespawnSeconds(data);
-  return spawnEncounters(spawnAnimals(state, now, data), now, data);
+  return settleUnits(spawnEncounters(spawnAnimals(state, now, data), now, data), now, data);
 }
 
 /** The mixer needs a finished Soul Mixer building and a high enough Balai Utama. */

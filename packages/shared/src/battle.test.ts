@@ -45,6 +45,30 @@ describe('simulateBattle', () => {
     expect(r.winner).toBe('defenders');
   });
 
+  it('fights on past maxTicks until one side falls when untilDefeat is set', () => {
+    // 1 damage a second against 4 000 HP takes far longer than maxTicks.
+    const slow = (id: string) => fighter(id, { stats: stats({ hp: 4000, atk: 1, def: 0 }) });
+    const r = simulateBattle([slow('a'), slow('b')], [slow('d')], 9, gameData, {
+      untilDefeat: true,
+    });
+    expect(r.ticks).toBeGreaterThan(battle.maxTicks);
+    expect(r.winner).toBe('attackers');
+    expect(r.hp.d).toBe(0);
+  });
+
+  it('never stalls at the edge of range: untilDefeat fights end with one side gone', () => {
+    const team = [fighter('a'), fighter('b', { stats: stats({ hp: 160, def: 14, spd: 8 }) })];
+    const foes = [0, 1, 2, 3].map((i) =>
+      fighter(`x${i}`, { stats: stats({ hp: 120, atk: 10, def: 8, spd: 9 }) }),
+    );
+    for (let seed = 0; seed < 300; seed++) {
+      const r = simulateBattle(team, foes, seed * 7919, gameData, { untilDefeat: true });
+      expect(r.ticks).toBeLessThan(battle.maxTicks);
+      const loser = r.winner === 'attackers' ? foes : team;
+      for (const f of loser) expect(r.hp[f.id]).toBe(0);
+    }
+  });
+
   it('hits for atk × element edge × defenseK / (defenseK + def), within the variance', () => {
     const a = fighter('a', { element: 'air', stats: stats({ atk: 40 }) });
     const d = fighter('d', { element: 'api', stats: stats({ def: 25, hp: 1e6, atk: 1 }) });

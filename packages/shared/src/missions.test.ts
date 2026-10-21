@@ -16,6 +16,7 @@ import {
   reviveCost,
   reviveMonster,
   sendTeam,
+  settleMissions,
   teamPower,
   previewWinChance,
   type WildEncounter,
@@ -118,6 +119,9 @@ describe('encounter spawns', () => {
 
 const units = (ms: Monster[]) => ms.map((m) => ({ power: monsterPower(m), element: m.element }));
 
+/** The team reaches its enemy: the fight is simulated now. */
+const arrive = (s: PlayerState) => settleMissions(s, s.missions[0]!.arriveAt);
+
 describe('power and odds', () => {
   it('rises with team size, growth and element edge', () => {
     const one = [adult('a', 'kucing', 'api')];
@@ -173,15 +177,18 @@ describe('power and odds', () => {
     let gold = 0;
     const n = 4000;
     for (let i = 0; i < n; i++) {
-      const r = ok(sendTeam(s, { monsterIds: team, encounterId: 'e1' }, T0));
-      const m = r.state.missions[0]!;
-      if (m.won) {
+      const arrived = arrive(ok(sendTeam(s, { monsterIds: team, encounterId: 'e1' }, T0)).state);
+      const f = arrived.missions[0]!.fight!;
+      if (f.won) {
         wins++;
-        expect(m.enemyHpLeft.every((hp) => hp === 0)).toBe(true);
+        expect(f.enemyHpLeft.every((hp) => hp === 0)).toBe(true);
+      } else {
+        // No time limit: a lost fight means the whole team has fallen.
+        expect(f.dead).toEqual(team);
       }
-      for (const id of team) expect(m.hpLeft[id] === 0).toBe(m.dead.includes(id));
-      gold += m.reward.gold;
-      s = { ...s, rngState: r.state.rngState };
+      for (const id of team) expect(f.hpLeft[id] === 0).toBe(f.dead.includes(id));
+      gold += f.reward.gold;
+      s = { ...s, rngState: arrived.rngState };
     }
     expect(Math.abs(wins / n - chance)).toBeLessThan(0.04);
     expect(Math.abs(gold / n - chance * reward.gold)).toBeLessThan(0.04 * reward.gold + 1);
@@ -189,16 +196,14 @@ describe('power and odds', () => {
 });
 
 describe('sending a team', () => {
-  it('locks the members until the mission ends, then pays a win', () => {
+  it('marches, fights on arrival without a time limit, then pays a win', () => {
     const s = setup(1);
     s.monsters.push(adult('m4', 'kelinci', 'angin'), adult('m5', 'tupai', 'cahaya'));
-    // Find a seed that wins so the reward can be checked.
-    let r = ok(sendTeam(s, { monsterIds: ['m1', 'm2', 'm3', 'm4', 'm5'], encounterId: 'e1' }, T0));
-    while (!r.state.missions[0]!.won) {
-      s.rngState = r.state.rngState;
-      r = ok(sendTeam(s, { monsterIds: ['m1', 'm2', 'm3', 'm4', 'm5'], encounterId: 'e1' }, T0));
-    }
-    const sent = r.state;
+    const team = ['m1', 'm2', 'm3', 'm4', 'm5'];
+    const sent = ok(sendTeam(s, { monsterIds: team, encounterId: 'e1' }, T0)).state;
+    expect(sent.missions[0]!).toMatchObject({ arriveAt: T0 + skirmish.marchSeconds, fight: null });
+    // Nothing is decided while the team is still walking.
+    expect(settleVillage(sent, T0 + skirmish.marchSeconds - 1).missions[0]!.fight).toBeNull();
     expect(sendTeam(sent, { monsterIds: ['m1'], encounterId: 'e1' }, T0)).toEqual({
       ok: false,
       error: 'encounterBusy',
@@ -209,15 +214,37 @@ describe('sending a team', () => {
       error: 'monsterBusy',
     });
     expect(releaseMonster(sent, 'm1')).toEqual({ ok: false, error: 'monsterBusy' });
-    const half = settleVillage(sent, T0 + skirmish.missionSeconds - 1);
-    expect(half.missions).toHaveLength(1);
-    const done = settleVillage(sent, T0 + skirmish.missionSeconds);
+    // Find a seed that wins so the reward can be checked.
+    let arrived = arrive(sent);
+    while (!arrived.missions[0]!.fight!.won) {
+      sent.rngState = arrived.rngState;
+      arrived = arrive(sent);
+    }
+    const f = arrived.missions[0]!.fight!;
+    expect(f.startsAt).toBe(T0 + skirmish.marchSeconds);
+    expect(f.endsAt).toBeGreaterThan(f.startsAt);
+    expect(settleVillage(arrived, f.endsAt - 1).missions).toHaveLength(1);
+    const done = settleVillage(arrived, f.endsAt);
     expect(done.missions).toHaveLength(0);
     expect(done.village.encounters.map((e) => e.id)).toEqual(['e2']);
     expect(done.resources.gold).toBe(
       sent.resources.gold + encounters.levels[0]!.groups[0]!.reward.gold,
     );
-    expect(done.monsters).toHaveLength(5);
+    expect(done.monsters).toHaveLength(5 - f.dead.length);
+  });
+
+  it('settles a long absence in one go: arrival, fight and payout', () => {
+    const sent = ok(sendTeam(setup(1), { monsterIds: ['m1', 'm2', 'm3'], encounterId: 'e1' }, T0));
+    const later = settleVillage(sent.state, T0 + 100_000);
+    expect(later.missions).toHaveLength(0);
+  });
+
+  it('brings the team home without a fight when the enemy is gone', () => {
+    const sent = ok(sendTeam(setup(1), { monsterIds: ['m1'], encounterId: 'e1' }, T0)).state;
+    sent.village.encounters = [];
+    const back = settleVillage(sent, T0 + skirmish.marchSeconds);
+    expect(back.missions).toEqual([]);
+    expect(back.monsters.map((m) => m.id)).toContain('m1');
   });
 
   it('refuses empty, oversized or duplicate teams, unknown targets and mixing parents', () => {
@@ -255,17 +282,19 @@ describe('sending a team', () => {
 
   it('sends the fallen of a lost fight to the graveyard and keeps the enemy', () => {
     const s = setup(12);
-    let r = ok(sendTeam(s, { monsterIds: ['m1'], encounterId: 'e1' }, T0));
-    while (r.state.missions[0]!.won) {
-      s.rngState = r.state.rngState;
-      r = ok(sendTeam(s, { monsterIds: ['m1'], encounterId: 'e1' }, T0));
+    const sent = ok(sendTeam(s, { monsterIds: ['m1'], encounterId: 'e1' }, T0)).state;
+    let arrived = arrive(sent);
+    while (arrived.missions[0]!.fight!.won) {
+      sent.rngState = arrived.rngState;
+      arrived = arrive(sent);
     }
-    expect(r.state.missions[0]!.dead).toEqual(['m1']);
-    const done = settleVillage(r.state, T0 + skirmish.missionSeconds);
+    const f = arrived.missions[0]!.fight!;
+    expect(f.dead).toEqual(['m1']);
+    const done = settleVillage(arrived, f.endsAt);
     expect(done.monsters.map((m) => m.id)).toEqual(['m2', 'm3']);
     expect(done.graveyard.map((m) => m.id)).toEqual(['m1']);
     expect(done.village.encounters.map((e) => e.id)).toEqual(['e1']);
-    expect(done.resources.gold).toBe(r.state.resources.gold);
+    expect(done.resources.gold).toBe(sent.resources.gold);
   });
 });
 

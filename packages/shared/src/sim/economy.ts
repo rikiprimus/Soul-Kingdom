@@ -174,7 +174,8 @@ export function simulateEconomy(
     earn(before, s);
     for (const m of missionsBefore) {
       if (s.missions.some((x) => x.id === m.id)) continue;
-      if (m.won) won++;
+      // The fight may have started and ended in the same step: a win removes the enemy.
+      if (!s.village.encounters.some((e) => e.id === m.encounterId)) won++;
       else lost++;
     }
     record(now);
