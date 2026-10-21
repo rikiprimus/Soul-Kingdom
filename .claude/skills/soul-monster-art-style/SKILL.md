@@ -40,7 +40,7 @@ Pakai warna yang sudah ada agar aset baru menyatu dengan UI dan gambar buatan ko
 
 **Kelangkaan** (`ui/theme.ts`): biasa `#9aa0b4`, langka `#4fc3f7`, epik `#c77dff`, legenda `#ffc83d`.
 
-**UI** (`ui/theme.ts`): panel `#2a2148`, panel terang `#3a2f63`, panel gelap `#1d1736`, garis `#4b3f7d`, aksen `#8a6cff`, baik `#3ccf91`, peringatan `#ffb347`, bahaya `#ff5c7a`, teks `#f4f0ff`, teks redup `#b4aad6`. Font: **Fredoka** (400/600/700).
+**UI** (`ui/theme.ts`): panel `#2a2148`, panel terang `#3a2f63`, panel gelap `#1d1736`, garis `#4b3f7d`, aksen `#8a6cff`, baik `#3ccf91`, peringatan `#ffb347`, bahaya `#ff5c7a`, teks `#f4f0ff`, teks redup `#b4aad6`. Font: **Fredoka** 400 dan 500 (teks "tebal" memakai 500, bukan 700 — terlalu berat).
 
 **Musuh:** bandit memakai kain gelap + ikat kepala merah `#b8322a`; monster liar ditandai cincin merah `#d63c3c` di tanah (bukan warna tubuhnya).
 

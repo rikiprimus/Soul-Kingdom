@@ -5,6 +5,7 @@ import { UIScene } from './scenes/UIScene';
 import { VillageScene } from './scenes/VillageScene';
 import { GameStore } from './store';
 import { t } from './text';
+import { dpr } from './ui/dpr';
 import { fullscreenOnFirstInteraction, mountRotateOverlay } from './ui/fullscreen';
 
 export function boot(): void {
@@ -22,10 +23,13 @@ export function boot(): void {
     type: Phaser.AUTO,
     parent: 'game',
     backgroundColor: '#16112a',
+    // The canvas has one pixel per screen pixel and is shown at CSS size (zoom 1/dpr),
+    // so the browser never stretches it (stretched text looks broken); resizing below.
     scale: {
-      mode: Phaser.Scale.RESIZE,
-      width: window.innerWidth,
-      height: window.innerHeight,
+      mode: Phaser.Scale.NONE,
+      width: window.innerWidth * dpr(),
+      height: window.innerHeight * dpr(),
+      zoom: 1 / dpr(),
     },
     render: { antialias: true },
     // Dev-only: `?timer=1` drives the loop with setTimeout so automated tests keep
@@ -37,6 +41,12 @@ export function boot(): void {
     input: { activePointers: 3 },
     scene: [new VillageScene(store), new UIScene(store, dev)],
   });
+
+  const fit = () => {
+    game.scale.setZoom(1 / dpr());
+    game.scale.resize(window.innerWidth * dpr(), window.innerHeight * dpr());
+  };
+  window.addEventListener('resize', fit);
 
   // Browser: go full screen on the first tap/click (a user gesture is required),
   // and ask phone players to turn the device sideways.

@@ -23,6 +23,7 @@ import {
 } from '../events';
 import type { GameStore } from '../store';
 import type { VillageScene } from './VillageScene';
+import { cssSize, dpr } from '../ui/dpr';
 import { errorText, formatDuration, formatNumber, t } from '../text';
 import { COLORS, textStyle } from '../ui/theme';
 import { canFullscreen, isFullscreen, toggleFullscreen } from '../ui/fullscreen';
@@ -111,7 +112,8 @@ export class UIScene extends Phaser.Scene {
   private shownLoadError = false;
 
   private get layout(): UILayout {
-    return uiLayout(this.scale.width, this.scale.height);
+    const { width, height } = cssSize(this);
+    return uiLayout(width, height);
   }
 
   constructor(
@@ -122,6 +124,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Lay out in CSS pixels; the camera scales them up to the canvas density.
+    this.cameras.main.setOrigin(0, 0).setZoom(dpr());
     this.buildHud();
     this.buildDock();
     if (openPanelKind) this.openPanel(openPanelKind, openPanelTarget, true);

@@ -1,5 +1,7 @@
 import type { Rarity } from '@soul-monster/shared';
 
+import { dpr } from './dpr';
+
 /** Rounded game font (self-hosted via @fontsource, works offline on Android). */
 export const FONT = 'Fredoka, system-ui, "Segoe UI", Roboto, Arial, sans-serif';
 
@@ -46,7 +48,12 @@ export function textStyle(
     fontFamily: FONT,
     fontSize: `${size}px`,
     color: hex(color),
-    resolution: Math.min(window.devicePixelRatio || 1, 3),
+    resolution: dpr(),
     ...extra,
+    // "Bold" uses Fredoka Medium: full bold (700) reads too heavy (owner, 2026-10-21).
+    ...(extra.fontStyle === 'bold' ? { fontStyle: BOLD_WEIGHT } : {}),
   };
 }
+
+/** Weight used wherever a text asks for bold. */
+export const BOLD_WEIGHT = '500';

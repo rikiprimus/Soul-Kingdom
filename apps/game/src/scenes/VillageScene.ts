@@ -1,3 +1,4 @@
+import { soldierTexture } from '../art/soldierArt';
 import Phaser from 'phaser';
 import {
   buildBuilding,
@@ -34,6 +35,9 @@ import {
   levelDef,
   mixRemaining,
   moveBuilding,
+  hashSeed,
+  hatchEgg,
+  soldierName,
   moveGroup,
   groupMoveTiles,
   connectedGroup,
@@ -79,6 +83,7 @@ import { loadMusic, playSfx, preloadSounds, prepareSounds } from '../audio/sound
 import type { FeelTier } from '../fx/math';
 import { encounterTitle } from '../views/enemyText';
 import { COLORS, textStyle } from '../ui/theme';
+import { cssSize, dpr } from '../ui/dpr';
 import { darken, icons } from '../ui/widgets';
 
 interface Sprite {
@@ -94,6 +99,26 @@ interface Sprite {
   bar?: Phaser.GameObjects.Graphics;
   timer?: Phaser.GameObjects.Text;
   bubble?: Phaser.GameObjects.Container;
+}
+
+/** Closest the village camera may zoom in. */
+const MAX_ZOOM = 2.2;
+
+/**
+ * Text that lives on the map is scaled by the camera, so it is drawn at the highest zoom
+ * (times the screen density) to stay smooth when zoomed in instead of breaking up.
+ */
+function worldTextStyle(...args: Parameters<typeof textStyle>) {
+  const style = textStyle(...args);
+  return { ...style, resolution: Math.min((window.devicePixelRatio || 1) * MAX_ZOOM, 4) };
+}
+
+/** Wild animals are drawn smaller than a full tile so buildings read as bigger. */
+const ANIMAL_SCALE = 0.65;
+
+/** Trees, rocks and bushes vary in size (0.7–1.15×), fixed per node so it never flickers. */
+function wildScale(id: string): number {
+  return 0.7 + ((hashSeed(id) % 1000) / 1000) * 0.45;
 }
 
 interface Placement {
@@ -187,6 +212,13 @@ export class VillageScene extends Phaser.Scene {
   /** Monsters picked for the next fight (highlight rings). */
   private team = new Set<string>();
   private teamGfx?: Phaser.GameObjects.Graphics;
+  /** Health bars of running fights, redrawn every frame. */
+  private fightGfx?: Phaser.GameObjects.Graphics;
+  /** Per mission: when its fight started and ends (scene ms), and its soldier figures. */
+  private fights = new Map<
+    string,
+    { start: number; end: number; soldiers: { id: string; image: Phaser.GameObjects.Image }[] }
+  >();
   /** Active play time not yet added to gathering (committed in small batches). */
   private pendingGather = 0;
   private lastTickAt = 0;
@@ -264,8 +296,13 @@ export class VillageScene extends Phaser.Scene {
       this.mapSize * TILE_H + CLIFF + 460,
     );
     // Short screens (phones held sideways) start a little zoomed out.
-    const short = Math.min(this.scale.width, this.scale.height);
-    this.cameras.main.setZoom(Phaser.Math.Clamp(short / 420, 0.6, 1.1));
+    const css = cssSize(this);
+    const short = Math.min(css.width, css.height);
+    this.cameras.main.setZoom(Phaser.Math.Clamp(short / 420, 0.6, 1.1) * dpr());
+    // Art keeps the soft look it had when the browser stretched a 1x canvas: a faint blur
+    // as strong as the extra density (none on a plain 100 % screen). Text is in the UI scene
+    // or drawn on top of this blur only slightly, so it stays readable.
+    if (dpr() > 1) this.cameras.main.postFX?.addBlur(0, dpr() - 1, dpr() - 1, 1);
     this.focusOnTownHall();
 
     this.sync();
@@ -319,6 +356,7 @@ export class VillageScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number): void {
+    this.drawFights();
     const cam = this.cameras.main;
     this.lastMid = { x: cam.midPoint.x, y: cam.midPoint.y };
     for (const w of this.walkers) {
@@ -470,7 +508,7 @@ export class VillageScene extends Phaser.Scene {
         0,
         0,
         buyable ? formatNumber(price.gold) : t('plot.needsHall', { level: price.requiresTownHall }),
-        textStyle(14, buyable ? COLORS.text : COLORS.textDim, { fontStyle: 'bold' }),
+        worldTextStyle(14, buyable ? COLORS.text : COLORS.textDim, { fontStyle: 'bold' }),
       )
       .setOrigin(0, 0.5);
     const w = label.width + 40;
@@ -532,6 +570,10 @@ export class VillageScene extends Phaser.Scene {
       const ready = this.store.state.mixQueue.some((e) => mixRemaining(e, now) === 0);
       return ready ? 'egg' : null;
     }
+    // Monster eggs hatch at the Kandang.
+    if (b.level >= 1 && gameData.buildingById.get(b.type)?.feature === 'stable') {
+      return this.store.state.eggs.some((e) => e.readyAt <= now) ? 'egg' : null;
+    }
     const status = cropStatus(b, now);
     if (status === 'ready') return 'food';
     if (status === 'empty') return b.construction ? null : 'seed';
@@ -579,6 +621,7 @@ export class VillageScene extends Phaser.Scene {
       this.destroySprite(this.sprites.get(o.id));
       const size = sizeOf(o.type);
       const image = this.placeImage(buildingTexture(this, o.type, 1), o.x, o.y, size);
+      image.setScale(image.scaleX * wildScale(o.id));
       // Wild things on locked land look faded; they can still be gathered.
       if (locked) image.setTint(0xb4bccb);
       this.sprites.set(o.id, {
@@ -671,7 +714,7 @@ export class VillageScene extends Phaser.Scene {
           image.x,
           top - 4,
           '',
-          textStyle(12, COLORS.text, {
+          worldTextStyle(12, COLORS.text, {
             fontStyle: 'bold',
             stroke: '#1b1530',
             strokeThickness: 4,
@@ -759,11 +802,11 @@ export class VillageScene extends Phaser.Scene {
       this.game.events.emit(EVT.toast, { message: t('village.workerReady'), color: COLORS.good });
     }
     if (this.store.state.barracksQueue.length < soldiersBefore) {
-      const m = this.store.state.monsters.at(-1);
-      if (m) {
+      const soldier = this.store.state.soldiers.at(-1);
+      if (soldier) {
         playSfx(this, 'ready');
         this.game.events.emit(EVT.toast, {
-          message: t('barracks.ready', { name: monsterName(m) }),
+          message: t('barracks.ready', { name: soldierName(soldier) }),
           color: COLORS.good,
         });
       }
@@ -816,9 +859,9 @@ export class VillageScene extends Phaser.Scene {
     }
     if (!box) return null;
     const cam = this.cameras.main;
-    const sy = (y: number) => (y - cam.worldView.y) * cam.zoom + cam.y;
+    const sy = (y: number) => ((y - cam.worldView.y) * cam.zoom + cam.y) / dpr();
     return {
-      x: (box.x - cam.worldView.x) * cam.zoom + cam.x,
+      x: ((box.x - cam.worldView.x) * cam.zoom + cam.x) / dpr(),
       top: sy(box.top),
       bottom: sy(box.bottom),
     };
@@ -927,7 +970,7 @@ export class VillageScene extends Phaser.Scene {
   private zoomAt(sx: number, sy: number, zoom: number) {
     const cam = this.cameras.main;
     const before = cam.getWorldPoint(sx, sy);
-    cam.setZoom(Phaser.Math.Clamp(zoom, 0.4, 2.2));
+    cam.setZoom(Phaser.Math.Clamp(zoom, 0.4 * dpr(), MAX_ZOOM * dpr()));
     cam.preRender();
     const after = cam.getWorldPoint(sx, sy);
     cam.scrollX += before.x - after.x;
@@ -1065,6 +1108,21 @@ export class VillageScene extends Phaser.Scene {
     if (!b) return false;
     // A ready egg on the Soul Mixer opens the mixer straight away.
     if (this.bubbleKind(b, now) === 'egg') {
+      const egg = this.store.state.eggs.find((e) => e.readyAt <= now);
+      if (gameData.buildingById.get(b.type)?.feature === 'stable' && egg) {
+        const r = this.store.apply((s, n) => hatchEgg(s, egg.id, n));
+        if (!r.ok) {
+          this.game.events.emit(EVT.toast, { message: errorText(r.error) });
+          return true;
+        }
+        playSfx(this, 'ready');
+        this.feelBuilding(b.id, 'medium', 'sparkle');
+        this.game.events.emit(EVT.toast, {
+          message: t('egg.hatched', { name: monsterName(r.monster) }),
+          color: COLORS.good,
+        });
+        return true;
+      }
       this.game.events.emit(EVT.openPanel, 'mixer');
       return true;
     }
@@ -1099,12 +1157,12 @@ export class VillageScene extends Phaser.Scene {
 
   // ---------- Game feel ----------
 
-  /** Screen position of a world point (for effects drawn by the UI scene). */
+  /** Screen position (CSS px) of a world point, for effects drawn by the UI scene. */
   private toScreen(wx: number, wy: number) {
     const cam = this.cameras.main;
     return {
-      x: (wx - cam.worldView.x) * cam.zoom + cam.x,
-      y: (wy - cam.worldView.y) * cam.zoom + cam.y,
+      x: ((wx - cam.worldView.x) * cam.zoom + cam.x) / dpr(),
+      y: ((wy - cam.worldView.y) * cam.zoom + cam.y) / dpr(),
     };
   }
 
@@ -1155,7 +1213,7 @@ export class VillageScene extends Phaser.Scene {
         x,
         y,
         text,
-        textStyle(18, color, {
+        worldTextStyle(18, color, {
           fontStyle: 'bold',
           stroke: '#1b1530',
           strokeThickness: 5,
@@ -1910,7 +1968,7 @@ export class VillageScene extends Phaser.Scene {
       const image = this.add
         .image(pos.x, pos.y, art.key, art.frame)
         .setOrigin(art.originX, art.originY)
-        .setScale(1 / BUILDING_RES);
+        .setScale(ANIMAL_SCALE / BUILDING_RES);
       this.animals.push({
         id: a.id,
         type: a.type,
@@ -2028,7 +2086,11 @@ export class VillageScene extends Phaser.Scene {
           0,
           -46,
           encounterTitle(e),
-          textStyle(11, 0xffd0d0, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }),
+          worldTextStyle(11, 0xffd0d0, {
+            fontStyle: 'bold',
+            stroke: '#1b1530',
+            strokeThickness: 4,
+          }),
         )
         .setOrigin(0.5);
       view.add(label);
@@ -2100,6 +2162,79 @@ export class VillageScene extends Phaser.Scene {
         w.v = w.cv = to.v;
       },
     });
+  }
+
+  /**
+   * Health bars while a team fights: they appear when the first member reaches the enemy
+   * and drain over the rest of the mission towards the outcome rolled at departure
+   * (display only; the result itself comes from the shared mission logic).
+   */
+  private drawFights() {
+    if (!this.fightGfx) this.fightGfx = this.add.graphics().setDepth(1_400_000);
+    const g = this.fightGfx.clear();
+    const state = this.store.state;
+    const live = new Set(state.missions.map((m) => m.id));
+    for (const [id, f] of this.fights) {
+      if (live.has(id)) continue;
+      for (const sd of f.soldiers) sd.image.destroy();
+      this.fights.delete(id);
+    }
+    for (const m of state.missions) {
+      const e = state.village.encounters.find((x) => x.id === m.encounterId);
+      const view = this.enemies.get(m.encounterId);
+      if (!e || !view) continue;
+      let fight = this.fights.get(m.id);
+      if (!fight) {
+        const walkers = this.walkers.filter((w) => m.monsterIds.includes(w.monsterId));
+        const arrived =
+          walkers.length === 0 ||
+          walkers.some((w) => {
+            const p = isoToWorld(w.cu, w.cv);
+            return Phaser.Math.Distance.Between(p.x, p.y, view.x, view.y) < 60;
+          });
+        if (!arrived) continue;
+        const left = Math.max(1, m.endsAt - this.store.now()) * 1000;
+        fight = { start: this.time.now, end: this.time.now + left, soldiers: [] };
+        // Soldiers have no walkers in the village: they stand in front of the enemy.
+        const soldiers = state.soldiers.filter((x) => m.monsterIds.includes(x.id));
+        soldiers.forEach((sd, i) => {
+          const pos = isoToWorld(e.x + 0.5 + (i - (soldiers.length - 1) / 2) * 0.55, e.y + 1.5);
+          fight!.soldiers.push({
+            id: sd.id,
+            image: this.add
+              .image(pos.x, pos.y, soldierTexture(this, sd))
+              .setOrigin(0.5, 1)
+              .setScale(0.6)
+              .setFlipX(true)
+              .setDepth(view.depth + 1),
+          });
+        });
+        this.fights.set(m.id, fight);
+      }
+      const t = Phaser.Math.Clamp((this.time.now - fight.start) / (fight.end - fight.start), 0, 1);
+      // Small per-member differences so the bars do not move in lockstep.
+      const spread = (key: string) => 0.6 + ((hashSeed(key) % 100) / 100) * 0.4;
+      const bar = (x: number, y: number, hp: number, color: number) => {
+        g.fillStyle(0x1b1530, 0.85).fillRect(x - 14, y, 28, 5);
+        g.fillStyle(color, 1).fillRect(x - 13, y + 1, 26 * Phaser.Math.Clamp(hp, 0, 1), 3);
+      };
+      for (const child of view.list) {
+        if (!(child instanceof MonsterView) && !(child instanceof Phaser.GameObjects.Image))
+          continue;
+        const loss = m.won ? 1 : 0.5 * spread(`${m.id}:${child.x}`);
+        const top = child instanceof MonsterView ? child.y - 30 : child.y - 34;
+        bar(view.x + child.x, view.y + top, 1 - t * loss, COLORS.danger);
+      }
+      const team = (id: string) =>
+        1 - t * (m.dead.includes(id) ? 1 : (m.won ? 0.35 : 0.7) * spread(`${m.id}:${id}`));
+      for (const w of this.walkers) {
+        if (m.monsterIds.includes(w.monsterId))
+          bar(w.view.x, w.view.y - 30, team(w.monsterId), COLORS.good);
+      }
+      for (const sd of fight.soldiers) {
+        bar(sd.image.x, sd.image.y - 38, team(sd.id), COLORS.good);
+      }
+    }
   }
 
   /** Toasts for missions that finished during the last settle. */

@@ -1,6 +1,5 @@
 import '@fontsource/fredoka/latin-400.css';
-import '@fontsource/fredoka/latin-600.css';
-import '@fontsource/fredoka/latin-700.css';
+import '@fontsource/fredoka/latin-500.css';
 
 /** Entry point: loads the game lazily so invalid data/ shows a clear error page. */
 function showFatal(err: unknown) {
@@ -33,7 +32,7 @@ function windowHasSize(): Promise<void> {
 async function start() {
   await windowHasSize();
   await Promise.all(
-    ['400 16px Fredoka', '600 16px Fredoka', '700 16px Fredoka'].map((f) => document.fonts.load(f)),
+    ['400 16px Fredoka', '500 16px Fredoka'].map((f) => document.fonts.load(f)),
   ).catch(() => undefined);
   const { boot } = await import('./boot');
   boot();

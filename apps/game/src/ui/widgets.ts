@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { cssSize, dpr } from './dpr';
 import { contentBottom, uiLayout } from './layout';
 import { COLORS, hex, textStyle } from './theme';
 import { t } from '../text';
@@ -200,7 +201,10 @@ export class ScrollArea {
   }
 
   private active(pointer: Phaser.Input.Pointer): boolean {
-    return openModalCount(this.scene) === this.layer && this.rect.contains(pointer.x, pointer.y);
+    return (
+      openModalCount(this.scene) === this.layer &&
+      this.rect.contains(pointer.x / dpr(), pointer.y / dpr())
+    );
   }
 
   setContentHeight(h: number): void {
@@ -218,17 +222,18 @@ export class ScrollArea {
     if (!this.active(pointer)) return;
     this.dragging = true;
     this.velocity = 0;
-    this.dragStartY = this.lastY = pointer.y;
+    this.dragStartY = this.lastY = pointer.y / dpr();
     this.dragStartScroll = this.scrollY;
   }
 
   private onMove(pointer: Phaser.Input.Pointer) {
     if (!this.dragging || !pointer.isDown) return;
-    if (Math.abs(pointer.y - this.dragStartY) > 8) pointerState.dragMoved = true;
+    const y = pointer.y / dpr();
+    if (Math.abs(y - this.dragStartY) > 8) pointerState.dragMoved = true;
     if (!pointerState.dragMoved) return;
-    this.velocity = this.lastY - pointer.y;
-    this.lastY = pointer.y;
-    this.scrollTo(this.dragStartScroll + (this.dragStartY - pointer.y));
+    this.velocity = this.lastY - y;
+    this.lastY = y;
+    this.scrollTo(this.dragStartScroll + (this.dragStartY - y));
   }
 
   private onUp() {
@@ -348,7 +353,7 @@ export function toast(
   sound: SoundId | null = color === COLORS.danger ? 'error' : null,
 ): void {
   if (sound) playSfx(scene, sound);
-  const { width, height } = scene.scale;
+  const { width, height } = cssSize(scene);
   const layout = uiLayout(width, height);
   const { play } = layout;
   const baseY = contentBottom(layout, true) - 20;
