@@ -199,6 +199,70 @@
           "sha12": "16053d9989aa"
         }
       ]
+    },
+    {
+      "asset_id": "c89dcbb9-eff8-4d25-9d08-d48d8521f6f5",
+      "label": "grid alam liar: pohon, batu, semak, pohon-hias",
+      "source_sha12": "ae9dc75f7952",
+      "crops": [
+        {
+          "path": "art/buildings/pohon/lv1.png",
+          "crop": [0, 0, 512, 512],
+          "sha12": "db2ddb8adddb"
+        },
+        {
+          "path": "art/buildings/batu/lv1.png",
+          "crop": [512, 0, 512, 512],
+          "sha12": "590873b0c675"
+        },
+        {
+          "path": "art/buildings/semak/lv1.png",
+          "crop": [0, 512, 512, 512],
+          "sha12": "c37e254a0d7c"
+        },
+        {
+          "path": "art/buildings/pohon-hias/lv1.png",
+          "crop": [512, 512, 512, 512],
+          "sha12": "90ee8d4d3c07"
+        }
+      ]
+    },
+    {
+      "asset_id": "d409b044-afb5-4aff-b94e-3e40edf6dcbd",
+      "label": "grid ikon sumber daya UI",
+      "source_sha12": "e082ffb6dcb7",
+      "crops": [
+        {
+          "path": "art/ui/icon-gold.png",
+          "crop": [0, 0, 682, 576],
+          "sha12": "eac6ce2e0de9"
+        },
+        {
+          "path": "art/ui/icon-food.png",
+          "crop": [682, 0, 682, 576],
+          "sha12": "5c8af2d12449"
+        },
+        {
+          "path": "art/ui/icon-wood.png",
+          "crop": [1364, 0, 682, 576],
+          "sha12": "df9f7fb4a7be"
+        },
+        {
+          "path": "art/ui/icon-stone.png",
+          "crop": [0, 576, 682, 576],
+          "sha12": "097e58e9e4e0"
+        },
+        {
+          "path": "art/ui/icon-crystal.png",
+          "crop": [682, 576, 682, 576],
+          "sha12": "15302787827c"
+        },
+        {
+          "path": "art/ui/icon-gem.png",
+          "crop": [1364, 576, 682, 576],
+          "sha12": "0e5a9a03f8af"
+        }
+      ]
     }
   ]
 }

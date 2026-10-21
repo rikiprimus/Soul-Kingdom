@@ -680,6 +680,90 @@
 						"w": 256,
 						"h": 161
 					}
+				},
+				{
+					"filename": "batu/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 97
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 128,
+						"h": 96
+					},
+					"frame": {
+						"x": 3,
+						"y": 431,
+						"w": 128,
+						"h": 96
+					}
+				},
+				{
+					"filename": "semak/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 96
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 128,
+						"h": 95
+					},
+					"frame": {
+						"x": 137,
+						"y": 431,
+						"w": 128,
+						"h": 95
+					}
+				},
+				{
+					"filename": "pohon-hias/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 120,
+						"h": 236
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 120,
+						"h": 204
+					},
+					"frame": {
+						"x": 271,
+						"y": 431,
+						"w": 120,
+						"h": 204
+					}
+				},
+				{
+					"filename": "pohon/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 120,
+						"h": 178
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 120,
+						"h": 146
+					},
+					"frame": {
+						"x": 137,
+						"y": 532,
+						"w": 120,
+						"h": 146
+					}
 				}
 			]
 		}

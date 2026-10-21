@@ -82,7 +82,9 @@ export class UIScene extends Phaser.Scene {
   private statusText?: Phaser.GameObjects.Text;
   private statusMaxWidth = 200;
   private resourceMaxWidth = 60;
-  private resourceIcons: Partial<Record<CollectFx['resource'], Phaser.GameObjects.Graphics>> = {};
+  private resourceIcons: Partial<
+    Record<CollectFx['resource'], Phaser.GameObjects.Graphics | Phaser.GameObjects.Container>
+  > = {};
   /** Earned amounts still flying to the HUD: the pill shows them only when they land. */
   private inFlight: Partial<Record<CollectFx['resource'], number>> = {};
   /** Numbers currently counting up after icons landed. */
@@ -272,7 +274,7 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
-  private popHud(target: Phaser.GameObjects.Graphics) {
+  private popHud(target: Phaser.GameObjects.Graphics | Phaser.GameObjects.Container) {
     this.tweens.killTweensOf(target);
     target.setScale(1.35);
     this.tweens.add({ targets: target, scale: 1, duration: 220, ease: 'Back.easeOut' });
@@ -408,21 +410,26 @@ export class UIScene extends Phaser.Scene {
     const rowW = L.landscape ? Math.min(inner - 210, 660) - tools : inner - 16 - (tools + gap);
     const pillW = (rowW - gap * (cols - 1)) / cols;
     const resources = [
-      ['gold', icons.gold, COLORS.gold],
-      ['food', icons.food, COLORS.food],
-      ['wood', icons.wood, COLORS.wood],
-      ['stone', icons.stone, COLORS.stone],
-      ['soulCrystal', icons.crystal, COLORS.crystal],
-      ['gems', icons.gem, COLORS.gem],
+      ['gold', icons.gold, 'gold', COLORS.gold],
+      ['food', icons.food, 'food', COLORS.food],
+      ['wood', icons.wood, 'wood', COLORS.wood],
+      ['stone', icons.stone, 'stone', COLORS.stone],
+      ['soulCrystal', icons.crystal, 'crystal', COLORS.crystal],
+      ['gems', icons.gem, 'gem', COLORS.gem],
     ] as const;
-    resources.forEach(([key, icon, color], i) => {
+    resources.forEach(([key, icon, frame, color], i) => {
       const x = left + (i % cols) * (pillW + gap);
       const y = pillY + Math.floor(i / cols) * (pillH + 6);
       const pill = this.add.graphics();
       pill.fillStyle(COLORS.panel, 1).fillRoundedRect(x, y, pillW, pillH, 14);
       pill.lineStyle(1.5, color, 0.6).strokeRoundedRect(x, y, pillW, pillH, 14);
-      const ic = this.add.graphics({ x: x + 14, y: y + pillH / 2 });
-      icon(ic, 15);
+      // Painted icon from the ui atlas when there is one; code-drawn otherwise.
+      const ic = this.textures.get('ui').has(`icon-${frame}`)
+        ? this.add.container(x + 14, y + pillH / 2, [
+            this.add.image(0, 0, 'ui', `icon-${frame}`).setDisplaySize(22, 22),
+          ])
+        : this.add.graphics({ x: x + 14, y: y + pillH / 2 });
+      if (ic instanceof Phaser.GameObjects.Graphics) icon(ic, 15);
       const text = this.add
         .text(x + 26, y + pillH / 2, '0', textStyle(13, COLORS.text, { fontStyle: 'bold' }))
         .setOrigin(0, 0.5);
