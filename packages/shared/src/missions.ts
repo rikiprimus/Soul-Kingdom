@@ -23,6 +23,8 @@ export interface WildEncounter {
   /** Tile it stands on. */
   x: number;
   y: number;
+  /** Ambush spawns leave by themselves at this time unless they are fighting. */
+  leavesAt?: number | null;
   /** Bandits: how many. Monster groups: one kind per enemy. */
   count: number;
   enemies: (MonsterKind & { stage: string })[];
@@ -236,7 +238,12 @@ export interface MissionDone {
  * moves the fallen monsters to the graveyard. Same object when nothing finished.
  */
 /** Simulates the fight of a team that has arrived (seeded from the state's RNG). */
-function startFight(next: PlayerState, m: Mission, e: WildEncounter, data: GameData): void {
+export function startFight(
+  next: PlayerState,
+  m: Mission,
+  e: WildEncounter,
+  data: GameData = gameData,
+): void {
   const rng = createRng(next.rngState);
   const team = teamFighters(next, m.monsterIds, data);
   const enemies = encounterFighters(e, data);

@@ -83,6 +83,7 @@ const playerStateSchema = z.object({
         y: int.min(0),
         count: int.min(1),
         enemies: z.array(z.object({ form: z.string(), element: z.string(), stage: z.string() })),
+        leavesAt: z.number().nullable().optional(),
       }),
     ),
     encountersAt: z.number(),

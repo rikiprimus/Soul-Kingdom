@@ -311,6 +311,8 @@ export const obstacleDefSchema = z.object({
   weight: z.number().min(0),
   yield: villageAmountSchema,
   soulCrystalChance: probability,
+  /** Chance that finishing this node calls out an ambush (wilds.encounters.ambush). */
+  ambushChance: probability.default(0),
   work: z.object({ workSeconds: z.number().positive(), maxWorkers: z.number().int().min(1) }),
   regrow: z.object({ chancePerStep: probability, maxPerPlot: nonNegInt }),
   /** Set: gathering leaves an empty node that fills up again after this many hours. */
@@ -356,6 +358,13 @@ export const wildsFileSchema = z.object({
       .min(1),
   }),
   encounters: z.object({
+    /** Enemies wake when our units come this close (tiles), then chase at this speed. */
+    aggro: z.object({
+      banditTiles: z.number().positive(),
+      monsterTiles: z.number().positive(),
+      chaseTilesPerSecond: z.number().positive(),
+    }),
+    ambush: z.object({ workerDeathChance: probability, leaveHours: z.number().positive() }),
     respawnHours: z.number().positive(),
     groupsByTownHall: z.array(nonNegInt).min(1),
     levels: z

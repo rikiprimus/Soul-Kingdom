@@ -13,6 +13,7 @@ import {
 import type { Rng } from './rng';
 import type { RanchAnimal, WildAnimal } from './animals';
 import { settleMissions, type WildEncounter } from './missions';
+import { aggroEncounters } from './aggro';
 import { settleUnits } from './units';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { settleBarracks } from './barracks';
@@ -313,8 +314,9 @@ export function buyPlot(
  * Returns the same object when nothing changed.
  */
 export function settleVillage(state: PlayerState, now: number): PlayerState {
-  const trained = settleUnits(
-    settleMissions(settleBarracks(settleTraining(state, now), now), now),
+  // Enemies wake after units have moved (they chase whoever came close).
+  const trained = aggroEncounters(
+    settleUnits(settleMissions(settleBarracks(settleTraining(state, now), now), now), now),
     now,
   );
   const done = trained.village.buildings.some(

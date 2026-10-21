@@ -22,6 +22,7 @@
       "size": 1,
       "weight": 5,
       "yield": { "wood": 40 },
+      "ambushChance": 0.04,
       "soulCrystalChance": 0.1,
       "work": { "workSeconds": 60, "maxWorkers": 3 },
       "regrow": { "chancePerStep": 0.5, "maxPerPlot": 6 }
@@ -32,6 +33,7 @@
       "size": 1,
       "weight": 3,
       "yield": { "stone": 40 },
+      "ambushChance": 0.03,
       "soulCrystalChance": 0.3,
       "work": { "workSeconds": 90, "maxWorkers": 3 },
       "regrow": { "chancePerStep": 0.35, "maxPerPlot": 3 }
@@ -42,6 +44,7 @@
       "size": 1,
       "weight": 4,
       "yield": { "food": 25 },
+      "ambushChance": 0.02,
       "soulCrystalChance": 0.05,
       "work": { "workSeconds": 30, "maxWorkers": 2 },
       "regrow": { "chancePerStep": 0.5, "maxPerPlot": 4 }
@@ -52,6 +55,7 @@
       "size": 1,
       "weight": 0,
       "yield": { "gold": 150 },
+      "ambushChance": 0.05,
       "soulCrystalChance": 0.1,
       "work": { "workSeconds": 75, "maxWorkers": 2 },
       "regrow": { "chancePerStep": 0, "maxPerPlot": 0 },
@@ -110,6 +114,10 @@
     ]
   },
   "encounters": {
+    "_aggroNote": "Musuh diam sampai prajurit/monster kita masuk jarak deteksi (banditTiles / monsterTiles), lalu mengejar dengan chaseTilesPerSecond dan menyerang (pertarungan simulator, tanpa batas waktu). Pekerja yang mengumpulkan di objek liar dalam jarak itu juga diserang.",
+    "aggro": { "banditTiles": 3, "monsterTiles": 4, "chaseTilesPerSecond": 2 },
+    "_ambushNote": "Setiap objek liar yang selesai dikumpulkan bisa memicu penyergapan (ambushChance node). Musuh dari daftar level Balai muncul di sana. Pengawal (kawal) bertarung dulu; tanpa pengawal atau bila pengawal kalah, tiap pekerja di objek itu mati dengan workerDeathChance. Musuh penyergapan pergi sendiri setelah leaveHours bila tidak sedang bertarung (tidak menumpuk).",
+    "ambush": { "workerDeathChance": 0.5, "leaveHours": 6 },
     "respawnHours": 24,
     "groupsByTownHall": [2, 2, 3, 3, 4, 4],
     "levels": [

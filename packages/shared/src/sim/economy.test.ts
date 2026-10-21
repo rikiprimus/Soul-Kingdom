@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SIM_PLAYER, formatSimTime, simulateEconomy } from './economy';
 
-const short = { ...DEFAULT_SIM_PLAYER, days: 3 };
+const short = { ...DEFAULT_SIM_PLAYER, days: 4 };
 
 describe('economy simulation', () => {
   const report = simulateEconomy(short);
 
-  it('reaches the Soul Mixer level (Balai Lv 4) within about three days of normal play', () => {
+  // Owner (2026-10-21): with chasing enemies and ambushes the pace is about four days.
+  it('reaches the Soul Mixer level (Balai Lv 4) within about four days of normal play', () => {
     const hall4 = report.milestones.find((m) => m.label === 'Balai Utama Lv 4');
     expect(hall4).toBeDefined();
-    expect(hall4!.at).toBeLessThanOrEqual(3 * 86_400);
+    expect(hall4!.at).toBeLessThanOrEqual(4 * 86_400);
     // …but not on the very first day.
     expect(hall4!.at).toBeGreaterThan(86_400);
   });

@@ -36,6 +36,8 @@ import {
   levelDef,
   mixRemaining,
   moveBuilding,
+  aggroRadius,
+  type AmbushResult,
   moveUnits,
   retreatUnits,
   guardNode,
@@ -70,6 +72,7 @@ import {
   isoToWorld,
   rankBehindPoint,
   TILE_H,
+  TILE_W,
   worldToIso,
   type Footprint,
 } from '../art/iso';
@@ -833,6 +836,11 @@ export class VillageScene extends Phaser.Scene {
       playSfx(this, 'enemy');
     }
     this.reportMissions(missionsBefore, enemySpots);
+    const sent = new Set(missionsBefore.map((m) => m.id));
+    if (this.store.state.missions.some((m) => !sent.has(m.id) && m.fight === null)) {
+      playSfx(this, 'enemy');
+      this.game.events.emit(EVT.toast, { message: t('ambush.chase') });
+    }
     this.tickGathering();
     if (this.store.state.workers.length > workersBefore) {
       playSfx(this, 'ready');
@@ -1418,6 +1426,7 @@ export class VillageScene extends Phaser.Scene {
         }
       }
       for (const g of result.gathered) {
+        if (g.ambush) this.reportAmbush(g.ambush, g.type);
         const at = spots.get(g.obstacleId);
         if (!at) continue;
         this.floatAt(at.x, at.y, `+${costLabel(g.amount)}`, COLORS.good);
@@ -2183,6 +2192,10 @@ export class VillageScene extends Phaser.Scene {
       const c = isoToWorld(e.x + 0.5, e.y + 0.5);
       const view = this.add.container(c.x, c.y);
       const ring = this.add.graphics();
+      // Faint reach: a circle of aggroRadius tiles, squashed to the 2:1 iso grid.
+      const reach = aggroRadius(e) * Math.SQRT2 * TILE_W;
+      ring.fillStyle(0xd63c3c, 0.05).fillEllipse(0, 0, reach, reach / 2);
+      ring.lineStyle(1.5, 0xd63c3c, 0.35).strokeEllipse(0, 0, reach, reach / 2);
       ring.fillStyle(0xd63c3c, 0.22).fillEllipse(0, 0, 70, 34);
       ring.lineStyle(2, 0xd63c3c, 0.8).strokeEllipse(0, 0, 70, 34);
       view.add(ring);
@@ -2341,6 +2354,19 @@ export class VillageScene extends Phaser.Scene {
           bar(w.view.x, w.view.y - 30, team(w.monsterId), COLORS.good);
       }
     }
+  }
+
+  /** What an ambush at a wild node did, as a toast. */
+  private reportAmbush(a: AmbushResult, nodeType: string) {
+    playSfx(this, 'enemy');
+    const node = obstacleDef(nodeType).name;
+    const parts = [t('ambush.appear', { node })];
+    if (a.guarded) parts.push(t(a.guardsWon ? 'ambush.guardsWon' : 'ambush.guardsLost'));
+    if (a.workersLost > 0) parts.push(t('ambush.workersLost', { n: a.workersLost }));
+    this.game.events.emit(EVT.toast, {
+      message: parts.join(' '),
+      color: a.workersLost > 0 ? COLORS.danger : COLORS.warn,
+    });
   }
 
   /** Toasts for missions that finished during the last settle. */

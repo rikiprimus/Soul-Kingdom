@@ -746,6 +746,22 @@ Keputusan pemilik (2026-10-21): memilih prajurit/monster di desa adalah inti str
 >   - **Tabrakan antarunit:** tidak ada dua unit di satu petak, terpilih atau tidak — petak yang ditempati atau sedang dituju unit lain dilewati saat mencari tempat (perintah pindah/kawal/mundur dan unit baru).
 > - **Belum:** kotak pilihan dan geser dua jari belum dicoba di HP sungguhan; geser klik kanan belum bisa diuji dengan alat browser (tidak ada seret klik kanan); bangunan yang dibangun di atas unit belum memindahkan unit itu; unit boleh berpapasan saat berjalan (tabrakan hanya untuk tempat berdiri).
 
+### - [x] Tugas 1A.16 — Musuh mengejar & penyergapan saat menebang
+
+Ide pemilik (2026-10-21), angka disetujui pemilik.
+
+- **Musuh mengejar:** kelompok musuh diam sampai prajurit/monster kita masuk jarak deteksi (`wilds.encounters.aggro`: bandit 3 petak, monster liar 4 petak), lalu mengejar (2 petak/detik) dan bertarung (simulator tanpa batas waktu) dengan unit-unit terdekat (maks. `maxTeam`). Tanpa unit di jangkauan, pekerja yang mengumpulkan objek liar di dalam jangkauan diserang (tiap pekerja mati 50 %), sisanya lari.
+- **Penyergapan saat menebang:** setiap objek liar yang selesai dikumpulkan punya `ambushChance` (pohon 4 %, batu 3 %, semak 2 %, batu emas 5 %). Musuh dari daftar level Balai muncul di sana; **pengawal** (`guardNode`) bertarung dulu — menang = pekerja aman; tanpa pengawal atau kalah = tiap pekerja mati 50 % (`ambush.workerDeathChance`). Musuh penyergapan **pergi sendiri** setelah `ambush.leaveHours` = 6 jam bila tidak sedang bertarung (tidak menumpuk).
+
+> **Ringkasan (selesai 2026-10-21):**
+>
+> - **Shared (`aggro.ts`, baru):** `aggroRadius`, `aggroEncounters` (dipanggil di `settleVillage` setelah unit bergerak; misi otomatis tiba setelah jarak / kecepatan kejar), `ambushAt` (dipanggil `advanceWilds` saat node selesai; hasilnya di `Gathered.ambush`). `startFight` diekspor dari `missions.ts`. `WildEncounter.leavesAt` untuk musuh penyergapan (simpanan menerima kolom opsional baru).
+> - **Bot simulasi:** tidak menebang dalam jangkauan musuh dan hanya menyerang bila 30 simulasi pertarungan untuk seluruh pasukan bebasnya memberi peluang ≥ `minWinChance`. **Keputusan pemilik:** tempo Balai Lv 4 menjadi **±4 hari** (game kini lebih berbahaya); biaya kayu Balai Lv 4 tetap 7.000.
+> - **Client:** lingkaran merah tipis sebesar jarak deteksi di sekitar musuh; pesan "Musuh menyergap dari {objek}! · Pengawal menang/kalah · N pekerja gugur" dan "Musuh mengejar pasukanmu!".
+> - **Tes:** `aggro.test.ts` (diam di luar jangkauan, mengejar unit terdekat dengan waktu tiba yang benar, tidak bangun dua kali, jangkauan bandit vs monster, pekerja diserang & dipulangkan, Monte Carlo 50 % pekerja mati, pengawal bertarung dulu dan pekerja aman bila menang, Monte Carlo peluang penyergapan 4 %, musuh penyergapan pergi setelah 6 jam kecuali sedang bertarung, kejaran menjadi pertarungan biasa).
+> - **Dicek di browser:** lingkaran deteksi tampil; Kucing berhenti 3,04 petak dari bandit → bandit tidak bangun; lebih dekat → "Musuh mengejar pasukanmu!" dan misi otomatis terbentuk. (Pertarungannya baru berjalan saat panel browser terlihat; di tes per detik: bangun ±10 dtk, bertarung, selesai.)
+> - **Belum:** posisi kejaran dihitung saat `settle` berjalan (cukup untuk client; untuk server nanti perlu titik waktu tetap); musuh belum benar-benar berjalan di layar saat mengejar (tim kita yang berjalan ke musuh).
+
 ## Fase 1B — Konten & retensi (4–5 minggu)
 
 ### - [ ] Tugas 1B.1 — Level & XP pemain

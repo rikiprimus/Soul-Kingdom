@@ -100,13 +100,20 @@ describe('gathering wild nodes', () => {
 
   it('drops soul crystals at the configured chance (Monte Carlo)', () => {
     const def = [...nodes].sort((a, b) => b.soulCrystalChance - a.soulCrystalChance)[0]!;
+    // Ambushes are tested on their own; here they would kill the test's workers.
+    const calm = {
+      ...gameData,
+      obstacleById: new Map(
+        [...gameData.obstacleById].map(([id, d]) => [id, { ...d, ambushChance: 0 }]),
+      ),
+    } as typeof gameData;
     let s = withNode(def.id, def.work.maxWorkers);
     let crystals = 0;
     const n = 100_000;
     for (let i = 0; i < n; i++) {
       s.village.obstacles = [{ id: 'n1', type: def.id, x: 0, y: 0, work: 0 }];
       s.workers[0]!.task = { kind: 'gathering', targetId: 'n1' };
-      const r = advanceWilds(s, def.work.workSeconds, T0);
+      const r = advanceWilds(s, def.work.workSeconds, T0, calm);
       crystals += r.gathered[0]!.soulCrystal;
       s = r.state;
     }

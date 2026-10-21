@@ -1,5 +1,6 @@
 import { deepClone } from './clone';
 import { gameData, VILLAGE_RESOURCES, type GameData, type VillageAmount } from './data';
+import { ambushAt, type AmbushResult } from './aggro';
 import { advanceAnimals, type AnimalDone } from './animals';
 import { createRng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
@@ -21,6 +22,8 @@ export interface Gathered {
   y: number;
   amount: VillageAmount;
   soulCrystal: number;
+  /** Set when finishing the node called out an ambush. */
+  ambush?: AmbushResult;
 }
 
 const fail = (error: ActionError): { ok: false; error: ActionError } => ({ ok: false, error });
@@ -86,7 +89,7 @@ export function advanceWilds(
   const busy = state.workers.some((w) => w.task.kind === 'gathering');
   if (seconds <= 0 || !busy) return { state, gathered: [], animals: [] };
   const next = deepClone(state);
-  const rng = createRng(next.rngState);
+  let rng = createRng(next.rngState);
   const gathered: Gathered[] = [];
   for (const o of next.village.obstacles) {
     const crew = gatherWorkers(next, o.id);
@@ -97,7 +100,15 @@ export function advanceWilds(
     const soulCrystal = rng.chance(def.soulCrystalChance) ? 1 : 0;
     for (const r of VILLAGE_RESOURCES) next.resources[r] += def.yield[r];
     next.resources.soulCrystal += soulCrystal;
+    const crewIds = next.workers.filter((w) => gathering(o.id)(w.task)).map((w) => w.id);
     releaseWorkers(next, gathering(o.id));
+    // Rarely, finishing the node calls out an ambush (guards fight, workers may fall).
+    let ambush: AmbushResult | undefined;
+    if (rng.chance(def.ambushChance)) {
+      next.rngState = rng.getState();
+      ambush = ambushAt(next, o, crewIds, now, data);
+      rng = createRng(next.rngState);
+    }
     // Refilling nodes stay as an empty rock and fill up again later.
     if (def.refillHours) {
       o.work = 0;
@@ -110,6 +121,7 @@ export function advanceWilds(
       y: o.y,
       amount: { ...def.yield },
       soulCrystal,
+      ...(ambush ? { ambush } : {}),
     });
   }
   const done = new Set(

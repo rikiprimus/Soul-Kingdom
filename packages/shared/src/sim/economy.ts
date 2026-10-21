@@ -13,7 +13,15 @@ import {
 } from '../barracks';
 import { gameData, VILLAGE_RESOURCES, type GameData, type VillageAmount } from '../data';
 import { spawnEncounters } from '../encounters';
-import { encounterPower, isOnMission, sendTeam, teamPower, teamUnits } from '../missions';
+import { aggroRadius } from '../aggro';
+import {
+  encounterPower,
+  isOnMission,
+  previewWinChance,
+  sendTeam,
+  teamPower,
+  teamUnits,
+} from '../missions';
 import { formTierOf, foodToNextStage, isFinalStage } from '../monster';
 import {
   collectMix,
@@ -397,20 +405,13 @@ export function simulateEconomy(
           .filter((m) => !s.mixQueue.some((q) => q.parents.some((p) => p.id === m.id)))
           .map((m) => m.id),
       ].filter((id) => !isOnMission(s, id));
-      const team: string[] = [];
-      // The bot judges by raw power (simulating every option would be too slow over 14
-      // days); the fight itself still runs through the battle simulator in sendTeam.
-      const odds = () => {
-        const units = teamUnits(s, team, data);
-        const ratio = teamPower(units, e, data) / Math.max(0.01, encounterPower(e, units, data));
-        return Math.min(1, ratio / 2);
-      };
-      for (const id of free) {
-        if (team.length >= data.rules.skirmish.maxTeam) break;
-        team.push(id);
-        if (odds() >= player.minWinChance) break;
-      }
-      if (team.length && odds() >= player.minWinChance) {
+      // Power tells which teams are worth simulating; a short simulated preview of the
+      // whole free army then decides (raw power alone was far too hopeful).
+      const team = free.slice(0, data.rules.skirmish.maxTeam);
+      if (team.length === 0) continue;
+      const units = teamUnits(s, team, data);
+      if (teamPower(units, e, data) < encounterPower(e, units, data)) continue;
+      if (previewWinChance(s, team, e, 30, data) >= player.minWinChance) {
         tryDo(sendTeam(s, { monsterIds: team, encounterId: e.id }, now, data));
       }
     }
@@ -446,9 +447,15 @@ export function simulateEconomy(
       .filter((r) => r !== 'gold')
       .sort((a, b) => s.resources[a] - need[a] - (s.resources[b] - need[b]));
     const hall = hallOf();
+    // A careful player keeps workers out of the enemies' reach (they chase and strike).
+    const safe = (o: { x: number; y: number }) =>
+      s.village.encounters.every(
+        (e) => Math.hypot(o.x - e.x, o.y - e.y) > aggroRadius(e, data) + 1,
+      );
     for (const resource of shortest) {
       const nodes = s.village.obstacles
         .filter((o) => (data.obstacleById.get(o.type)?.yield[resource] ?? 0) > 0)
+        .filter((o) => o.refillAt == null && safe(o))
         .sort(
           (a, b) =>
             Math.abs(a.x - hall.x) +
