@@ -29,7 +29,7 @@ for (const m of report.milestones) console.log(`  ${formatSimTime(m.at).padEnd(1
 const n = (x: number) => Math.round(x).toLocaleString('id-ID');
 console.log('\nPer hari (pendapatan, bukan saldo):');
 console.log(
-  '  hari  balai  plot    emas+  makanan+   kayu+   batu+  kristal+  pekerja  monster(slot)/populasi  menang/kalah  tingkat',
+  '  hari  balai  plot    emas+  makanan+   kayu+   batu+  kristal+  pekerja  monster(slot)/populasi  menang/kalah  tingkat  serangan m/k  dicuri',
 );
 for (const d of report.days) {
   console.log(
@@ -46,6 +46,8 @@ for (const d of report.days) {
       `${d.monsters}(${d.monsterSlots})/${d.populationCap}`.padStart(23),
       `${d.fightsWon}/${d.fightsLost}`.padStart(13),
       String(d.maxFormTier).padStart(8),
+      `${d.raidsWon}/${d.raidsLost}`.padStart(14),
+      `  ${n(d.stolen.gold + d.stolen.food + d.stolen.wood + d.stolen.stone)}`,
     ].join(''),
   );
 }

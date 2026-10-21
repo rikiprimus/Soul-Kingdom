@@ -62,7 +62,7 @@ export function mountDebugPanel(store: GameStore): void {
         [
           t('debug.raid'),
           () => {
-            // A full raid clock: the next bit of play time sends a raid (Balai Lv 2+).
+            // A full raid clock: the next bit of play time sends a raid (once the Balai reaches rules.raids.minTownHall).
             edit((s) => void (s.village.raidClock = gameData.rules.raids.intervalSeconds));
             store.raid(0.01);
           },

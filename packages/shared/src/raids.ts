@@ -15,7 +15,6 @@ import { createRng } from './rng';
 import type { PlayerState } from './state';
 import { unitPoint } from './units';
 import {
-  canPlace,
   isTileUnlocked,
   occupancy,
   sizeOf,
@@ -322,8 +321,9 @@ function raidSpawnTile(state: PlayerState, data: GameData): Tile | null {
   const { mapSize } = data.village.village;
   const { village } = state;
   const taken = new Set(village.encounters.map((e) => `${e.x},${e.y}`));
-  const free = (x: number, y: number) =>
-    !taken.has(`${x},${y}`) && canPlace(village, 1, x, y, data);
+  // One occupancy map for the whole scan (building it per tile is far too slow).
+  const tiles = occupancy(village, data);
+  const free = (x: number, y: number) => !taken.has(`${x},${y}`) && !tiles.has(`${x},${y}`);
   const outside: Tile[] = [];
   const edge: Tile[] = [];
   for (let y = 0; y < mapSize; y++) {
@@ -481,13 +481,15 @@ export function advanceRaids(
   const raid = currentRaid(state);
   if (!raid) {
     if (townHallLevel(state, data) < raids.minTownHall) return { state, events };
-    const next = deepClone(state);
-    next.village.raidClock += seconds;
-    if (next.village.raidClock >= raids.intervalSeconds) {
-      next.village.raidClock = 0;
-      const e = spawnRaid(next, data);
-      if (e) events.push({ kind: 'warning', encounterId: e.id, x: e.x, y: e.y });
+    const raidClock = state.village.raidClock + seconds;
+    // Just the clock: a shallow copy is enough (nothing else changes).
+    if (raidClock < raids.intervalSeconds) {
+      return { state: { ...state, village: { ...state.village, raidClock } }, events };
     }
+    const next = deepClone(state);
+    next.village.raidClock = 0;
+    const e = spawnRaid(next, data);
+    if (e) events.push({ kind: 'warning', encounterId: e.id, x: e.x, y: e.y });
     return { state: next, events };
   }
   if (missionFor(state, raid.id)) return { state, events };

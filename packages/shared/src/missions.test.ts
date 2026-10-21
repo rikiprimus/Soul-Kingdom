@@ -157,7 +157,8 @@ describe('power and odds', () => {
   });
 
   it('wins and pays at the simulated chance, and the fallen have no HP (Monte Carlo)', () => {
-    const base = setup(4);
+    // A close fight (about even odds), so both outcomes show up often.
+    const base = setup(8);
     const team = ['m1', 'm2'];
     const e = base.village.encounters[0]!;
     expect(previewWinChance(base, [], e)).toBe(0);

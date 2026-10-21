@@ -23,6 +23,8 @@ import {
   teamUnits,
 } from '../missions';
 import { formTierOf, foodToNextStage, isFinalStage } from '../monster';
+import { advanceRaids, currentRaid, raidRoute } from '../raids';
+import { moveUnits } from '../units';
 import {
   collectMix,
   createInitialState,
@@ -78,6 +80,8 @@ export interface SimPlayer {
   saveFrom: number;
   /** Only fights with at least this chance to win are taken. */
   minWinChance: number;
+  /** During a raid's warning the free army stands on its route this many tiles before the Balai. */
+  raidRallyTiles: number;
 }
 
 export const DEFAULT_SIM_PLAYER: SimPlayer = {
@@ -86,8 +90,12 @@ export const DEFAULT_SIM_PLAYER: SimPlayer = {
   sessionMinutes: 20,
   stepSeconds: 15,
   seed: 1,
+  // With raids on the village (Tugas 1.7) a sensible player builds soldiers and a tower early.
   buildOrder: [
     'rumah',
+    'petarung',
+    'menara',
+    'lapangan-panah',
     'soul-mixer',
     'pasar',
     'ladang',
@@ -95,14 +103,13 @@ export const DEFAULT_SIM_PLAYER: SimPlayer = {
     'tambang-emas',
     'barak',
     'kandang',
-    'petarung',
-    'lapangan-panah',
     'peternakan',
   ],
   mustHave: ['soul-mixer'],
   workerShare: 0.6,
   saveFrom: 0.5,
   minWinChance: 0.75,
+  raidRallyTiles: 3,
 };
 
 export interface Milestone {
@@ -125,6 +132,10 @@ export interface DayReport {
   maxFormTier: number;
   fightsWon: number;
   fightsLost: number;
+  /** Raids on the village the defence beat or lost, and what the raiders carried off. */
+  raidsWon: number;
+  raidsLost: number;
+  stolen: VillageAmount;
 }
 
 export interface SimReport {
@@ -147,6 +158,9 @@ export function simulateEconomy(
   let earned = emptyEarned();
   let won = 0;
   let lost = 0;
+  let raidsWon = 0;
+  let raidsLost = 0;
+  let stolen: VillageAmount = { gold: 0, food: 0, wood: 0, stone: 0 };
   const seen = new Set<string>();
   const mark = (now: number, key: string, label: string) => {
     if (seen.has(key)) return;
@@ -183,7 +197,12 @@ export function simulateEconomy(
     for (const m of missionsBefore) {
       if (s.missions.some((x) => x.id === m.id)) continue;
       // The fight may have started and ended in the same step: a win removes the enemy.
-      if (!s.village.encounters.some((e) => e.id === m.encounterId)) won++;
+      const win = m.fight ? m.fight.won : !s.village.encounters.some((e) => e.id === m.encounterId);
+      if (before.village.encounters.find((e) => e.id === m.encounterId)?.raid) {
+        if (win) raidsWon++;
+        else raidsLost++;
+        for (const r of VILLAGE_RESOURCES) stolen[r] += m.fight?.stolen?.[r] ?? 0;
+      } else if (win) won++;
       else lost++;
     }
     record(now);
@@ -217,6 +236,7 @@ export function simulateEconomy(
     staff(now);
     trainPeople(now);
     buyLand();
+    defendRaid(now);
     fight(now);
     gather();
   };
@@ -393,6 +413,21 @@ export function simulateEconomy(
     }
   }
 
+  /** Raids already met: the army moves out once per raid. */
+  const rallied = new Set<string>();
+
+  /** A raid is coming: the free army stands on its way, a few tiles before the Balai. */
+  function defendRaid(now: number) {
+    const raid = currentRaid(s);
+    if (!raid || rallied.has(raid.id) || s.missions.some((m) => m.encounterId === raid.id)) return;
+    rallied.add(raid.id);
+    const route = raidRoute(s, raid, data);
+    const spot = route[Math.max(0, route.length - 1 - player.raidRallyTiles)];
+    if (!spot) return;
+    const ids = Object.keys(s.units).filter((id) => !isOnMission(s, id));
+    if (ids.length > 0) tryDo(moveUnits(s, { ids, x: spot.x, y: spot.y }, now, data));
+  }
+
   /** Takes fights it is likely to win, with the fewest monsters that get there. */
   function fight(now: number) {
     for (const e of s.village.encounters) {
@@ -479,6 +514,9 @@ export function simulateEconomy(
     earned = emptyEarned();
     won = 0;
     lost = 0;
+    raidsWon = 0;
+    raidsLost = 0;
+    stolen = { gold: 0, food: 0, wood: 0, stone: 0 };
     for (const start of player.sessionStarts) {
       const begin = d * day + start * 3600;
       advanceWorld(begin);
@@ -490,6 +528,8 @@ export function simulateEconomy(
         const r = advanceWilds(s, player.stepSeconds, now + player.stepSeconds, data);
         s = r.state;
         earn(before, s);
+        // Raids, like gathering, only move on while the game is open.
+        s = advanceRaids(s, player.stepSeconds, now + player.stepSeconds, data).state;
         now += player.stepSeconds;
         advanceWorld(now);
       }
@@ -512,6 +552,9 @@ export function simulateEconomy(
       maxFormTier: Math.max(0, ...s.monsters.map((m) => formTierOf(m, data))),
       fightsWon: won,
       fightsLost: lost,
+      raidsWon,
+      raidsLost,
+      stolen,
     });
   }
   return { milestones, days, final: s };

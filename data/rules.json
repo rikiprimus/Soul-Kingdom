@@ -91,10 +91,10 @@
       "skillMultiplier": 2,
       "previewRuns": 200
     },
-    "_banditNote": "Statistik satu bandit = stats x banditPower kelompoknya (wilds.json) x powerScale; spd dan range tidak dikali.",
+    "_banditNote": "Statistik satu bandit = stats x banditPower kelompoknya (wilds.json) x powerScale; spd dan range tidak dikali. powerScale 1.2 (2026-10-21, dulu 2.5): kelompok bandit dengan total banditPower p kira-kira setara p poin kekuatan prajurit/monster tingkat 1 Dewasa, sesuai arti banditPower di wilds.json.",
     "bandit": {
       "stats": { "hp": 120, "atk": 10, "def": 8, "spd": 9, "range": 1 },
-      "powerScale": 2.5
+      "powerScale": 1.2
     }
   },
   "skirmish": {
@@ -104,12 +104,12 @@
   },
   "raids": {
     "_note": "Tugas 1.7: serangan ke desa. Hanya berjalan saat bermain: setiap intervalSeconds detik bermain (mulai Balai minTownHall) satu kelompok dari daftar musuh liar level Balai (wilds.json) muncul tepat di luar desa. Setelah warnSeconds peringatan mereka berjalan walkTilesPerSecond petak/detik menuju Balai Utama lewat petak bebas. Bangunan dan alam liar tidak bisa dilewati; Tembok menghalangi jalan, jadi musuh memilih rute tercepat: memutar, atau menjebol satu ruas (lama = HP ruas / kerusakan per detik penyerang; ruas itu hancur). Pertarungan mulai saat monster/prajurit kita ada dalam defendTiles petak, Menara Jaga dalam reachTiles, atau musuh tiba di Balai; hanya unit dalam defendTiles dan menara yang mencapai yang ikut bertahan (maks. battle.maxUnits). Menara bertarung di tempat dengan statistik per level. Kalah = musuh mencuri stealRatio emas/makanan/kayu/batu lalu pergi; menang = hadiah kelompok itu.",
-    "minTownHall": 2,
-    "intervalSeconds": 900,
+    "minTownHall": 3,
+    "intervalSeconds": 1200,
     "warnSeconds": 60,
     "walkTilesPerSecond": 1,
     "defendTiles": 4,
-    "stealRatio": 0.1,
+    "stealRatio": 0.05,
     "tower": {
       "building": "menara",
       "reachTiles": 6,

@@ -22,14 +22,14 @@ const adult = gameData.rules.growth.stages.at(-1)!.id;
 const baby = gameData.rules.growth.stages[0]!.id;
 const step = 1 / raids.walkTilesPerSecond;
 
-/** Only a level-2 Balai Utama (tiles 22–25) on open land 16–31, no wilds, enemies or units. */
+/** Only a Balai Utama at the raid level (tiles 22–25) on open land 16–31, no wilds, enemies or units. */
 function village(): PlayerState {
   const s = createInitialState(T0, 5);
   s.village.obstacles = [];
   s.village.encounters = [];
   s.village.animals = [];
   const hall = s.village.buildings.find((b) => b.type === gameData.townHallId)!;
-  hall.level = 2;
+  hall.level = raids.minTownHall;
   s.village.buildings = [hall];
   s.units = {};
   return s;
@@ -135,7 +135,7 @@ describe('raid schedule (active play only)', () => {
     s.village.encountersAt = T0 - encounterRespawnSeconds();
     const spawned = spawnEncounters(s, T0);
     const waiting = spawned.village.encounters.filter((e) => !e.raid);
-    expect(waiting.length).toBe(gameData.wilds.encounters.groupsByTownHall[1]);
+    expect(waiting.length).toBe(gameData.wilds.encounters.groupsByTownHall[raids.minTownHall - 1]);
   });
 });
 
