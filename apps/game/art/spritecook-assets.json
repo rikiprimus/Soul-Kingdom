@@ -1,0 +1,204 @@
+{
+  "_note": "Aset dari SpriteCook (proyek SpriteCook \"Soul Monster\"). asset_id = id di SpriteCook; sha12 = 12 karakter awal SHA-256 file di repo; source_sha12 = file mentah dari SpriteCook (atau potongan sel grid) sebelum pnpm art:iso; crop = sel [x, y, lebar, tinggi] pada gambar grid.",
+  "assets": [
+    {
+      "asset_id": "e1a2864a-fff2-4a8d-986a-69e55929033a",
+      "label": "balai-utama lv1",
+      "path": "art/buildings/balai-utama/lv1.png",
+      "sha12": "9bed632d5691",
+      "source_sha12": "9e2e76348cbf"
+    },
+    {
+      "asset_id": "e774ac89-a1e6-419e-9ec0-985d27c08f47",
+      "label": "grid lv1: pasar, rumah, kandang, barak",
+      "source_sha12": "82e13b8179ca",
+      "crops": [
+        {
+          "path": "art/buildings/pasar/lv1.png",
+          "crop": [0, 0, 512, 512],
+          "sha12": "8640a3547ff1",
+          "source_sha12": "a12751fe0c05"
+        },
+        {
+          "path": "art/buildings/rumah/lv1.png",
+          "crop": [512, 0, 512, 512],
+          "sha12": "87efdd5832f8",
+          "source_sha12": "acfa9db86354"
+        },
+        {
+          "path": "art/buildings/kandang/lv1.png",
+          "crop": [0, 512, 512, 512],
+          "sha12": "d7cb3c6627df",
+          "source_sha12": "d4b1955abf1b"
+        },
+        {
+          "path": "art/buildings/barak/lv1.png",
+          "crop": [512, 512, 512, 512],
+          "sha12": "28d8c65ecc1b",
+          "source_sha12": "13061267d9b5"
+        }
+      ]
+    },
+    {
+      "asset_id": "e13c6365-c0b9-410b-ae0a-ded914b7689d",
+      "label": "grid lv1 tambang-emas penggilingan peternakan kuburan",
+      "source_sha12": "bbc4261b23b4",
+      "crops": [
+        {
+          "path": "art/buildings/tambang-emas/lv1.png",
+          "crop": [0, 0, 512, 512],
+          "sha12": "6df79fe5fe36",
+          "source_sha12": "1b859483d376"
+        },
+        {
+          "path": "art/buildings/penggilingan/lv1.png",
+          "crop": [512, 0, 512, 512],
+          "sha12": "ce9317f90e49",
+          "source_sha12": "1e886d23e4e9"
+        },
+        {
+          "path": "art/buildings/peternakan/lv1.png",
+          "crop": [0, 512, 562, 512],
+          "sha12": "b929a588aca6",
+          "source_sha12": "151461664eb2"
+        },
+        {
+          "path": "art/buildings/kuburan/lv1.png",
+          "crop": [562, 512, 462, 512],
+          "sha12": "0bdb31fcb49c",
+          "source_sha12": "57c868f87e3a"
+        }
+      ]
+    },
+    {
+      "asset_id": "841a07cc-c35a-47cd-930f-19f67f9d5f4c",
+      "label": "grid lv1 soul-mixer ladang (kosong, tumbuh, siap)",
+      "source_sha12": "799e86155c8d",
+      "crops": [
+        {
+          "path": "art/buildings/soul-mixer/lv1.png",
+          "crop": [0, 0, 520, 512],
+          "sha12": "f63ed6cecfef",
+          "source_sha12": "f22e52baa0de"
+        },
+        {
+          "path": "art/buildings/ladang/lv1.png",
+          "crop": [520, 0, 504, 512],
+          "sha12": "6638b33a742a",
+          "source_sha12": "bb54fcd797fb"
+        },
+        {
+          "path": "art/buildings/ladang/lv1-crop-growing.png",
+          "crop": [0, 512, 520, 512],
+          "sha12": "c036b52725d1",
+          "source_sha12": "8770fbf9d265"
+        },
+        {
+          "path": "art/buildings/ladang/lv1-crop-ready.png",
+          "crop": [520, 512, 504, 512],
+          "sha12": "80160047a0eb",
+          "source_sha12": "50871f0a8f3a"
+        }
+      ]
+    },
+    {
+      "asset_id": "48f2f437-dcfa-4f88-8587-cf68b89ea7c0",
+      "label": "grid lv1 petarung lapangan-panah gerbang-petualangan menara",
+      "source_sha12": "29f2feb9296a",
+      "crops": [
+        {
+          "path": "art/buildings/petarung/lv1.png",
+          "crop": [0, 0, 512, 500],
+          "sha12": "57d5c73510de",
+          "source_sha12": "d1833a071ce0"
+        },
+        {
+          "path": "art/buildings/lapangan-panah/lv1.png",
+          "crop": [512, 0, 512, 500],
+          "sha12": "b1e7ac1a7dca",
+          "source_sha12": "d8d971a1e69e"
+        },
+        {
+          "path": "art/buildings/gerbang-petualangan/lv1.png",
+          "crop": [0, 500, 512, 524],
+          "sha12": "4ca0dabfdff4",
+          "source_sha12": "1015c3c044af"
+        },
+        {
+          "path": "art/buildings/menara/lv1.png",
+          "crop": [512, 500, 512, 524],
+          "sha12": "63508b7ae90b",
+          "source_sha12": "ddd7e2a33902"
+        }
+      ]
+    },
+    {
+      "asset_id": "3110ce4d-f066-4065-8282-be312a67aee6",
+      "label": "tembok lv1-3 tiang dan ruas",
+      "source_sha12": "d6fcf24b7984",
+      "pieces_config": "art/tembok-pieces.json",
+      "pieces": [
+        {
+          "path": "art/buildings/tembok/lv1-post.png",
+          "sha12": "2384176b29a8"
+        },
+        {
+          "path": "art/buildings/tembok/lv1-seg-xn.png",
+          "sha12": "40b313911337"
+        },
+        {
+          "path": "art/buildings/tembok/lv1-seg-xp.png",
+          "sha12": "975155052371"
+        },
+        {
+          "path": "art/buildings/tembok/lv1-seg-yn.png",
+          "sha12": "9f5debb08f90"
+        },
+        {
+          "path": "art/buildings/tembok/lv1-seg-yp.png",
+          "sha12": "d7b88e143aa8"
+        },
+        {
+          "path": "art/buildings/tembok/lv2-post.png",
+          "sha12": "1c63d2049db4"
+        },
+        {
+          "path": "art/buildings/tembok/lv2-seg-xn.png",
+          "sha12": "0f4cdc06bf67"
+        },
+        {
+          "path": "art/buildings/tembok/lv2-seg-xp.png",
+          "sha12": "758b54b7f612"
+        },
+        {
+          "path": "art/buildings/tembok/lv2-seg-yn.png",
+          "sha12": "a28f9af07913"
+        },
+        {
+          "path": "art/buildings/tembok/lv2-seg-yp.png",
+          "sha12": "a2420765d3ab"
+        },
+        {
+          "path": "art/buildings/tembok/lv3-post.png",
+          "sha12": "b5e8eb985159"
+        },
+        {
+          "path": "art/buildings/tembok/lv3-seg-xn.png",
+          "sha12": "da8322985c0a"
+        },
+        {
+          "path": "art/buildings/tembok/lv3-seg-xp.png",
+          "sha12": "51dfe9934f76"
+        },
+        {
+          "path": "art/buildings/tembok/lv3-seg-yn.png",
+          "sha12": "81aa343246fa"
+        },
+        {
+          "path": "art/buildings/tembok/lv3-seg-yp.png",
+          "sha12": "16053d9989aa"
+        }
+      ]
+    }
+  ]
+}

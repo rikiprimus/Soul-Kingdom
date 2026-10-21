@@ -1,0 +1,600 @@
+{
+  "_notes": [
+    "Bangunan desa. Semua angka (biaya, waktu, produksi, kapasitas) masih awal dan akan diseimbangkan saat uji coba.",
+    "Biaya: emas (gold), makanan (food), kayu (wood), batu (stone); yang tidak ditulis bernilai 0.",
+    "hidden: bangunan sudah punya data tetapi belum bisa dibangun karena fiturnya dikerjakan di tugas lain (lihat docs/PLAN.md Fase 1A).",
+    "Satuan waktu: detik. maxCount[i] = jumlah maksimum bangunan saat Balai Utama level i+1.",
+    "lineBuild: bangunan 1x1 yang dibangun sebaris (titik awal -> titik akhir) dan di-upgrade per sambungan; semua levelnya harus langsung jadi (seconds 0).",
+    "sellable: bangunan bisa dijual kembali seharga sellRefundRatio x total biaya emas/makanan yang sudah dibayar.",
+    "collectReadyRatio: produksi dianggap siap dipungut (gelembung muncul) setelah mencapai rasio ini dari kapasitas.",
+    "levels[0] = level 1. requiresTownHall = level Balai Utama minimum untuk membangun/menaikkan ke level itu.",
+    "production: hasil pasif yang menumpuk sampai capacity lalu dipanen dengan mengetuk bangunan.",
+    "crop: ladang ditanam dengan emas, tumbuh selama seconds, lalu dipanen menjadi makanan.",
+    "Peta: mapSize x mapSize petak, dibagi plot plotSize x plotSize. initialPlots terbuka sejak awal; plot lain dibeli berurutan dengan plotCostGold[n] dan butuh Balai plotRequiresTownHall[n] (n = jumlah plot yang sudah dibeli).",
+    "population: populasi yang diberikan bangunan (Balai Utama, Rumah). Pekerja memakai rules.population.workerSlots, monster memakai rules.battle.powerPoints sesuai tingkat wujud."
+  ],
+  "village": {
+    "mapSize": 48,
+    "plotSize": 8,
+    "initialPlots": [
+      [2, 2],
+      [3, 2],
+      [2, 3],
+      [3, 3]
+    ],
+    "plotCostGold": [
+      1000, 1200, 1400, 1600, 1900, 2300, 2700, 3200, 3800, 4400, 5200, 6200, 7300, 8600, 10100,
+      12000, 14100, 16700, 19700, 23200, 27400, 32300, 38100, 45000, 53100, 62700, 73900, 87300,
+      103000, 121500, 143400, 169200
+    ],
+    "plotRequiresTownHall": [
+      1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5
+    ],
+    "initialObstacles": 130,
+    "keepClearRadius": 3,
+    "sellRefundRatio": 0.5,
+    "collectReadyRatio": 0.1,
+    "startingBuildings": [
+      { "type": "balai-utama", "x": 22, "y": 22, "level": 1 },
+      { "type": "kandang", "x": 17, "y": 22, "level": 1 },
+      { "type": "ladang", "x": 22, "y": 27, "level": 1 },
+      { "type": "pasar", "x": 27, "y": 22, "level": 1 },
+      { "type": "pohon-hias", "x": 21, "y": 21, "level": 1 },
+      { "type": "bunga", "x": 26, "y": 26, "level": 1 }
+    ]
+  },
+  "categories": {
+    "produksi": "Produksi",
+    "monster": "Monster",
+    "militer": "Militer",
+    "dekorasi": "Dekorasi",
+    "utama": "Utama"
+  },
+  "buildings": [
+    {
+      "id": "balai-utama",
+      "name": "Balai Utama",
+      "description": "Jantung desa. Level Balai Utama membuka bangunan dan level baru.",
+      "category": "utama",
+      "feature": "townHall",
+      "size": 4,
+      "maxCount": [1, 1, 1, 1, 1, 1],
+      "levels": [
+        { "cost": {}, "seconds": 0, "requiresTownHall": 0, "population": 8 },
+        {
+          "cost": { "gold": 1000, "wood": 400, "stone": 100 },
+          "seconds": 600,
+          "requiresTownHall": 1,
+          "population": 10
+        },
+        {
+          "cost": { "gold": 5000, "food": 1000, "wood": 2500, "stone": 1200 },
+          "seconds": 3600,
+          "requiresTownHall": 2,
+          "population": 12
+        },
+        {
+          "cost": { "gold": 20000, "food": 5000, "wood": 9000, "stone": 7000 },
+          "seconds": 14400,
+          "requiresTownHall": 3,
+          "population": 14
+        },
+        {
+          "cost": { "gold": 100000, "food": 20000, "wood": 20000, "stone": 12000 },
+          "seconds": 43200,
+          "requiresTownHall": 4,
+          "population": 16
+        },
+        {
+          "cost": { "gold": 250000, "food": 60000, "wood": 45000, "stone": 30000 },
+          "seconds": 86400,
+          "requiresTownHall": 5,
+          "population": 18
+        }
+      ]
+    },
+    {
+      "id": "rumah",
+      "name": "Rumah",
+
+      "feature": "house",
+      "description": "Tempat tinggal. Menambah populasi untuk pekerja dan monster.",
+      "category": "utama",
+      "size": 2,
+      "maxCount": [1, 2, 3, 4, 5, 6],
+      "levels": [
+        {
+          "cost": { "gold": 150, "wood": 150 },
+          "seconds": 60,
+          "requiresTownHall": 1,
+          "population": 4
+        },
+        {
+          "cost": { "gold": 500, "wood": 400, "stone": 100 },
+          "seconds": 300,
+          "requiresTownHall": 2,
+          "population": 5
+        },
+        {
+          "cost": { "gold": 1500, "wood": 900, "stone": 300 },
+          "seconds": 900,
+          "requiresTownHall": 3,
+          "population": 6
+        },
+        {
+          "cost": { "gold": 4000, "wood": 1800, "stone": 800 },
+          "seconds": 1800,
+          "requiresTownHall": 4,
+          "population": 7
+        },
+        {
+          "cost": { "gold": 10000, "wood": 3500, "stone": 1800 },
+          "seconds": 3600,
+          "requiresTownHall": 5,
+          "population": 8
+        }
+      ]
+    },
+    {
+      "id": "pasar",
+      "name": "Pasar",
+      "description": "Pedagang membayar pajak emas. Ketuk untuk memungut emas.",
+      "category": "produksi",
+      "size": 2,
+      "maxCount": [1, 2, 2, 3, 3, 4],
+      "levels": [
+        {
+          "cost": { "gold": 300, "wood": 100 },
+          "seconds": 60,
+          "requiresTownHall": 1,
+          "production": { "resource": "gold", "perHour": 600, "capacity": 2400 }
+        },
+        {
+          "cost": { "gold": 800, "wood": 250 },
+          "seconds": 300,
+          "requiresTownHall": 2,
+          "production": { "resource": "gold", "perHour": 900, "capacity": 3600 }
+        },
+        {
+          "cost": { "gold": 2000, "food": 200, "wood": 500, "stone": 100 },
+          "seconds": 900,
+          "requiresTownHall": 3,
+          "production": { "resource": "gold", "perHour": 1300, "capacity": 5200 }
+        },
+        {
+          "cost": { "gold": 5000, "food": 500, "wood": 1000, "stone": 300 },
+          "seconds": 1800,
+          "requiresTownHall": 4,
+          "production": { "resource": "gold", "perHour": 1800, "capacity": 7200 }
+        },
+        {
+          "cost": { "gold": 12000, "food": 1500, "wood": 2000, "stone": 800 },
+          "seconds": 3600,
+          "requiresTownHall": 5,
+          "production": { "resource": "gold", "perHour": 2400, "capacity": 9600 }
+        }
+      ]
+    },
+    {
+      "id": "ladang",
+      "name": "Ladang",
+      "description": "Tanam bibit dengan emas, tunggu tumbuh, lalu panen makanan untuk monster.",
+      "category": "produksi",
+      "size": 3,
+      "maxCount": [2, 3, 4, 5, 6, 7],
+      "levels": [
+        {
+          "cost": { "gold": 100, "wood": 80 },
+          "seconds": 30,
+          "requiresTownHall": 1,
+          "crop": { "plantGold": 50, "seconds": 300, "food": 150 }
+        },
+        {
+          "cost": { "gold": 400, "wood": 200 },
+          "seconds": 300,
+          "requiresTownHall": 2,
+          "crop": { "plantGold": 80, "seconds": 300, "food": 250 }
+        },
+        {
+          "cost": { "gold": 1000, "wood": 400 },
+          "seconds": 900,
+          "requiresTownHall": 3,
+          "crop": { "plantGold": 120, "seconds": 600, "food": 450 }
+        },
+        {
+          "cost": { "gold": 2500, "wood": 800, "stone": 200 },
+          "seconds": 1800,
+          "requiresTownHall": 4,
+          "crop": { "plantGold": 180, "seconds": 900, "food": 700 }
+        },
+        {
+          "cost": { "gold": 6000, "wood": 1500, "stone": 500 },
+          "seconds": 3600,
+          "requiresTownHall": 5,
+          "crop": { "plantGold": 250, "seconds": 1200, "food": 1000 }
+        }
+      ]
+    },
+    {
+      "id": "tambang-emas",
+      "name": "Tambang Emas",
+
+      "feature": "staffed",
+      "description": "Pekerja di dalam menggali emas, tetap bekerja saat game ditutup.",
+      "category": "produksi",
+      "size": 2,
+      "maxCount": [0, 1, 1, 2, 2, 3],
+      "levels": [
+        {
+          "cost": { "gold": 800, "wood": 300, "stone": 200 },
+          "seconds": 600,
+          "requiresTownHall": 2,
+          "workerSlots": 2,
+          "staffedProduction": { "resource": "gold", "perWorkerPerHour": 120, "capacity": 2000 }
+        },
+        {
+          "cost": { "gold": 2500, "wood": 800, "stone": 600 },
+          "seconds": 1800,
+          "requiresTownHall": 3,
+          "workerSlots": 3,
+          "staffedProduction": { "resource": "gold", "perWorkerPerHour": 150, "capacity": 3500 }
+        },
+        {
+          "cost": { "gold": 7000, "wood": 1800, "stone": 1500 },
+          "seconds": 3600,
+          "requiresTownHall": 4,
+          "workerSlots": 4,
+          "staffedProduction": { "resource": "gold", "perWorkerPerHour": 190, "capacity": 6000 }
+        }
+      ]
+    },
+    {
+      "id": "penggilingan",
+      "name": "Penggilingan",
+
+      "feature": "staffed",
+      "description": "Pekerja di dalam menggiling gandum menjadi makanan, tetap bekerja saat game ditutup.",
+      "category": "produksi",
+      "size": 2,
+      "maxCount": [1, 1, 2, 2, 3, 3],
+      "levels": [
+        {
+          "cost": { "gold": 300, "wood": 300 },
+          "seconds": 300,
+          "requiresTownHall": 1,
+          "workerSlots": 2,
+          "staffedProduction": { "resource": "food", "perWorkerPerHour": 80, "capacity": 1200 }
+        },
+        {
+          "cost": { "gold": 1200, "wood": 700, "stone": 200 },
+          "seconds": 900,
+          "requiresTownHall": 2,
+          "workerSlots": 3,
+          "staffedProduction": { "resource": "food", "perWorkerPerHour": 100, "capacity": 2000 }
+        },
+        {
+          "cost": { "gold": 4000, "wood": 1500, "stone": 600 },
+          "seconds": 1800,
+          "requiresTownHall": 3,
+          "workerSlots": 4,
+          "staffedProduction": { "resource": "food", "perWorkerPerHour": 130, "capacity": 3500 }
+        }
+      ]
+    },
+    {
+      "id": "peternakan",
+      "name": "Peternakan",
+
+      "feature": "ranch",
+      "description": "Hewan tangkapan beternak di sini dan menghasilkan makanan.",
+      "category": "produksi",
+      "size": 3,
+      "maxCount": [1, 1, 2, 2, 3, 3],
+      "levels": [
+        {
+          "cost": { "gold": 400, "wood": 400 },
+          "seconds": 300,
+          "requiresTownHall": 1,
+          "animalSlots": 3,
+          "ranchCapacity": 600
+        },
+        {
+          "cost": { "gold": 1500, "wood": 900, "stone": 200 },
+          "seconds": 900,
+          "requiresTownHall": 2,
+          "animalSlots": 5,
+          "ranchCapacity": 1200
+        },
+        {
+          "cost": { "gold": 4500, "wood": 1800, "stone": 700 },
+          "seconds": 1800,
+          "requiresTownHall": 3,
+          "animalSlots": 7,
+          "ranchCapacity": 2000
+        }
+      ]
+    },
+    {
+      "id": "kandang",
+      "name": "Kandang Monster",
+      "description": "Rumah para monster. Di sini kamu melihat, memberi makan, dan melepas monster.",
+      "category": "monster",
+      "feature": "stable",
+      "size": 3,
+      "maxCount": [1, 1, 2, 2, 3, 3],
+      "levels": [
+        {
+          "cost": { "gold": 300, "wood": 200 },
+          "seconds": 60,
+          "requiresTownHall": 1
+        },
+        {
+          "cost": { "gold": 1000, "food": 200, "wood": 500 },
+          "seconds": 600,
+          "requiresTownHall": 2
+        },
+        {
+          "cost": { "gold": 3000, "food": 500, "wood": 1000, "stone": 300 },
+          "seconds": 1800,
+          "requiresTownHall": 3
+        },
+        {
+          "cost": { "gold": 8000, "food": 1500, "wood": 2000, "stone": 800 },
+          "seconds": 3600,
+          "requiresTownHall": 4
+        },
+        {
+          "cost": { "gold": 20000, "food": 4000, "wood": 4000, "stone": 2000 },
+          "seconds": 7200,
+          "requiresTownHall": 5
+        }
+      ]
+    },
+    {
+      "id": "soul-mixer",
+      "name": "Soul Mixer",
+      "description": "Kuali jiwa kuno. Campur dua monster dewasa menjadi monster baru.",
+      "category": "monster",
+      "feature": "mixer",
+      "size": 3,
+      "maxCount": [1, 1, 1, 1, 1, 1],
+      "levels": [
+        {
+          "cost": { "gold": 3000, "food": 500, "wood": 800, "stone": 600 },
+          "seconds": 600,
+          "requiresTownHall": 4
+        }
+      ]
+    },
+    {
+      "id": "kuburan",
+      "name": "Kuburan",
+
+      "feature": "graveyard",
+      "description": "Monster yang gugur beristirahat di sini dan bisa dihidupkan kembali.",
+      "category": "monster",
+      "size": 2,
+      "maxCount": [1, 1, 1, 1, 1, 1],
+      "levels": [
+        {
+          "cost": { "gold": 500, "wood": 200, "stone": 300 },
+          "seconds": 300,
+          "requiresTownHall": 1
+        }
+      ]
+    },
+    {
+      "id": "barak",
+      "name": "Barak",
+      "description": "Melatih pasukan. Level Barak menaikkan batas poin kekuatan untuk Serbu.",
+      "category": "militer",
+      "feature": "barracks",
+      "size": 3,
+      "maxCount": [1, 1, 1, 1, 1, 1],
+      "levels": [
+        { "cost": { "gold": 600, "wood": 300 }, "seconds": 300, "requiresTownHall": 1 },
+        {
+          "cost": { "gold": 2000, "food": 300, "wood": 600, "stone": 200 },
+          "seconds": 900,
+          "requiresTownHall": 3
+        },
+        {
+          "cost": { "gold": 6000, "food": 800, "wood": 1200, "stone": 600 },
+          "seconds": 1800,
+          "requiresTownHall": 4
+        },
+        {
+          "cost": { "gold": 15000, "food": 2000, "wood": 2500, "stone": 1500 },
+          "seconds": 3600,
+          "requiresTownHall": 5
+        },
+        {
+          "cost": { "gold": 40000, "food": 5000, "wood": 5000, "stone": 3000 },
+          "seconds": 7200,
+          "requiresTownHall": 6
+        }
+      ],
+      "trainsRole": "penahan"
+    },
+    {
+      "id": "petarung",
+      "name": "Arena Petarung",
+
+      "feature": "barracks",
+      "trainsRole": "petarung",
+      "description": "Melatih prajurit dasar peran petarung.",
+      "category": "militer",
+      "size": 3,
+      "maxCount": [1, 1, 1, 1, 1, 1],
+      "levels": [
+        { "cost": { "gold": 600, "wood": 300 }, "seconds": 300, "requiresTownHall": 1 },
+        {
+          "cost": { "gold": 2000, "food": 300, "wood": 600, "stone": 200 },
+          "seconds": 900,
+          "requiresTownHall": 3
+        },
+        {
+          "cost": { "gold": 6000, "food": 800, "wood": 1200, "stone": 600 },
+          "seconds": 1800,
+          "requiresTownHall": 4
+        },
+        {
+          "cost": { "gold": 15000, "food": 2000, "wood": 2500, "stone": 1500 },
+          "seconds": 3600,
+          "requiresTownHall": 5
+        },
+        {
+          "cost": { "gold": 40000, "food": 5000, "wood": 5000, "stone": 3000 },
+          "seconds": 7200,
+          "requiresTownHall": 6
+        }
+      ]
+    },
+    {
+      "id": "lapangan-panah",
+      "name": "Lapangan Panah",
+
+      "feature": "barracks",
+      "trainsRole": "penembak",
+      "description": "Melatih prajurit dasar peran penembak.",
+      "category": "militer",
+      "size": 3,
+      "maxCount": [1, 1, 1, 1, 1, 1],
+      "levels": [
+        { "cost": { "gold": 600, "wood": 300 }, "seconds": 300, "requiresTownHall": 1 },
+        {
+          "cost": { "gold": 2000, "food": 300, "wood": 600, "stone": 200 },
+          "seconds": 900,
+          "requiresTownHall": 3
+        },
+        {
+          "cost": { "gold": 6000, "food": 800, "wood": 1200, "stone": 600 },
+          "seconds": 1800,
+          "requiresTownHall": 4
+        },
+        {
+          "cost": { "gold": 15000, "food": 2000, "wood": 2500, "stone": 1500 },
+          "seconds": 3600,
+          "requiresTownHall": 5
+        },
+        {
+          "cost": { "gold": 40000, "food": 5000, "wood": 5000, "stone": 3000 },
+          "seconds": 7200,
+          "requiresTownHall": 6
+        }
+      ]
+    },
+    {
+      "id": "gerbang-petualangan",
+      "name": "Gerbang Petualangan",
+      "description": "Pintu menuju wilayah liar dan para bos. Petualangan segera hadir.",
+      "category": "militer",
+      "feature": "adventure",
+      "size": 3,
+      "maxCount": [0, 1, 1, 1, 1, 1],
+      "levels": [
+        {
+          "cost": { "gold": 1500, "wood": 400, "stone": 300 },
+          "seconds": 300,
+          "requiresTownHall": 2
+        }
+      ]
+    },
+    {
+      "id": "arena",
+      "name": "Arena",
+      "description": "Duel monster 3 lawan 3. Arena segera hadir.",
+      "category": "militer",
+      "feature": "arena",
+      "size": 4,
+      "maxCount": [0, 0, 1, 1, 1, 1],
+      "levels": [
+        {
+          "cost": { "gold": 5000, "food": 500, "wood": 1000, "stone": 1000 },
+          "seconds": 900,
+          "requiresTownHall": 3
+        }
+      ]
+    },
+    {
+      "id": "menara",
+      "name": "Menara Jaga",
+      "description": "Menembak penyerang dari jauh.",
+      "category": "militer",
+      "feature": "defense",
+      "size": 2,
+      "maxCount": [0, 1, 2, 3, 4, 5],
+      "levels": [
+        { "cost": { "gold": 400, "stone": 300 }, "seconds": 300, "requiresTownHall": 2 },
+        { "cost": { "gold": 1500, "stone": 800 }, "seconds": 900, "requiresTownHall": 3 },
+        { "cost": { "gold": 4000, "stone": 1800 }, "seconds": 1800, "requiresTownHall": 4 }
+      ]
+    },
+    {
+      "id": "tembok",
+      "sellable": true,
+      "lineBuild": true,
+      "name": "Tembok",
+      "description": "Pagar kayu lalu tembok batu. Dibangun sebaris: ketuk titik awal lalu titik akhir.",
+      "category": "militer",
+      "feature": "defense",
+      "size": 1,
+      "maxCount": [0, 40, 60, 80, 100, 120],
+      "levels": [
+        { "cost": { "wood": 10 }, "seconds": 0, "requiresTownHall": 2 },
+        { "cost": { "wood": 10, "stone": 20 }, "seconds": 0, "requiresTownHall": 3 },
+        { "cost": { "gold": 30, "stone": 50 }, "seconds": 0, "requiresTownHall": 4 }
+      ]
+    },
+    {
+      "id": "pohon-hias",
+      "sellable": true,
+      "name": "Pohon Hias",
+      "description": "Pohon rindang untuk mempercantik desa.",
+      "category": "dekorasi",
+      "size": 1,
+      "maxCount": [30, 30, 30, 30, 30, 30],
+      "levels": [{ "cost": { "gold": 100 }, "seconds": 0, "requiresTownHall": 1 }]
+    },
+    {
+      "id": "bunga",
+      "sellable": true,
+      "name": "Taman Bunga",
+      "description": "Bunga warna-warni.",
+      "category": "dekorasi",
+      "size": 1,
+      "maxCount": [40, 40, 40, 40, 40, 40],
+      "levels": [{ "cost": { "gold": 50 }, "seconds": 0, "requiresTownHall": 1 }]
+    },
+    {
+      "id": "lampu",
+      "sellable": true,
+      "name": "Lampu Jalan",
+      "description": "Lentera jiwa yang menyala lembut.",
+      "category": "dekorasi",
+      "size": 1,
+      "maxCount": [0, 20, 20, 20, 20, 20],
+      "levels": [{ "cost": { "gold": 150, "stone": 20 }, "seconds": 0, "requiresTownHall": 2 }]
+    },
+    {
+      "id": "air-mancur",
+      "sellable": true,
+      "name": "Air Mancur",
+      "description": "Air mancur batu di alun-alun.",
+      "category": "dekorasi",
+      "size": 2,
+      "maxCount": [0, 2, 3, 3, 3, 3],
+      "levels": [{ "cost": { "gold": 2500, "stone": 300 }, "seconds": 0, "requiresTownHall": 2 }]
+    },
+    {
+      "id": "patung",
+      "sellable": true,
+      "name": "Patung Naga",
+      "description": "Patung emas sang naga purba.",
+      "category": "dekorasi",
+      "size": 1,
+      "maxCount": [0, 0, 5, 5, 5, 5],
+      "levels": [{ "cost": { "gold": 1000, "stone": 200 }, "seconds": 0, "requiresTownHall": 3 }]
+    }
+  ]
+}

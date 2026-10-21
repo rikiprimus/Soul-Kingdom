@@ -1,0 +1,31 @@
+{
+  "name": "soul-monster",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.7",
+  "scripts": {
+    "dev": "pnpm --filter @soul-monster/game dev",
+    "build": "pnpm -r typecheck && pnpm --filter @soul-monster/game build",
+    "preview": "pnpm --filter @soul-monster/game preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "pnpm -r typecheck",
+    "sim:economy": "vite-node packages/shared/scripts/sim-economy.ts",
+    "atlas": "pnpm --filter @soul-monster/game atlas",
+    "art:iso": "pnpm --filter @soul-monster/game art:iso",
+    "art:wall": "pnpm --filter @soul-monster/game art:wall"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.0",
+    "eslint": "^9.30.0",
+    "eslint-config-prettier": "^10.1.5",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.35.1",
+    "vite-node": "3.2.4",
+    "vitest": "^3.2.4"
+  }
+}

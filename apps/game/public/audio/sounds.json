@@ -1,0 +1,32 @@
+{
+  "sfx": {
+    "click": "click.mp3",
+    "tap": "tap.mp3",
+    "collect": "collect.mp3",
+    "coin": "coin.mp3",
+    "pickup": "pickup.mp3",
+    "place": "place.mp3",
+    "build-done": "build-done.mp3",
+    "gather": "gather.mp3",
+    "ready": "ready.mp3",
+    "error": "error.mp3",
+    "win": "win.mp3",
+    "lose": "lose.mp3",
+    "mixer": "mixer.mp3",
+    "hatch": "hatch.mp3",
+    "panel": "panel.mp3",
+    "unlock-land": "unlock-land.mp3",
+    "grow": "grow.mp3",
+    "march": "march.mp3",
+    "revive": "revive.mp3",
+    "prophecy": "prophecy.mp3",
+    "rare-hatch": "rare-hatch.mp3",
+    "enemy": "enemy.mp3"
+  },
+  "music": {
+    "village": "villager.mp3",
+    "village-2": "villager_2.mp3",
+    "village-3": "villager_3.mp3",
+    "ambience": "ambience.mp3"
+  }
+}

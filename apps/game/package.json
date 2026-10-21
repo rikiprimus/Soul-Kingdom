@@ -1,0 +1,27 @@
+{
+  "name": "@soul-monster/game",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json",
+    "icons": "node scripts/make-icons.mjs",
+    "atlas": "node scripts/pack-atlas.mjs",
+    "art:iso": "node scripts/normalize-iso.mjs",
+    "art:wall": "node scripts/wall-pieces.mjs"
+  },
+  "dependencies": {
+    "@fontsource/fredoka": "^5.3.0",
+    "@soul-monster/shared": "workspace:*",
+    "phaser": "^3.90.0",
+    "phaser3-rex-plugins": "^1.80.20"
+  },
+  "devDependencies": {
+    "free-tex-packer-core": "^0.3.9",
+    "pngjs": "^7.0.0",
+    "vite": "^6.3.5"
+  }
+}

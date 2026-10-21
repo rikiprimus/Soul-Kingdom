@@ -1,0 +1,43 @@
+{
+  "roles": {
+    "penahan": { "name": "Penahan", "preferredRow": "depan" },
+    "petarung": { "name": "Petarung", "preferredRow": "tengah" },
+    "penembak": { "name": "Penembak", "preferredRow": "belakang" }
+  },
+  "tiers": {
+    "1": { "name": "Hewan kecil", "visual": "imut dan bulat" },
+    "2": { "name": "Hewan liar", "visual": "mulai ramping, taring dan cakar" },
+    "3": { "name": "Pemburu dan makhluk gaib", "visual": "tajam dan bertanduk" },
+    "4": { "name": "Makhluk perkasa", "visual": "besar, bersayap, berzirah atau bersisik tebal" },
+    "5": { "name": "Legenda", "visual": "sangat besar, dengan aura dan ornamen" }
+  },
+  "forms": [
+    { "id": "kucing", "name": "Kucing", "tier": 1, "role": "petarung" },
+    { "id": "anjing", "name": "Anjing", "tier": 1, "role": "penahan" },
+    { "id": "landak", "name": "Landak", "tier": 1, "role": "penahan" },
+    { "id": "kelinci", "name": "Kelinci", "tier": 1, "role": "petarung" },
+    { "id": "tupai", "name": "Tupai", "tier": 1, "role": "penembak" },
+    { "id": "katak", "name": "Katak", "tier": 1, "role": "penembak" },
+
+    { "id": "serigala", "name": "Serigala", "tier": 2, "role": "petarung" },
+    { "id": "babi-hutan", "name": "Babi Hutan", "tier": 2, "role": "penahan" },
+    { "id": "ular", "name": "Ular", "tier": 2, "role": "penembak" },
+    { "id": "kera", "name": "Kera", "tier": 2, "role": "penembak" },
+    { "id": "kura-kura", "name": "Kura-kura", "tier": 2, "role": "penahan" },
+
+    { "id": "elang", "name": "Elang", "tier": 3, "role": "penembak" },
+    { "id": "harimau", "name": "Harimau", "tier": 3, "role": "petarung" },
+    { "id": "buaya", "name": "Buaya", "tier": 3, "role": "penahan" },
+    { "id": "hantu", "name": "Hantu", "tier": 3, "role": "penembak" },
+    { "id": "golem", "name": "Golem", "tier": 3, "role": "penahan" },
+
+    { "id": "naga", "name": "Naga", "tier": 4, "role": "penembak" },
+    { "id": "raksasa", "name": "Raksasa", "tier": 4, "role": "penahan" },
+    { "id": "burung-agung", "name": "Burung Agung", "tier": 4, "role": "petarung" },
+    { "id": "siluman", "name": "Siluman", "tier": 4, "role": "petarung" },
+
+    { "id": "naga-purba", "name": "Naga Purba", "tier": 5, "role": "penembak" },
+    { "id": "titan", "name": "Titan", "tier": 5, "role": "penahan" },
+    { "id": "penjaga-abadi", "name": "Penjaga Abadi", "tier": 5, "role": "petarung" }
+  ]
+}

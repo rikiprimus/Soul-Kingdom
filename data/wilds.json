@@ -1,0 +1,179 @@
+{
+  "_notes": [
+    "Alam liar di sekitar desa. Semua angka masih awal dan akan diseimbangkan.",
+    "nodes: pohon/batu/semak di peta (terbuka maupun terkunci). Hanya bisa diambil dengan mengirim pekerja.",
+    "work: waktu kerja = workSeconds / jumlah pekerja (maksimal maxWorkers); waktu hanya berjalan selama bermain.",
+    "regrow: setiap regrow.stepSeconds, tiap plot punya peluang chancePerStep per jenis node untuk menumbuhkan satu node, sampai maxPerPlot. Maksimal regrow.maxSteps langkah dikejar sekaligus.",
+    "animals: muncul count ekor setiap respawnHours sejak terakhir muncul; buru = makanan, tangkap = masuk Peternakan.",
+    "encounters: kelompok musuh liar per level Balai, muncul lagi setiap respawnHours sejak terakhir muncul. banditPower = kekuatan satu bandit dalam satuan poin kekuatan monster (monster tingkat 1 Dewasa = 1).",
+    "graveyard: biaya menghidupkan monster = biaya per poin kekuatan x rules.battle.powerPoints tingkat wujudnya."
+  ],
+  "regrow": { "stepSeconds": 3600, "maxSteps": 48 },
+  "nodes": [
+    {
+      "id": "pohon",
+      "name": "Pohon Liar",
+      "size": 1,
+      "weight": 5,
+      "yield": { "wood": 40 },
+      "soulCrystalChance": 0.1,
+      "work": { "workSeconds": 60, "maxWorkers": 3 },
+      "regrow": { "chancePerStep": 0.5, "maxPerPlot": 6 }
+    },
+    {
+      "id": "batu",
+      "name": "Batu Besar",
+      "size": 1,
+      "weight": 3,
+      "yield": { "stone": 40 },
+      "soulCrystalChance": 0.3,
+      "work": { "workSeconds": 90, "maxWorkers": 3 },
+      "regrow": { "chancePerStep": 0.35, "maxPerPlot": 3 }
+    },
+    {
+      "id": "semak",
+      "name": "Semak Berduri",
+      "size": 1,
+      "weight": 4,
+      "yield": { "food": 25 },
+      "soulCrystalChance": 0.05,
+      "work": { "workSeconds": 30, "maxWorkers": 2 },
+      "regrow": { "chancePerStep": 0.5, "maxPerPlot": 4 }
+    }
+  ],
+  "animals": {
+    "respawnHours": 24,
+    "count": 6,
+    "types": [
+      {
+        "id": "ayam-hutan",
+        "name": "Ayam Hutan",
+        "weight": 5,
+        "hunt": { "workSeconds": 40, "food": 30 },
+        "capture": { "workSeconds": 90 },
+        "maxWorkers": 1,
+        "ranchFoodPerHour": 15
+      },
+      {
+        "id": "rusa",
+        "name": "Rusa",
+        "weight": 3,
+        "hunt": { "workSeconds": 80, "food": 80 },
+        "capture": { "workSeconds": 180 },
+        "maxWorkers": 2,
+        "ranchFoodPerHour": 30
+      },
+      {
+        "id": "babi-liar",
+        "name": "Babi Liar",
+        "weight": 2,
+        "hunt": { "workSeconds": 120, "food": 130 },
+        "capture": { "workSeconds": 240 },
+        "maxWorkers": 3,
+        "ranchFoodPerHour": 45
+      }
+    ]
+  },
+  "encounters": {
+    "respawnHours": 24,
+    "groupsByTownHall": [2, 2, 3, 3, 4, 4],
+    "levels": [
+      {
+        "townHall": 1,
+        "groups": [
+          {
+            "kind": "bandit",
+            "weight": 1,
+            "count": [2, 3],
+            "banditPower": 0.4,
+            "reward": { "gold": 150, "food": 50 }
+          }
+        ]
+      },
+      {
+        "townHall": 2,
+        "groups": [
+          {
+            "kind": "bandit",
+            "weight": 1,
+            "count": [3, 4],
+            "banditPower": 0.6,
+            "reward": { "gold": 250, "food": 80, "wood": 50 }
+          },
+          {
+            "kind": "monster",
+            "weight": 2,
+            "count": [2, 3],
+            "formTier": 1,
+            "stage": "dewasa",
+            "reward": { "gold": 300, "food": 100, "stone": 40 }
+          }
+        ]
+      },
+      {
+        "townHall": 3,
+        "groups": [
+          {
+            "kind": "monster",
+            "weight": 3,
+            "count": [3, 5],
+            "formTier": 1,
+            "stage": "dewasa",
+            "reward": { "gold": 500, "food": 150, "wood": 100 }
+          },
+          {
+            "kind": "monster",
+            "weight": 1,
+            "count": [1, 1],
+            "formTier": 2,
+            "stage": "dewasa",
+            "reward": { "gold": 600, "stone": 120, "soulCrystalChance": 0.3 }
+          }
+        ]
+      },
+      {
+        "townHall": 4,
+        "groups": [
+          {
+            "kind": "monster",
+            "weight": 3,
+            "count": [3, 5],
+            "formTier": 2,
+            "stage": "dewasa",
+            "reward": { "gold": 1000, "food": 300, "wood": 200 }
+          },
+          {
+            "kind": "monster",
+            "weight": 1,
+            "count": [1, 1],
+            "formTier": 3,
+            "stage": "dewasa",
+            "reward": { "gold": 1200, "stone": 250, "soulCrystalChance": 0.6 }
+          }
+        ]
+      },
+      {
+        "townHall": 5,
+        "groups": [
+          {
+            "kind": "monster",
+            "weight": 3,
+            "count": [4, 6],
+            "formTier": 2,
+            "stage": "dewasa",
+            "reward": { "gold": 1800, "food": 500, "wood": 400 }
+          },
+          {
+            "kind": "monster",
+            "weight": 1,
+            "count": [1, 1],
+            "formTier": 4,
+            "stage": "dewasa",
+            "reward": { "gold": 2500, "stone": 500, "soulCrystalChance": 1 }
+          }
+        ]
+      }
+    ]
+  },
+  "graveyard": { "goldPerPowerPoint": 300, "foodPerPowerPoint": 100, "gemsPerPowerPoint": 5 }
+}

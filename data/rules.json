@@ -1,0 +1,132 @@
+{
+  "_notes": [
+    "SEMUA angka penyeimbangan ada di sini. Angka ini masih awal dan akan diubah saat uji coba.",
+    "Satuan waktu: detik. Peluang: 0..1."
+  ],
+  "rarity": {
+    "byElementUnits": {
+      "1": "biasa",
+      "2": "langka",
+      "3": "epik",
+      "4": "legenda",
+      "5": "legenda",
+      "6": "legenda"
+    },
+    "legendaryIfFormTier": 5,
+    "legendaryIfSecretElement": true,
+    "names": { "biasa": "Biasa", "langka": "Langka", "epik": "Epik", "legenda": "Legenda" },
+    "visuals": {
+      "biasa": { "animation": false, "aura": "none", "elementEffect": false },
+      "langka": { "animation": true, "aura": "element", "elementEffect": false },
+      "epik": { "animation": true, "aura": "element", "elementEffect": true },
+      "legenda": { "animation": true, "aura": "gold", "elementEffect": true, "goldFrame": true }
+    }
+  },
+  "growth": {
+    "stages": [
+      { "id": "bayi", "name": "Bayi", "statMultiplier": 0.4, "foodToNextPerPowerPoint": 50 },
+      { "id": "remaja", "name": "Remaja", "statMultiplier": 0.7, "foodToNextPerPowerPoint": 150 },
+      { "id": "dewasa", "name": "Dewasa", "statMultiplier": 1.0 }
+    ]
+  },
+  "stats": {
+    "roleBase": {
+      "penahan": { "hp": 160, "atk": 12, "def": 14, "spd": 8, "range": 1 },
+      "petarung": { "hp": 110, "atk": 20, "def": 9, "spd": 12, "range": 1 },
+      "penembak": { "hp": 80, "atk": 18, "def": 6, "spd": 10, "range": 4 }
+    },
+    "tierMultiplier": { "1": 1, "2": 2, "3": 4, "4": 8, "5": 15 },
+    "_note": "hp/atk/def dikali tierMultiplier dan statMultiplier tahap tumbuh; spd dan range tidak dikali."
+  },
+  "mixer": {
+    "unlockTownHallLevel": 4,
+    "parentStage": "dewasa",
+    "consumeParents": true,
+    "protectLegendaryParents": true,
+    "initialSlots": 1,
+    "maxSlots": 4,
+    "maxElementUnitsByFormTier": { "1": 1, "2": 2, "3": 3, "4": 4, "5": 6 },
+    "secretElementMinFormTier": 5,
+    "maxFormTierByBossesDefeated": [2, 3, 4, 5],
+    "formTierOdds": { "same": 0.6, "up": 0.3, "down": 0.09, "mutation": 0.01 },
+    "elementOdds": { "fullUnion": 0.6, "parent": 0.3, "partial": 0.1 },
+    "pity": { "streak": 10, "mutationBonusPerStreak": 0.01, "resetOnRarity": "epik" },
+    "costByResultTier": {
+      "1": { "seconds": 300, "gold": 100, "soulCrystal": 0 },
+      "2": { "seconds": 1800, "gold": 500, "soulCrystal": 0 },
+      "3": { "seconds": 7200, "gold": 2000, "soulCrystal": 1 },
+      "4": { "seconds": 21600, "gold": 8000, "soulCrystal": 3 },
+      "5": { "seconds": 43200, "gold": 25000, "soulCrystal": 10 }
+    },
+    "_costNote": "Biaya dibayar saat mulai, berdasarkan tingkat MAKSIMUM yang mungkin dari pasangan induk (tingkat induk tertinggi + 1, dibatasi Tingkat Petualang)."
+  },
+  "premium": {
+    "currencyName": "Permata",
+    "speedUpGemsPerMinute": 1,
+    "speedUpMinimumGems": 1,
+    "extraMixerSlotGems": [100, 250, 500],
+    "soulProphecyGemsByResultTier": { "1": 5, "2": 10, "3": 25, "4": 50, "5": 100 }
+  },
+  "battle": {
+    "maxUnits": 30,
+    "powerPoints": { "1": 1, "2": 2, "3": 4, "4": 8, "5": 15 },
+    "powerCapByCombinedBarracksLevel": [
+      10, 20, 28, 36, 45, 54, 64, 75, 86, 98, 110, 124, 138, 154, 170, 188
+    ],
+    "grid": { "columns": 6, "rows": 5 },
+    "advantageStep": 0.25,
+    "advantageMin": 0.5,
+    "advantageMax": 2.0,
+    "maxTicks": 3000,
+    "ticksPerSecond": 20,
+    "arenaTeamSize": 3
+  },
+  "skirmish": {
+    "_note": "Pertarungan cepat tim melawan musuh liar (bukan Serbu). Kekuatan monster = poin kekuatan tingkat wujud x statMultiplier tahap tumbuh x rata-rata keunggulan elemen terhadap musuh. Peluang menang = tim^sharpness / (tim^sharpness + musuh^sharpness). Kalah: tiap anggota mati dengan peluang deathChanceOnLoss, minimal satu. Hasil dikunci saat tim berangkat dan diterapkan setelah missionSeconds.",
+    "maxTeam": 6,
+    "sharpness": 3,
+    "deathChanceOnLoss": 0.6,
+    "missionSeconds": 30
+  },
+  "barracks": {
+    "_note": "Barak (penahan), Arena Petarung (petarung), dan Lapangan Panah (penembak) melatih prajurit dasar yang lahir Dewasa: wujud tingkat 1 sesuai peran dan elemen dasar (1 unsur). Level bangunan membuka jumlah wujud dan elemen. Butuh slot populasi.",
+    "train": { "gold": 150, "food": 100, "seconds": 120 },
+    "queueMax": 3,
+    "unlocksByLevel": [
+      { "forms": 1, "elements": ["api", "air", "tanah", "angin"] },
+      { "forms": 2, "elements": ["api", "air", "tanah", "angin"] },
+      { "forms": 2, "elements": ["api", "air", "tanah", "angin", "cahaya"] },
+      { "forms": 2, "elements": ["api", "air", "tanah", "angin", "cahaya", "kegelapan"] },
+      { "forms": 2, "elements": ["api", "air", "tanah", "angin", "cahaya", "kegelapan"] }
+    ]
+  },
+  "population": {
+    "_note": "Populasi dari Balai Utama dan Rumah (buildings.json). Pekerja memakai workerSlots; monster memakai battle.powerPoints sesuai tingkat wujud (bayi dan dewasa sama).",
+    "workerSlots": 1
+  },
+  "workers": {
+    "_note": "Pekerja dilatih di Balai Utama. Pekerja juga membangun: waktu = waktu dasar / jumlah pekerja, maksimal constructionMaxBySize sesuai ukuran bangunan.",
+    "trainFood": 50,
+    "trainSeconds": 60,
+    "startingWorkers": 2,
+    "trainQueueMax": 3,
+    "constructionMaxBySize": { "1": 1, "2": 2, "3": 4, "4": 6 }
+  },
+  "economy": {
+    "startingResources": {
+      "gold": 2000,
+      "food": 500,
+      "wood": 600,
+      "stone": 300,
+      "soulCrystal": 0,
+      "gems": 50
+    },
+    "startingTownHallLevel": 1,
+    "startingMonsters": [{ "form": "kucing", "element": "api", "stage": "dewasa" }]
+  },
+  "debug": {
+    "enabledInDev": true,
+    "skipMixerUnlock": true,
+    "_note": "Panel debug hanya aktif di mode pengembangan: tambah sumber daya, lompati waktu, ubah level Balai Utama, tambah bos dikalahkan."
+  }
+}

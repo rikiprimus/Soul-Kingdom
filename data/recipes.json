@@ -1,0 +1,21 @@
+{
+  "_notes": [
+    "Resep monster rahasia. Format monster: \"<wujud>:<elemen>\". Urutan induk tidak penting.",
+    "Dicek PALING AWAL di Soul Mixer. Jika cocok, hasilnya pasti (tidak ada pengacakan wujud/elemen).",
+    "Hasil tetap tunduk pada batas tingkat wujud dari Tingkat Petualang; jika belum terbuka, resep tidak aktif dan perhitungan biasa dipakai."
+  ],
+  "monsterRecipes": [
+    { "id": "naga-uap", "parents": ["harimau:api", "buaya:air"], "result": "naga:uap" },
+    { "id": "siluman-roh", "parents": ["elang:angin", "hantu:kegelapan"], "result": "siluman:roh" },
+    {
+      "id": "raksasa-kristal",
+      "parents": ["golem:tanah", "elang:cahaya"],
+      "result": "raksasa:kristal"
+    },
+    {
+      "id": "naga-purba-langit",
+      "parents": ["naga:badai", "burung-agung:petir"],
+      "result": "naga-purba:langit"
+    }
+  ]
+}

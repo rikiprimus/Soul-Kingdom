@@ -1,0 +1,691 @@
+{
+	"textures": [
+		{
+			"image": "buildings.png",
+			"format": "RGBA8888",
+			"size": {
+				"w": 2048,
+				"h": 2048
+			},
+			"scale": 1,
+			"frames": [
+				{
+					"filename": "balai-utama/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 512,
+						"h": 423
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 512,
+						"h": 422
+					},
+					"frame": {
+						"x": 3,
+						"y": 3,
+						"w": 512,
+						"h": 422
+					}
+				},
+				{
+					"filename": "barak/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 384,
+						"h": 313
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 384,
+						"h": 313
+					},
+					"frame": {
+						"x": 521,
+						"y": 3,
+						"w": 384,
+						"h": 313
+					}
+				},
+				{
+					"filename": "gerbang-petualangan/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 384,
+						"h": 305
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 384,
+						"h": 305
+					},
+					"frame": {
+						"x": 911,
+						"y": 3,
+						"w": 384,
+						"h": 305
+					}
+				},
+				{
+					"filename": "kandang/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 384,
+						"h": 286
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 384,
+						"h": 286
+					},
+					"frame": {
+						"x": 1301,
+						"y": 3,
+						"w": 384,
+						"h": 286
+					}
+				},
+				{
+					"filename": "menara/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 256,
+						"h": 292
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 256,
+						"h": 292
+					},
+					"frame": {
+						"x": 1691,
+						"y": 3,
+						"w": 256,
+						"h": 292
+					}
+				},
+				{
+					"filename": "soul-mixer/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 384,
+						"h": 250
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 384,
+						"h": 250
+					},
+					"frame": {
+						"x": 1301,
+						"y": 295,
+						"w": 384,
+						"h": 250
+					}
+				},
+				{
+					"filename": "lapangan-panah/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 384,
+						"h": 238
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 384,
+						"h": 237
+					},
+					"frame": {
+						"x": 911,
+						"y": 314,
+						"w": 384,
+						"h": 237
+					}
+				},
+				{
+					"filename": "petarung/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 384,
+						"h": 238
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 384,
+						"h": 237
+					},
+					"frame": {
+						"x": 521,
+						"y": 322,
+						"w": 384,
+						"h": 237
+					}
+				},
+				{
+					"filename": "tembok/lv2-seg-xp",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 85
+					},
+					"spriteSourceSize": {
+						"x": 63,
+						"y": 19,
+						"w": 34,
+						"h": 55
+					},
+					"frame": {
+						"x": 1953,
+						"y": 3,
+						"w": 34,
+						"h": 55
+					}
+				},
+				{
+					"filename": "tembok/lv2-seg-yp",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 85
+					},
+					"spriteSourceSize": {
+						"x": 31,
+						"y": 19,
+						"w": 34,
+						"h": 55
+					},
+					"frame": {
+						"x": 1993,
+						"y": 3,
+						"w": 34,
+						"h": 55
+					}
+				},
+				{
+					"filename": "tembok/lv3-seg-xp",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 89
+					},
+					"spriteSourceSize": {
+						"x": 63,
+						"y": 23,
+						"w": 34,
+						"h": 55
+					},
+					"frame": {
+						"x": 1953,
+						"y": 64,
+						"w": 34,
+						"h": 55
+					}
+				},
+				{
+					"filename": "tembok/lv3-seg-yp",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 89
+					},
+					"spriteSourceSize": {
+						"x": 31,
+						"y": 23,
+						"w": 34,
+						"h": 55
+					},
+					"frame": {
+						"x": 1993,
+						"y": 64,
+						"w": 34,
+						"h": 55
+					}
+				},
+				{
+					"filename": "tembok/lv3-seg-xn",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 89
+					},
+					"spriteSourceSize": {
+						"x": 31,
+						"y": 9,
+						"w": 34,
+						"h": 54
+					},
+					"frame": {
+						"x": 1953,
+						"y": 125,
+						"w": 34,
+						"h": 54
+					}
+				},
+				{
+					"filename": "tembok/lv3-seg-yn",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 89
+					},
+					"spriteSourceSize": {
+						"x": 63,
+						"y": 9,
+						"w": 34,
+						"h": 54
+					},
+					"frame": {
+						"x": 1993,
+						"y": 125,
+						"w": 34,
+						"h": 54
+					}
+				},
+				{
+					"filename": "tembok/lv1-seg-xp",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 86
+					},
+					"spriteSourceSize": {
+						"x": 63,
+						"y": 21,
+						"w": 34,
+						"h": 52
+					},
+					"frame": {
+						"x": 1953,
+						"y": 185,
+						"w": 34,
+						"h": 52
+					}
+				},
+				{
+					"filename": "tembok/lv1-seg-yp",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 86
+					},
+					"spriteSourceSize": {
+						"x": 31,
+						"y": 21,
+						"w": 34,
+						"h": 52
+					},
+					"frame": {
+						"x": 1993,
+						"y": 185,
+						"w": 34,
+						"h": 52
+					}
+				},
+				{
+					"filename": "tembok/lv2-seg-xn",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 85
+					},
+					"spriteSourceSize": {
+						"x": 31,
+						"y": 6,
+						"w": 34,
+						"h": 52
+					},
+					"frame": {
+						"x": 1953,
+						"y": 243,
+						"w": 34,
+						"h": 52
+					}
+				},
+				{
+					"filename": "tembok/lv2-seg-yn",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 85
+					},
+					"spriteSourceSize": {
+						"x": 63,
+						"y": 6,
+						"w": 34,
+						"h": 52
+					},
+					"frame": {
+						"x": 1993,
+						"y": 243,
+						"w": 34,
+						"h": 52
+					}
+				},
+				{
+					"filename": "penggilingan/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 199
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 256,
+						"h": 198
+					},
+					"frame": {
+						"x": 1691,
+						"y": 301,
+						"w": 256,
+						"h": 198
+					}
+				},
+				{
+					"filename": "tembok/lv1-seg-xn",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 86
+					},
+					"spriteSourceSize": {
+						"x": 31,
+						"y": 6,
+						"w": 34,
+						"h": 50
+					},
+					"frame": {
+						"x": 1953,
+						"y": 301,
+						"w": 34,
+						"h": 50
+					}
+				},
+				{
+					"filename": "tembok/lv1-seg-yn",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 86
+					},
+					"spriteSourceSize": {
+						"x": 63,
+						"y": 6,
+						"w": 34,
+						"h": 50
+					},
+					"frame": {
+						"x": 1993,
+						"y": 301,
+						"w": 34,
+						"h": 50
+					}
+				},
+				{
+					"filename": "tembok/lv3-post",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 89
+					},
+					"spriteSourceSize": {
+						"x": 50,
+						"y": 5,
+						"w": 27,
+						"h": 59
+					},
+					"frame": {
+						"x": 1953,
+						"y": 357,
+						"w": 27,
+						"h": 59
+					}
+				},
+				{
+					"filename": "tembok/lv2-post",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 85
+					},
+					"spriteSourceSize": {
+						"x": 53,
+						"y": 9,
+						"w": 22,
+						"h": 50
+					},
+					"frame": {
+						"x": 1986,
+						"y": 357,
+						"w": 22,
+						"h": 50
+					}
+				},
+				{
+					"filename": "tembok/lv1-post",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 128,
+						"h": 86
+					},
+					"spriteSourceSize": {
+						"x": 57,
+						"y": 11,
+						"w": 14,
+						"h": 47
+					},
+					"frame": {
+						"x": 2014,
+						"y": 357,
+						"w": 14,
+						"h": 47
+					}
+				},
+				{
+					"filename": "rumah/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 190
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 256,
+						"h": 189
+					},
+					"frame": {
+						"x": 1691,
+						"y": 505,
+						"w": 256,
+						"h": 189
+					}
+				},
+				{
+					"filename": "ladang/lv1-crop-ready",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 384,
+						"h": 212
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 384,
+						"h": 212
+					},
+					"frame": {
+						"x": 1301,
+						"y": 551,
+						"w": 384,
+						"h": 212
+					}
+				},
+				{
+					"filename": "ladang/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 384,
+						"h": 210
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 384,
+						"h": 210
+					},
+					"frame": {
+						"x": 911,
+						"y": 557,
+						"w": 384,
+						"h": 210
+					}
+				},
+				{
+					"filename": "peternakan/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 384,
+						"h": 208
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 384,
+						"h": 208
+					},
+					"frame": {
+						"x": 1301,
+						"y": 769,
+						"w": 384,
+						"h": 208
+					}
+				},
+				{
+					"filename": "ladang/lv1-crop-growing",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 384,
+						"h": 207
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 384,
+						"h": 207
+					},
+					"frame": {
+						"x": 1301,
+						"y": 983,
+						"w": 384,
+						"h": 207
+					}
+				},
+				{
+					"filename": "pasar/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 186
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 256,
+						"h": 185
+					},
+					"frame": {
+						"x": 1691,
+						"y": 700,
+						"w": 256,
+						"h": 185
+					}
+				},
+				{
+					"filename": "tambang-emas/lv1",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 180
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 1,
+						"w": 256,
+						"h": 179
+					},
+					"frame": {
+						"x": 1691,
+						"y": 891,
+						"w": 256,
+						"h": 179
+					}
+				},
+				{
+					"filename": "kuburan/lv1",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 256,
+						"h": 161
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 256,
+						"h": 161
+					},
+					"frame": {
+						"x": 1691,
+						"y": 1076,
+						"w": 256,
+						"h": 161
+					}
+				}
+			]
+		}
+	],
+	"meta": {
+		"app": "http://github.com/odrick/free-tex-packer-core",
+		"version": "0.3.9"
+	}
+}
