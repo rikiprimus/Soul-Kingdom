@@ -325,7 +325,7 @@
 					}
 				},
 				{
-					"filename": "kelinci",
+					"filename": "naga-purba",
 					"rotated": false,
 					"trimmed": true,
 					"sourceSize": {
@@ -333,15 +333,36 @@
 						"h": 256
 					},
 					"spriteSourceSize": {
-						"x": 35,
+						"x": 33,
 						"y": 9,
-						"w": 186,
+						"w": 190,
 						"h": 238
 					},
 					"frame": {
 						"x": 1853,
 						"y": 481,
-						"w": 186,
+						"w": 190,
+						"h": 238
+					}
+				},
+				{
+					"filename": "siluman",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 30,
+						"y": 9,
+						"w": 196,
+						"h": 238
+					},
+					"frame": {
+						"x": 1639,
+						"y": 723,
+						"w": 196,
 						"h": 238
 					}
 				},
@@ -360,10 +381,52 @@
 						"h": 236
 					},
 					"frame": {
-						"x": 1639,
-						"y": 723,
+						"x": 1841,
+						"y": 725,
 						"w": 194,
 						"h": 236
+					}
+				},
+				{
+					"filename": "titan",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 33,
+						"y": 9,
+						"w": 190,
+						"h": 238
+					},
+					"frame": {
+						"x": 491,
+						"y": 232,
+						"w": 190,
+						"h": 238
+					}
+				},
+				{
+					"filename": "kelinci",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 35,
+						"y": 9,
+						"w": 186,
+						"h": 238
+					},
+					"frame": {
+						"x": 247,
+						"y": 237,
+						"w": 186,
+						"h": 238
 					}
 				},
 				{
@@ -381,10 +444,52 @@
 						"h": 236
 					},
 					"frame": {
-						"x": 1839,
-						"y": 725,
+						"x": 3,
+						"y": 466,
 						"w": 178,
 						"h": 236
+					}
+				},
+				{
+					"filename": "burung-agung",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 42,
+						"y": 9,
+						"w": 172,
+						"h": 238
+					},
+					"frame": {
+						"x": 687,
+						"y": 232,
+						"w": 172,
+						"h": 238
+					}
+				},
+				{
+					"filename": "penjaga-abadi",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 256,
+						"h": 256
+					},
+					"spriteSourceSize": {
+						"x": 45,
+						"y": 9,
+						"w": 166,
+						"h": 238
+					},
+					"frame": {
+						"x": 865,
+						"y": 466,
+						"w": 166,
+						"h": 238
 					}
 				}
 			]

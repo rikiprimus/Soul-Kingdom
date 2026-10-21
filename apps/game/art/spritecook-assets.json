@@ -428,6 +428,38 @@
           "sha12": "30533d98e8ef"
         }
       ]
+    },
+    {
+      "asset_id": "bc19083b-ce99-4c7c-a650-54289be23a89",
+      "label": "grid monster tingkat 4-5 (netral)",
+      "source_sha12": "8179a80f47ac",
+      "crops": [
+        {
+          "path": "art/monsters/burung-agung.png",
+          "crop": [0, 0, 350, 520],
+          "sha12": "77660e0be77c"
+        },
+        {
+          "path": "art/monsters/siluman.png",
+          "crop": [362, 60, 318, 460],
+          "sha12": "b8b6051ffa23"
+        },
+        {
+          "path": "art/monsters/naga-purba.png",
+          "crop": [680, 0, 344, 520],
+          "sha12": "fce9750dc1b3"
+        },
+        {
+          "path": "art/monsters/titan.png",
+          "crop": [0, 520, 374, 504],
+          "sha12": "2d8c8e8f9300"
+        },
+        {
+          "path": "art/monsters/penjaga-abadi.png",
+          "crop": [385, 520, 320, 504],
+          "sha12": "74c61faf57ef"
+        }
+      ]
     }
   ]
 }
