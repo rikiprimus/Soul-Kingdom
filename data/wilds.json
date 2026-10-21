@@ -71,6 +71,24 @@
         "capture": { "workSeconds": 240 },
         "maxWorkers": 3,
         "ranchFoodPerHour": 45
+      },
+      {
+        "id": "domba",
+        "name": "Domba",
+        "weight": 3,
+        "hunt": { "workSeconds": 70, "food": 60 },
+        "capture": { "workSeconds": 150 },
+        "maxWorkers": 2,
+        "ranchFoodPerHour": 25
+      },
+      {
+        "id": "sapi",
+        "name": "Sapi",
+        "weight": 2,
+        "hunt": { "workSeconds": 150, "food": 170 },
+        "capture": { "workSeconds": 300 },
+        "maxWorkers": 3,
+        "ranchFoodPerHour": 60
       }
     ]
   },

@@ -668,6 +668,25 @@ Semuanya nyaman dalam posisi horizontal.
 
 ---
 
+### - [ ] Tugas 1A.13 — Prajurit dari 3 barak, monster hanya dari telur
+
+Keputusan pemilik (2026-10-21): base awal memakai **prajurit manusia**, bukan monster. Monster tidak pernah lahir dari barak.
+
+- **Tiga barak melatih prajurit** (id lama dipakai ulang agar simpanan tetap terbaca):
+  - **Barak Prajurit** (infanteri, peran penahan) — dulu Arena Petarung (`petarung`).
+  - **Barak Panahan** (pemanah, peran penembak) — dulu Lapangan Panah (`lapangan-panah`).
+  - **Barak Berkuda** (penunggang kuda bertombak, peran petarung) — bangunan **baru**.
+  - **Guild** (`barak`, gambar benteng batu) berhenti melatih; belum punya fungsi.
+- **Prajurit** = unit manusia baru (bukan `Monster`): jenis per barak, level barak membuka tingkat/jumlah prajurit, biaya + waktu latih + antrean + slot populasi seperti latihan sekarang. Statistik, biaya, dan poin kekuatan per jenis di `rules.json`.
+- **Bertarung bersama monster:** prajurit dan monster masuk tim Serbu yang sama, sama-sama memakai poin kekuatan dan populasi. Prajurit tidak punya elemen (pengali keunggulan = 1), tidak tumbuh, dan tidak bisa jadi induk Soul Mixer. Batas poin Serbu = gabungan level ketiga barak prajurit.
+- **Monster hanya dari:** menetas telur, Soul Mixer, atau hadiah (misi, bos, acara — menyusul).
+- **Awal game:** desa baru dimulai dengan **1 telur siap ditetaskan** (wujud tingkat 1, elemen dasar, acak berbenih) yang menetas jadi **bayi**, bukan Kucing Api Dewasa. Simpanan lama tetap menyimpan monster dan prajurit latihnya (migrasi: monster hasil latihan barak tetap monster).
+- **Gambar:** Barak Prajurit, Barak Panahan, Barak Berkuda, dan tiga jenis prajurit (SpriteCook, cadangan gambar kode).
+
+**Kriteria selesai:** tes latih prajurit per barak (biaya, antrean, populasi penuh, terkunci per level), barak tidak bisa menghasilkan monster, permainan baru = 0 monster + 1 telur, menetaskan telur awal menghasilkan bayi tingkat 1 berelemen dasar, migrasi simpanan lama, prajurit masuk perhitungan poin Serbu.
+
+**Perlu angka dari pemilik sebelum dikerjakan:** statistik (HP/serang/kecepatan), biaya & waktu latih, dan poin kekuatan tiap jenis prajurit; biaya/syarat Balai Barak Berkuda; waktu menetas telur awal.
+
 ## Fase 1B — Konten & retensi (4–5 minggu)
 
 ### - [ ] Tugas 1B.1 — Level & XP pemain
@@ -852,6 +871,23 @@ Semuanya nyaman dalam posisi horizontal.
 ---
 
 ## Keputusan yang masih terbuka
+
+### Keputusan gambar monster (2026-10-21)
+
+- Setiap wujud punya **tiga gambar, satu per tahap tumbuh**: bayi → remaja → dewasa (`rules.growth.stages`). Gambar 23 wujud yang dibuat dengan SpriteCook pada 2026-10-21 adalah tahap **bayi**.
+- **Bayi:** didapat dari menetas telur (Sarang Telur Jiwa) atau Soul Mixer; kecil dan imut.
+- **Remaja (evolusi 1):** lebih besar, berkesan remaja, keimutan dikurangi.
+- **Dewasa (evolusi 2):** paling besar, keren dan sangar, tanpa kesan imut.
+- File: `apps/game/art/monsters/<wujud>/<tahap>.png`; sampai gambar remaja/dewasa dibuat, game memakai gambar bayi yang diperbesar per tahap. Detail gaya di skill `soul-monster-art-style`.
+- Belum dibuat: gambar remaja dan dewasa untuk 23 wujud (±8 pack grid 3×2 per tahap).
+
+### Keputusan desa (2026-10-21)
+
+- **Barak → Guild:** gambar benteng batu lebih cocok sebagai Guild, jadi nama dan deskripsinya diganti. Id data tetap `barak` agar simpanan lama tetap terbaca. Di Tugas 1A.13 Guild berhenti melatih dan **belum punya fungsi** (hiasan; fungsi ditentukan nanti).
+- **Prajurit, bukan monster, dari barak** (lihat Tugas 1A.13): desa awal memakai prajurit manusia dari 3 barak; monster hanya dari menetas telur, Soul Mixer, atau hadiah.
+- **Hewan ternak:** ditambah Domba dan Sapi (`data/wilds.json → animals.types`), angka di antara ayam/rusa/babi. Masih gambar buatan kode; gambar SpriteCook menyusul.
+- **Tembok:** bisa dipindah satuan (Pindah) atau seluruh sambungan sekaligus (Pindah sebaris, `moveGroup`).
+- **Kartu info:** muncul di atas (atau di bawah) objek yang diklik, bukan di pojok.
 
 ### Keputusan Fase 1A/1B
 

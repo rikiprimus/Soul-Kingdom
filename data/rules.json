@@ -89,7 +89,7 @@
     "missionSeconds": 30
   },
   "barracks": {
-    "_note": "Barak (penahan), Arena Petarung (petarung), dan Lapangan Panah (penembak) melatih prajurit dasar yang lahir Dewasa: wujud tingkat 1 sesuai peran dan elemen dasar (1 unsur). Level bangunan membuka jumlah wujud dan elemen. Butuh slot populasi.",
+    "_note": "Guild (id `barak`, penahan), Arena Petarung (petarung), dan Lapangan Panah (penembak) melatih prajurit dasar yang lahir Dewasa: wujud tingkat 1 sesuai peran dan elemen dasar (1 unsur). Level bangunan membuka jumlah wujud dan elemen. Butuh slot populasi.",
     "train": { "gold": 150, "food": 100, "seconds": 120 },
     "queueMax": 3,
     "unlocksByLevel": [

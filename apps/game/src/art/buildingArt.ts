@@ -713,6 +713,57 @@ const DESIGNS: Record<string, Design> = {
       p.ellipse({ x: c.x - 12, y: c.y - 14 }, 0.9, 0.9, 0x111111);
     },
   },
+  domba: {
+    top: 34,
+    draw(p) {
+      const c = p.fp(0.5, 0.55);
+      p.ellipse({ x: c.x, y: c.y - 1 }, 11, 3, 0x000000, null, 0.18);
+      for (const dx of [-7, -3, 4, 8]) {
+        p.line({ x: c.x + dx, y: c.y - 7 }, { x: c.x + dx, y: c.y }, 0x3a3030, 2.2);
+      }
+      // Woolly body: a ring of puffs around a round core.
+      const wool = 0xf4f0e6;
+      const woolLine = 0xa39a88;
+      for (const [dx, dy] of [
+        [-7, -12],
+        [-2, -16],
+        [5, -16],
+        [9, -12],
+        [3, -9],
+        [-4, -9],
+      ] as const) {
+        p.ellipse({ x: c.x + dx, y: c.y + dy }, 5, 4.5, wool, woolLine);
+      }
+      p.ellipse({ x: c.x + 1, y: c.y - 12.5 }, 9, 5.5, wool, null);
+      p.ellipse({ x: c.x - 12, y: c.y - 14 }, 4.5, 4, 0x3a3030, 0x1e1818);
+      p.ellipse({ x: c.x - 12, y: c.y - 18 }, 3.5, 2.2, wool, woolLine);
+      p.ellipse({ x: c.x - 13.5, y: c.y - 14.5 }, 0.9, 0.9, 0xffffff);
+    },
+  },
+  sapi: {
+    top: 44,
+    draw(p) {
+      const c = p.fp(0.5, 0.55);
+      p.ellipse({ x: c.x, y: c.y - 1 }, 14, 3.5, 0x000000, null, 0.18);
+      for (const dx of [-10, -5, 6, 11]) {
+        p.line({ x: c.x + dx, y: c.y - 12 }, { x: c.x + dx, y: c.y }, 0xe8e2d6, 2.6);
+        p.line({ x: c.x + dx, y: c.y - 2 }, { x: c.x + dx, y: c.y }, 0x2e2622, 2.6);
+      }
+      const hide = 0xf4f0e6;
+      const hideLine = 0x6e6458;
+      p.ellipse({ x: c.x + 1, y: c.y - 16 }, 15, 8, hide, hideLine);
+      // Black patches.
+      p.ellipse({ x: c.x + 5, y: c.y - 18 }, 5, 3.5, 0x2e2622);
+      p.ellipse({ x: c.x - 5, y: c.y - 14 }, 3.5, 2.6, 0x2e2622);
+      p.ellipse({ x: c.x + 11, y: c.y - 13 }, 2.6, 2, 0x2e2622);
+      // Head with a pink muzzle and small horns.
+      p.ellipse({ x: c.x - 14, y: c.y - 20 }, 6, 5.5, hide, hideLine);
+      p.ellipse({ x: c.x - 17, y: c.y - 17 }, 4, 3, 0xe8a5a0, 0x9a6460);
+      p.line({ x: c.x - 16, y: c.y - 25 }, { x: c.x - 19, y: c.y - 29 }, 0xd9c9a3, 1.6);
+      p.line({ x: c.x - 11, y: c.y - 25 }, { x: c.x - 9, y: c.y - 29 }, 0xd9c9a3, 1.6);
+      p.ellipse({ x: c.x - 15, y: c.y - 21.5 }, 0.9, 0.9, 0x111111);
+    },
+  },
   barak: {
     top: 90,
     draw(p, level) {

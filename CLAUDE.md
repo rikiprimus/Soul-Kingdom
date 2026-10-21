@@ -66,7 +66,7 @@ Setelah mengubah kode, selalu jalankan `pnpm test` dan `pnpm lint` sebelum menya
 4. **Setiap fungsi logika baru wajib punya tes.** Untuk peluang, pakai tes Monte Carlo (misalnya 100.000 percobaan) dengan toleransi yang wajar.
 5. **Kode berbahasa Inggris, teks yang dilihat pemain berbahasa Indonesia.** Nama elemen, wujud, dan teks UI diambil dari data, bukan ditulis ulang di kode.
 6. **Server adalah sumber kebenaran (mulai tugas 1.6).** Hasil acak, saldo, timer, dan hasil pertarungan dihitung di server; client hanya meminta dan menampilkan.
-7. **Tidak ada monster yang bisa dibeli dengan uang asli.** Semua monster di atas wujud tingkat 1 berelemen dasar hanya lahir dari Soul Mixer atau Sarang Telur Jiwa (telur tidak dijual dengan uang asli maupun permata). Permata hanya untuk: buka slot, mempercepat waktu, Ramalan Jiwa, dan menghidupkan kembali monster yang mati di Kuburan.
+7. **Tidak ada monster yang bisa dibeli dengan uang asli.** Monster hanya lahir dari menetas telur (telur awal, Sarang Telur Jiwa), Soul Mixer, atau hadiah — tidak dari barak maupun toko (telur tidak dijual dengan uang asli maupun permata). Barak melatih prajurit manusia, bukan monster (Tugas 1A.13). Permata hanya untuk: buka slot, mempercepat waktu, Ramalan Jiwa, dan menghidupkan kembali monster yang mati di Kuburan.
 8. **Aset gambar:** boleh gambar buatan kode, ilustrator, atau generator (mis. SpriteCook), asal **orisinal** dan mengikuti skill `soul-monster-art-style`. Jangan memakai gambar, karakter, atau aset dari game lain (termasuk meniru gaya khas Social Empires secara persis). Aset yang belum dibuat tetap memakai gambar buatan kode sebagai cadangan.
 9. Setelah tugas selesai, centang tugas itu di `docs/PLAN.md` dan tulis ringkasan singkat perubahan.
 
@@ -101,7 +101,7 @@ Siklus dasar ada di `elements.json → beats`. Untuk penyerang A dan bertahan D:
 
 ### Pertarungan
 
-- **Serbu (utama):** hingga `rules.battle.maxUnits` monster, ditempatkan pemain di petak medan, dibatasi poin kekuatan (`rules.battle.powerPoints` per tingkat wujud, batas naik bersama level Barak). Pertempuran otomatis dan deterministik (RNG berbenih) agar bisa diputar ulang dan diverifikasi server.
+- **Serbu (utama):** hingga `rules.battle.maxUnits` unit (monster dan prajurit), ditempatkan pemain di petak medan, dibatasi poin kekuatan (`rules.battle.powerPoints` per tingkat wujud, batas naik bersama gabungan level tiga barak prajurit). Pertempuran otomatis dan deterministik (RNG berbenih) agar bisa diputar ulang dan diverifikasi server.
 - **Petualangan:** wilayah berisi titik sumber daya dan bos; bos yang dikalahkan menaikkan tingkat hasil maksimum Soul Mixer.
 - **Arena:** mode sampingan 3 lawan 3.
 

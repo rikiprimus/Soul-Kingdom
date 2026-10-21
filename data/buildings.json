@@ -385,8 +385,8 @@
     },
     {
       "id": "barak",
-      "name": "Barak",
-      "description": "Melatih pasukan. Level Barak menaikkan batas poin kekuatan untuk Serbu.",
+      "name": "Guild",
+      "description": "Markas para pejuang monster. Melatih penahan; level Guild menaikkan batas poin kekuatan untuk Serbu.",
       "category": "militer",
       "feature": "barracks",
       "size": 3,
