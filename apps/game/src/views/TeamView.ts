@@ -8,8 +8,7 @@ import {
   missionFor,
   sendTeam,
   soldierName,
-  teamUnits,
-  winChance,
+  previewWinChance,
 } from '@soul-monster/shared';
 import { t } from '../text';
 import { MINI_CARD_HEIGHT, miniCard } from '../ui/MonsterCard';
@@ -33,7 +32,7 @@ export class TeamView extends View {
       return 60;
     }
     const ids = team.ids();
-    const chance = winChance(teamUnits(this.state, ids), e);
+    const chance = previewWinChance(this.state, ids, e);
     const { maxTeam } = gameData.rules.skirmish;
 
     let y = 10;

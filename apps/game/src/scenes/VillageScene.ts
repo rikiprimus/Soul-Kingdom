@@ -2166,8 +2166,8 @@ export class VillageScene extends Phaser.Scene {
 
   /**
    * Health bars while a team fights: they appear when the first member reaches the enemy
-   * and drain over the rest of the mission towards the outcome rolled at departure
-   * (display only; the result itself comes from the shared mission logic).
+   * and drain over the rest of the mission to the HP left in the battle simulated at
+   * departure (`Mission.hpLeft` / `enemyHpLeft`).
    */
   private drawFights() {
     if (!this.fightGfx) this.fightGfx = this.add.graphics().setDepth(1_400_000);
@@ -2186,8 +2186,11 @@ export class VillageScene extends Phaser.Scene {
       let fight = this.fights.get(m.id);
       if (!fight) {
         const walkers = this.walkers.filter((w) => m.monsterIds.includes(w.monsterId));
+        // The fight shows from the team's arrival, or from half-time if the walk is long.
+        const halfway = m.endsAt - this.store.now() <= gameData.rules.skirmish.missionSeconds / 2;
         const arrived =
           walkers.length === 0 ||
+          halfway ||
           walkers.some((w) => {
             const p = isoToWorld(w.cu, w.cv);
             return Phaser.Math.Distance.Between(p.x, p.y, view.x, view.y) < 60;
@@ -2212,21 +2215,20 @@ export class VillageScene extends Phaser.Scene {
         this.fights.set(m.id, fight);
       }
       const t = Phaser.Math.Clamp((this.time.now - fight.start) / (fight.end - fight.start), 0, 1);
-      // Small per-member differences so the bars do not move in lockstep.
-      const spread = (key: string) => 0.6 + ((hashSeed(key) % 100) / 100) * 0.4;
+      // Bars drain from full to the HP the simulator left each fighter with.
+      const drain = (left: number | undefined) => 1 - t * (1 - (left ?? 1));
       const bar = (x: number, y: number, hp: number, color: number) => {
         g.fillStyle(0x1b1530, 0.85).fillRect(x - 14, y, 28, 5);
         g.fillStyle(color, 1).fillRect(x - 13, y + 1, 26 * Phaser.Math.Clamp(hp, 0, 1), 3);
       };
+      let shown = 0;
       for (const child of view.list) {
         if (!(child instanceof MonsterView) && !(child instanceof Phaser.GameObjects.Image))
           continue;
-        const loss = m.won ? 1 : 0.5 * spread(`${m.id}:${child.x}`);
         const top = child instanceof MonsterView ? child.y - 30 : child.y - 34;
-        bar(view.x + child.x, view.y + top, 1 - t * loss, COLORS.danger);
+        bar(view.x + child.x, view.y + top, drain(m.enemyHpLeft[shown++]), COLORS.danger);
       }
-      const team = (id: string) =>
-        1 - t * (m.dead.includes(id) ? 1 : (m.won ? 0.35 : 0.7) * spread(`${m.id}:${id}`));
+      const team = (id: string) => drain(m.hpLeft[id]);
       for (const w of this.walkers) {
         if (m.monsterIds.includes(w.monsterId))
           bar(w.view.x, w.view.y - 30, team(w.monsterId), COLORS.good);

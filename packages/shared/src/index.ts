@@ -12,5 +12,6 @@ export * from './workers';
 export * from './wilds';
 export * from './animals';
 export * from './barracks';
+export * from './battle';
 export * from './missions';
 export * from './encounters';

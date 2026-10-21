@@ -1,4 +1,5 @@
-import { soldierPower } from './barracks';
+import { estimateWinChance, simulateBattle, type Fighter } from './battle';
+import { soldierPower, soldierStats } from './barracks';
 import { deepClone } from './clone';
 import {
   gameData,
@@ -8,7 +9,7 @@ import {
   type VillageAmount,
 } from './data';
 import { elementAdvantage } from './elements';
-import { getStage, powerPointsOf, type Monster, type MonsterKind } from './monster';
+import { getStage, monsterStats, powerPointsOf, type Monster, type MonsterKind } from './monster';
 import { createRng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { hasRoomFor } from './workers';
@@ -35,8 +36,11 @@ export interface Mission {
   monsterIds: string[];
   endsAt: number;
   won: boolean;
-  /** Team members that die (only when the fight is lost). */
+  /** Team members that fall in the fight (winners can lose members too). */
   dead: string[];
+  /** HP left after the fight, 0–1: per team member id, and per enemy (same order as shown). */
+  hpLeft: Record<string, number>;
+  enemyHpLeft: number[];
   reward: VillageAmount;
   soulCrystal: number;
 }
@@ -121,13 +125,55 @@ export function encounterPower(
   }, 0);
 }
 
-/** Chance that a team beats an encounter: t^k / (t^k + e^k). */
-export function winChance(team: TeamUnit[], e: WildEncounter, data: GameData = gameData): number {
-  if (team.length === 0) return 0;
-  const k = data.rules.skirmish.sharpness;
-  const t = teamPower(team, e, data) ** k;
-  const f = encounterPower(e, team, data) ** k;
-  return t + f === 0 ? 0 : t / (t + f);
+// ---------- Battle fighters ----------
+
+/** The fighters behind team ids (monsters with their element and skills, soldiers without). */
+export function teamFighters(
+  state: PlayerState,
+  ids: readonly string[],
+  data: GameData = gameData,
+): Fighter[] {
+  const out: Fighter[] = [];
+  for (const id of ids) {
+    const m = state.monsters.find((x) => x.id === id);
+    if (m) out.push({ id, stats: monsterStats(m, data), element: m.element, skill: true });
+    const s = state.soldiers.find((x) => x.id === id);
+    if (s) out.push({ id, stats: soldierStats(s, data), element: null, skill: false });
+  }
+  return out;
+}
+
+/** The enemies of an encounter as fighters: bandits by head count, or its monsters. */
+export function encounterFighters(e: WildEncounter, data: GameData = gameData): Fighter[] {
+  const group = encounterGroup(e, data);
+  if (group.kind === 'bandit') {
+    const { stats, powerScale } = data.rules.battle.bandit;
+    const k = (group.banditPower ?? 0) * powerScale;
+    const scaled = { ...stats, hp: stats.hp * k, atk: stats.atk * k, def: stats.def * k };
+    return Array.from({ length: e.count }, (_, i) => ({
+      id: `x${i}`,
+      stats: scaled,
+      element: null,
+      skill: false,
+    }));
+  }
+  return e.enemies.map((x, i) => ({
+    id: `x${i}`,
+    stats: monsterStats(x, data),
+    element: x.element,
+    skill: true,
+  }));
+}
+
+/** Preview of the odds: the share of fixed-seed simulations this team wins. */
+export function previewWinChance(
+  state: PlayerState,
+  ids: readonly string[],
+  e: WildEncounter,
+  runs: number = gameData.rules.battle.sim.previewRuns,
+  data: GameData = gameData,
+): number {
+  return estimateWinChance(teamFighters(state, ids, data), encounterFighters(e, data), runs, data);
 }
 
 // ---------- Sending a team ----------
@@ -137,12 +183,12 @@ export function sendTeam(
   params: { monsterIds: string[]; encounterId: string },
   now: number,
   data: GameData = gameData,
-): ActionResult<{ missionId: string; chance: number }> {
+): ActionResult<{ missionId: string }> {
   const e = state.village.encounters.find((x) => x.id === params.encounterId);
   if (!e) return fail('encounterNotFound');
   if (missionFor(state, e.id)) return fail('encounterBusy');
   const ids = params.monsterIds;
-  const { maxTeam, deathChanceOnLoss, missionSeconds } = data.rules.skirmish;
+  const { maxTeam, missionSeconds } = data.rules.skirmish;
   if (ids.length < 1 || ids.length > maxTeam || new Set(ids).size !== ids.length) {
     return fail('invalidAmount');
   }
@@ -153,16 +199,16 @@ export function sendTeam(
     const inMixer = state.mixQueue.some((q) => q.parents.some((p) => p.id === id));
     if (inMixer || isOnMission(state, id)) return fail('monsterBusy');
   }
-  const chance = winChance(teamUnits(state, ids, data), e, data);
   const next = deepClone(state);
   const rng = createRng(next.rngState);
-  const won = rng.chance(chance);
-  let dead: string[] = [];
-  if (!won) {
-    dead = ids.filter(() => rng.chance(deathChanceOnLoss));
-    // A lost fight always costs at least one member.
-    if (dead.length === 0) dead = [ids[rng.int(0, ids.length - 1)]!];
-  }
+  // The whole fight is simulated now; its outcome is applied when the mission ends.
+  const team = teamFighters(state, ids, data);
+  const enemies = encounterFighters(e, data);
+  const battle = simulateBattle(team, enemies, rng.int(0, 0x7fffffff), data);
+  const won = battle.winner === 'attackers';
+  const dead = ids.filter((id) => (battle.hp[id] ?? 0) <= 0);
+  const hpLeft = Object.fromEntries(team.map((f) => [f.id, battle.hp[f.id]! / f.stats.hp]));
+  const enemyHpLeft = enemies.map((f) => battle.hp[f.id]! / f.stats.hp);
   const group = encounterGroup(e, data);
   const reward: VillageAmount = { gold: 0, food: 0, wood: 0, stone: 0 };
   let soulCrystal = 0;
@@ -180,10 +226,12 @@ export function sendTeam(
     endsAt: now + missionSeconds,
     won,
     dead,
+    hpLeft,
+    enemyHpLeft,
     reward,
     soulCrystal,
   });
-  return { ok: true, state: next, missionId, chance };
+  return { ok: true, state: next, missionId };
 }
 
 /** What finished missions did, for the client to show. */
@@ -204,15 +252,14 @@ export function settleMissions(state: PlayerState, now: number): PlayerState {
       for (const r of VILLAGE_RESOURCES) next.resources[r] += m.reward[r];
       next.resources.soulCrystal += m.soulCrystal;
       next.village.encounters = next.village.encounters.filter((e) => e.id !== m.encounterId);
-    } else {
-      for (const id of m.dead) {
-        // Fallen soldiers are gone; fallen monsters wait in the Kuburan.
-        next.soldiers = next.soldiers.filter((x) => x.id !== id);
-        const fallen = next.monsters.find((x) => x.id === id);
-        if (!fallen) continue;
-        next.monsters = next.monsters.filter((x) => x.id !== id);
-        next.graveyard.push(fallen);
-      }
+    }
+    // Members who fell (on either outcome): soldiers are gone, monsters go to the Kuburan.
+    for (const id of m.dead) {
+      next.soldiers = next.soldiers.filter((x) => x.id !== id);
+      const fallen = next.monsters.find((x) => x.id === id);
+      if (!fallen) continue;
+      next.monsters = next.monsters.filter((x) => x.id !== id);
+      next.graveyard.push(fallen);
     }
   }
   next.missions = next.missions.filter((x) => x.endsAt > now);

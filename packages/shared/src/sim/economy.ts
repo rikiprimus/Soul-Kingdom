@@ -13,7 +13,7 @@ import {
 } from '../barracks';
 import { gameData, VILLAGE_RESOURCES, type GameData, type VillageAmount } from '../data';
 import { spawnEncounters } from '../encounters';
-import { isOnMission, sendTeam, teamUnits, winChance } from '../missions';
+import { encounterPower, isOnMission, sendTeam, teamPower, teamUnits } from '../missions';
 import { formTierOf, foodToNextStage, isFinalStage } from '../monster';
 import {
   collectMix,
@@ -397,7 +397,13 @@ export function simulateEconomy(
           .map((m) => m.id),
       ].filter((id) => !isOnMission(s, id));
       const team: string[] = [];
-      const odds = () => winChance(teamUnits(s, team, data), e, data);
+      // The bot judges by raw power (simulating every option would be too slow over 14
+      // days); the fight itself still runs through the battle simulator in sendTeam.
+      const odds = () => {
+        const units = teamUnits(s, team, data);
+        const ratio = teamPower(units, e, data) / Math.max(0.01, encounterPower(e, units, data));
+        return Math.min(1, ratio / 2);
+      };
       for (const id of free) {
         if (team.length >= data.rules.skirmish.maxTeam) break;
         team.push(id);

@@ -79,13 +79,27 @@
     "advantageMax": 2.0,
     "maxTicks": 3000,
     "ticksPerSecond": 20,
-    "arenaTeamSize": 3
+    "arenaTeamSize": 3,
+    "_simNote": "Simulator pertarungan (Tugas 1.3), 20 langkah/detik. Gerak = spd x moveTilesPerSpd petak/detik. Jeda serangan = attackSecondsAtSpd10 x 10 / spd. Kerusakan = atk x keunggulan elemen x defenseK / (defenseK + def), +-damageVariance acak, minimal minDamage. Monster: setiap serangan ke-skillEvery adalah jurus elemen (x skillMultiplier); prajurit tanpa jurus. Waktu habis = penyerang kalah. previewRuns = jumlah simulasi untuk perkiraan peluang menang.",
+    "sim": {
+      "moveTilesPerSpd": 0.05,
+      "attackSecondsAtSpd10": 1,
+      "defenseK": 50,
+      "damageVariance": 0.1,
+      "minDamage": 1,
+      "skillEvery": 4,
+      "skillMultiplier": 2,
+      "previewRuns": 200
+    },
+    "_banditNote": "Statistik satu bandit = stats x banditPower kelompoknya (wilds.json) x powerScale; spd dan range tidak dikali.",
+    "bandit": {
+      "stats": { "hp": 120, "atk": 10, "def": 8, "spd": 9, "range": 1 },
+      "powerScale": 2.5
+    }
   },
   "skirmish": {
-    "_note": "Pertarungan cepat tim melawan musuh liar (bukan Serbu). Kekuatan monster = poin kekuatan tingkat wujud x statMultiplier tahap tumbuh x rata-rata keunggulan elemen terhadap musuh. Peluang menang = tim^sharpness / (tim^sharpness + musuh^sharpness). Kalah: tiap anggota mati dengan peluang deathChanceOnLoss, minimal satu. Hasil dikunci saat tim berangkat dan diterapkan setelah missionSeconds.",
+    "_note": "Pertarungan tim melawan musuh liar (bukan Serbu). Hasil dihitung simulator pertarungan saat tim berangkat dan diterapkan setelah missionSeconds. Anggota yang HP-nya habis mati: monster ke Kuburan, prajurit gugur.",
     "maxTeam": 6,
-    "sharpness": 3,
-    "deathChanceOnLoss": 0.6,
     "missionSeconds": 30
   },
   "barracks": {

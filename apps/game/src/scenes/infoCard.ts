@@ -22,7 +22,7 @@ import {
   sendTeam,
   teamPower,
   teamUnits,
-  winChance,
+  previewWinChance,
   hatchEgg,
   monsterName,
   soldierKindOf,
@@ -169,6 +169,8 @@ function encounterInfo(state: PlayerState, id: string, a: InfoActions): InfoCont
   const group = encounterGroup(e);
   const ids = a.team();
   const members = teamUnits(state, ids);
+  // Simulated odds, worked out once per card (the team only changes by rebuilding it).
+  const percent = members.length ? Math.round(previewWinChance(state, ids, e) * 100) : 0;
   const mission = missionFor(state, e.id);
   const lines = [
     group.kind === 'bandit' ? t('enemy.banditInfo') : encounterMembers(e),
@@ -193,7 +195,7 @@ function encounterInfo(state: PlayerState, id: string, a: InfoActions): InfoCont
           t('team.status', {
             n: members.length,
             power: teamPower(members, e).toFixed(1),
-            percent: Math.round(winChance(members, e) * 100),
+            percent,
           }),
         );
       } else {

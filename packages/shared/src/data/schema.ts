@@ -157,12 +157,32 @@ export const rulesFileSchema = z.object({
     maxTicks: z.number().int().positive(),
     ticksPerSecond: z.number().int().positive(),
     arenaTeamSize: z.number().int().positive(),
+    /** Battle simulator (battle.ts). */
+    sim: z.object({
+      moveTilesPerSpd: z.number().positive(),
+      attackSecondsAtSpd10: z.number().positive(),
+      defenseK: z.number().positive(),
+      damageVariance: z.number().min(0).max(1),
+      minDamage: z.number().int().min(1),
+      skillEvery: z.number().int().min(1),
+      skillMultiplier: z.number().positive(),
+      previewRuns: z.number().int().min(1),
+    }),
+    /** One bandit's stats, scaled by its group's banditPower × powerScale. */
+    bandit: z.object({
+      stats: z.object({
+        hp: z.number().positive(),
+        atk: z.number().positive(),
+        def: z.number().nonnegative(),
+        spd: z.number().positive(),
+        range: z.number().int().min(1),
+      }),
+      powerScale: z.number().positive(),
+    }),
   }),
   population: z.object({ workerSlots: z.number().int().min(1) }),
   skirmish: z.object({
     maxTeam: z.number().int().min(1),
-    sharpness: z.number().positive(),
-    deathChanceOnLoss: probability,
     missionSeconds: z.number().positive(),
   }),
   barracks: z.object({

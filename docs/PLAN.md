@@ -695,6 +695,20 @@ Keputusan pemilik (2026-10-21): base awal memakai **prajurit manusia**, bukan mo
 > - **Dicek di browser:** game baru tanpa monster; ketuk Kandang → "Anjing Air menetas!"; menu Bangun menampilkan Guild, Barak Prajurit, Barak Panahan, Barak Berkuda (butuh Balai Lv 2); panel latih Barak Prajurit (Rekrut, Veteran Lv 2, Elit Lv 3); latih 1 Prajurit Rekrut → selesai, populasi bertambah.
 > - **Belum:** gambar SpriteCook untuk tiga barak dan prajurit; gelembung telur bisa tertutup HUD kalau Kandang di tepi atas layar.
 
+### - [ ] Tugas 1A.14 — Batu emas liar
+
+Ide pemilik (2026-10-21): sumber emas dari alam liar.
+
+- Di peta muncul **1–3 gugus** batu emas; tiap gugus = **4 petak berdekatan** (2×2).
+- Pekerja menambang batu emas seperti batu biasa dan mendapat emas.
+- Setelah diambil, petak itu berubah menjadi **batu kosong** yang tidak bisa diambil, lalu **terisi emas lagi** setelah waktu tertentu (tidak hilang dari peta).
+- Gugus baru tidak muncul di atas bangunan; gugus di wilayah terkunci tetap terlihat (pudar) seperti objek liar lain.
+- Angka di `data/wilds.json`.
+
+**Usulan angka (menunggu persetujuan pemilik):** 1–3 gugus per peta (acak berbenih), 4 petak per gugus, tiap petak 150 emas, kerja 75 detik (maks. 2 pekerja), terisi lagi 6 jam setelah diambil, peluang Kristal Jiwa 0,1.
+
+**Kriteria selesai:** tes jumlah gugus (1–3) dan bentuk 2×2, menambang memberi emas lalu petak jadi kosong, kosong tidak bisa ditambang, terisi lagi tepat setelah waktunya (juga setelah lama tidak main), migrasi simpanan; gambar SpriteCook (batu emas + batu kosong) dengan cadangan gambar kode.
+
 ## Fase 1B — Konten & retensi (4–5 minggu)
 
 ### - [ ] Tugas 1B.1 — Level & XP pemain
@@ -764,7 +778,7 @@ Keputusan pemilik (2026-10-21): base awal memakai **prajurit manusia**, bukan mo
 
 ## Fase 1 (lanjutan) — Pertarungan dan server
 
-### - [ ] Tugas 1.3 — Simulator pertarungan (shared)
+### - [x] Tugas 1.3 — Simulator pertarungan (shared)
 
 - Fungsi murni deterministik `simulateBattle(attackers, defenders, seed)`:
   - petak 6×5 sesuai `rules.battle.grid`;
@@ -777,6 +791,16 @@ Keputusan pemilik (2026-10-21): base awal memakai **prajurit manusia**, bukan mo
 - Menggantikan rumus sementara di Tugas 1A.10.
 
 **Kriteria selesai:** benih dan susunan sama selalu memberi hasil sama; pertempuran selalu berakhir sebelum `maxTicks`.
+
+> **Ringkasan (selesai 2026-10-21):**
+>
+> - **Shared (`battle.ts`, baru):** `simulateBattle(attackers, defenders, seed)` murni dan deterministik di petak `rules.battle.grid` (penyerang 2 kolom kiri, bertahan 2 kolom kanan, sel diacak berbenih), 20 langkah/detik: gerak ke musuh terdekat, serang dalam jangkauan sesuai jeda dari kecepatan, kerusakan = atk × keunggulan elemen × defenseK/(defenseK+def) ±10 %, jurus elemen monster tiap serangan ke-4 (×2), waktu habis = penyerang kalah. Log kejadian (`start`, `attack`, `skill`, `death`) + sisa HP per petarung. `estimateWinChance` = bagian kemenangan dari `previewRuns` simulasi berbenih tetap.
+> - **Data:** `rules.battle.sim` dan `rules.battle.bandit` (angka disetujui pemilik); `skirmish.sharpness` dan `deathChanceOnLoss` dihapus. Divalidasi zod.
+> - **Misi:** `sendTeam` menjalankan simulator saat berangkat (`teamFighters`, `encounterFighters`); anggota yang HP-nya habis mati walau tim menang (monster ke Kuburan, prajurit gugur). `Mission.hpLeft` / `enemyHpLeft` menyimpan sisa HP. `previewWinChance` menggantikan rumus `winChance`. **Simpanan v12** (migrasi 11 mengisi sisa HP misi yang sedang berjalan).
+> - **Client:** peluang menang di kartu musuh dan panel Pilih tim dari simulator (dihitung sekali per kartu); health bar memakai sisa HP sungguhan dan tampil paling lambat di separuh waktu misi bila tim masih berjalan.
+> - **Tes:** `battle.test.ts` (deterministik, selesai ≤ `maxTicks` dan waktu habis = kalah, rumus kerusakan + keunggulan elemen + varians, jurus tiap serangan ke-4 dan prajurit tanpa jurus, posisi awal per sisi, Monte Carlo tim lebih kuat lebih sering menang, cermin ≈ 50 %); `missions.test.ts` Monte Carlo 4.000 kiriman cocok dengan perkiraan simulator.
+> - **Dicek di browser:** Kucing Api Dewasa vs 2 bandit (perkiraan menang 37 %) → menang dengan sisa HP 10 %; bar merah bandit muncul dan habis, hadiah masuk.
+> - **Catatan penyeimbangan:** di simulasi ekonomi 14 hari, bot kini sering kalah melawan bandit (hari 3: 1 menang/10 kalah) — bandit simulator lebih kuat dari rumus lama. Perlu ditinjau bersama Tugas 1A.11 (angka bandit / `banditPower`).
 
 ### - [ ] Tugas 1.4 — Mode Serbu
 

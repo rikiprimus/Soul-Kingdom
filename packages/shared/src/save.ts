@@ -9,7 +9,7 @@ import { encounterRespawnSeconds } from './encounters';
 import { canPlace, createVillage, levelDef, scatterObstacles, type Village } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 11;
+export const SAVE_SCHEMA_VERSION = 12;
 
 const int = z.number().int();
 const monsterSchema = z.object({
@@ -110,6 +110,8 @@ const playerStateSchema = z.object({
       endsAt: z.number(),
       won: z.boolean(),
       dead: z.array(z.string()),
+      hpLeft: z.record(z.string(), z.number().min(0).max(1)),
+      enemyHpLeft: z.array(z.number().min(0).max(1)),
       reward: z.object({
         gold: int.min(0),
         food: int.min(0),
@@ -330,6 +332,16 @@ const migrations: Record<number, (state: unknown) => unknown> = {
     state.barracksQueue = [];
     state.soldiers = [];
     state.eggs = [];
+    return state;
+  },
+  // v11 missions came from the odds formula: give them HP left for the fight display.
+  11: (raw) => {
+    const state = raw as PlayerState;
+    for (const m of state.missions) {
+      m.hpLeft = Object.fromEntries(m.monsterIds.map((id) => [id, m.dead.includes(id) ? 0 : 0.5]));
+      const e = state.village.encounters.find((x) => x.id === m.encounterId);
+      m.enemyHpLeft = Array.from({ length: e?.count ?? 0 }, () => (m.won ? 0 : 0.5));
+    }
     return state;
   },
 };

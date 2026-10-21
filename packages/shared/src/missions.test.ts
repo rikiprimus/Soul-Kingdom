@@ -17,8 +17,7 @@ import {
   reviveMonster,
   sendTeam,
   teamPower,
-  teamUnits,
-  winChance,
+  previewWinChance,
   type WildEncounter,
 } from './missions';
 import { soldierPower } from './barracks';
@@ -122,10 +121,7 @@ const units = (ms: Monster[]) => ms.map((m) => ({ power: monsterPower(m), elemen
 describe('power and odds', () => {
   it('rises with team size, growth and element edge', () => {
     const one = [adult('a', 'kucing', 'api')];
-    const two = [...one, adult('b', 'kucing', 'api')];
     const e = bandits(3);
-    expect(winChance(units(two), e)).toBeGreaterThan(winChance(units(one), e));
-    expect(winChance(units([]), e)).toBe(0);
     const baby = [{ ...one[0]!, stage: growth.stages[0]!.id }];
     expect(monsterPower(baby[0]!)).toBeLessThan(monsterPower(one[0]!));
     const strong = {
@@ -141,10 +137,6 @@ describe('power and odds', () => {
     expect(encounterPower(bandits(4), units(one))).toBeCloseTo(
       4 * encounters.levels[0]!.groups[0]!.banditPower!,
     );
-    const k = skirmish.sharpness;
-    const t = teamPower(units(two), e) ** k;
-    const f = encounterPower(e, units(two)) ** k;
-    expect(winChance(units(two), e)).toBeCloseTo(t / (t + f));
   });
 
   it('counts soldiers by power points with no element edge either way', () => {
@@ -160,38 +152,39 @@ describe('power and odds', () => {
     expect(encounterPower(strong, [soldier])).toBeCloseTo(monsterPower(strong.enemies[0]!));
   });
 
-  it('wins and pays at the stated chance (Monte Carlo)', () => {
+  it('wins and pays at the simulated chance, and the fallen have no HP (Monte Carlo)', () => {
     const base = setup(4);
     const team = ['m1', 'm2'];
-    const chance = winChance(teamUnits(base, team), base.village.encounters[0]!);
-    expect(chance).toBeGreaterThan(0.2);
-    expect(chance).toBeLessThan(0.8);
-    // A bare state keeps 100 000 sends fast; sendTeam only reads these parts.
+    const e = base.village.encounters[0]!;
+    expect(previewWinChance(base, [], e)).toBe(0);
+    expect(previewWinChance(base, ['m1', 'm2', 'm3'], e)).toBeGreaterThanOrEqual(
+      previewWinChance(base, ['m1'], e),
+    );
+    const chance = previewWinChance(base, team, e, 2000);
+    expect(chance).toBeGreaterThan(0.05);
+    expect(chance).toBeLessThan(0.95);
+    // A bare state keeps the sends fast; sendTeam only reads these parts.
     let s = {
       ...base,
       village: { ...base.village, obstacles: [], buildings: [] },
     } as PlayerState;
     const reward = encounters.levels[0]!.groups[0]!.reward;
     let wins = 0;
-    let deaths = 0;
     let gold = 0;
-    const n = 100_000;
+    const n = 4000;
     for (let i = 0; i < n; i++) {
       const r = ok(sendTeam(s, { monsterIds: team, encounterId: 'e1' }, T0));
       const m = r.state.missions[0]!;
-      if (m.won) wins++;
-      else expect(m.dead.length).toBeGreaterThanOrEqual(1);
-      deaths += m.dead.length;
+      if (m.won) {
+        wins++;
+        expect(m.enemyHpLeft.every((hp) => hp === 0)).toBe(true);
+      }
+      for (const id of team) expect(m.hpLeft[id] === 0).toBe(m.dead.includes(id));
       gold += m.reward.gold;
       s = { ...s, rngState: r.state.rngState };
     }
-    expect(Math.abs(wins / n - chance)).toBeLessThan(0.01);
-    expect(Math.abs(gold / n - chance * reward.gold)).toBeLessThan(0.01 * reward.gold + 1);
-    // Losses kill each member at deathChanceOnLoss, but never nobody.
-    const lossDeaths = deaths / (n - wins);
-    const p = skirmish.deathChanceOnLoss;
-    const expected = 2 * p + (1 - p) ** 2;
-    expect(Math.abs(lossDeaths - expected)).toBeLessThan(0.02);
+    expect(Math.abs(wins / n - chance)).toBeLessThan(0.04);
+    expect(Math.abs(gold / n - chance * reward.gold)).toBeLessThan(0.04 * reward.gold + 1);
   });
 });
 
