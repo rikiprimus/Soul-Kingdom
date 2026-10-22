@@ -127,6 +127,10 @@ export const ACTIONS = {
       awaitProphecy: z.boolean().optional(),
       /** Development only; the server always drops it. */
       skipUnlock: z.boolean().optional(),
+      /** A friend's monster; the edge function swaps in its own checked copy. */
+      borrowed: z
+        .object({ id, form: id, element: id, stage: id, food: z.number().int().min(0) })
+        .optional(),
     }),
     (s, p, now) => startMix(s, p, now),
   ),

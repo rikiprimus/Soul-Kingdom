@@ -104,6 +104,11 @@ export class GameStore {
     return this.link !== null;
   }
 
+  /** A friends request to the server (Tugas 2.1); offline it answers `offline`. */
+  social(request: object): Promise<{ ok: boolean; error?: string; [key: string]: unknown }> {
+    return this.link?.social(request) ?? Promise.resolve({ ok: false, error: 'offline' });
+  }
+
   get state(): PlayerState {
     return this._state;
   }

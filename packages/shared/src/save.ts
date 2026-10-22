@@ -17,7 +17,7 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 24;
+export const SAVE_SCHEMA_VERSION = 25;
 
 const int = z.number().int();
 const villageAmountSchema = z.object({
@@ -33,6 +33,7 @@ const actionCountsSchema = z.object({
   gather: int.min(0),
   defeatEnemy: int.min(0),
   hatch: int.min(0),
+  help: int.min(0),
 });
 const monsterSchema = z.object({
   id: z.string(),
@@ -184,6 +185,10 @@ const playerStateSchema = z.object({
   actions: actionCountsSchema,
   quest: z.object({ index: int.min(0), start: actionCountsSchema }),
   daily: z.object({ next: int.min(0), lastDay: int.nullable() }),
+  social: z.object({
+    helped: z.record(z.string(), int),
+    borrowDay: int.nullable(),
+  }),
   monsters: z.array(monsterSchema),
   mixQueue: z.array(
     z.object({
@@ -510,6 +515,14 @@ const migrations: Record<number, (state: unknown) => unknown> = {
     const state = raw as PlayerState;
     state.island = gameData.islands.islands[0]!.id;
     state.islands = {};
+    return state;
+  },
+  // v24 had no friends: no help given, nothing borrowed, no help counted yet.
+  24: (raw) => {
+    const state = raw as PlayerState;
+    state.social = { helped: {}, borrowDay: null };
+    state.actions.help = 0;
+    state.quest.start.help = 0;
     return state;
   },
 };

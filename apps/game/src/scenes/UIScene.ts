@@ -51,6 +51,7 @@ import { MixerView } from '../views/MixerView';
 import { PediaView } from '../views/PediaView';
 import { StorageView } from '../views/StorageView';
 import { WorldView } from '../views/WorldView';
+import { FriendsView } from '../views/FriendsView';
 import { BarracksView } from '../views/BarracksView';
 import { GraveyardView } from '../views/GraveyardView';
 import { TeamView } from '../views/TeamView';
@@ -68,9 +69,10 @@ export type PanelKind =
   | 'team'
   | 'graveyard'
   | 'storage'
-  | 'world';
+  | 'world'
+  | 'friends';
 /** Tabs on the floating bar. Monsters and the Soul Mixer open from their buildings. */
-const DOCK_TABS: PanelKind[] = ['build', 'pedia', 'storage', 'world'];
+const DOCK_TABS: PanelKind[] = ['build', 'pedia', 'storage', 'world', 'friends'];
 const PANEL_DEPTH = 300;
 const DOCK_DEPTH = 360;
 const DOCK_KEY = 'soul-monster:dock-visible';
@@ -1029,6 +1031,7 @@ export class UIScene extends Phaser.Scene {
           this.game.events.emit(EVT.startPlacement, { storedId });
         }),
       world: () => new WorldView(ctx),
+      friends: () => new FriendsView(ctx),
     };
     const view = views[kind]();
     view.render();

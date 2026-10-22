@@ -1014,6 +1014,15 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 - Login Google, tautkan akun anonim.
 - Teman lewat kode, kunjungi dan bantu markas teman, pinjam satu monster teman untuk campur sekali sehari.
 
+> **Ringkasan (sebagian, 2026-10-22):**
+>
+> - **Keputusan pemilik (2026-10-22):** pertemanan lewat permintaan yang harus diterima; bantu sekali sehari per teman; nama pilihan pemain.
+> - **Shared (`social.ts`, baru):** `helpFriend` (murni, dua keadaan: konstruksi teman yang paling lama dipercepat `rules.social.helpSpeedUpSeconds`, atau teman dapat `helpFriendGold` bila tak ada yang dibangun; penolong dapat `helpReward` + XP aksi baru `help`), batas harian `canHelp`/`canBorrow`, `startMix` menerima monster pinjaman (`borrowed`, id `borrowedId`, tidak pernah habis), `borrowFrom`/`parseBorrowedId` untuk salinan server. **Simpanan v25** (`social`, hitungan `help`).
+> - **Server (belum di-deploy, menunggu persetujuan pemilik):** migrasi `20261022010000_friends.sql` (kode teman, nama, `friend_requests`, `friendships`), edge function `social` (me, setName, request, respond, visit, help), function `action` memeriksa pertemanan dan memakai salinan monster dari server untuk pinjaman; kode muat/simpan bersama di `supabase/functions/_shared/db.ts`.
+> - **Client:** tab "Teman": nama & kode, tambah teman (kode), permintaan masuk (Terima/Tolak) dan terkirim, Kunjungi (ringkasan markas, Bantu, pinjam monster dewasa → pilih induk sendiri → campur). Isian nama/kode memakai `window.prompt` sementara.
+> - **Tes:** `social.test.ts` (bantu & sasaran konstruksi, emas bila tak membangun, sekali sehari per teman, pinjam tidak menghabiskan & sekali sehari, harus dewasa, salinan server, simpan/migrasi). 353 tes lulus.
+> - **Belum:** deploy + uji dua akun di browser; kunjungan visual (desa teman yang bisa dilihat), login Google (butuh OAuth Client ID dari pemilik).
+
 ### - [ ] Tugas 2.2 — Serbu markas pemain lain
 
 - Simpan cuplikan pertahanan pemain; pencocokan lawan berdasarkan kekuatan; hasil dihitung server; rekaman bisa ditonton pemilik markas.

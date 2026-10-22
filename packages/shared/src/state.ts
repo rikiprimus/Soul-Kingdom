@@ -25,6 +25,8 @@ import { encounterRespawnSeconds, spawnEncounters } from './encounters';
 import { isOnMission, type Mission } from './missions';
 import { deepClone } from './clone';
 import { recordAction, type XpAction } from './player';
+import { dayNumber } from './quests';
+import { canBorrow, type SocialDay } from './social';
 import { createRng, type RngState } from './rng';
 import type { AdventureProgress } from './adventure';
 import type { SerbuProgress } from './serbu';
@@ -104,6 +106,8 @@ export interface PlayerState {
   actions: Record<XpAction, number>;
   quest: QuestProgress;
   daily: DailyBonus;
+  /** Help given and monster borrowed today (Tugas 2.1). */
+  social: SocialDay;
   monsters: Monster[];
   mixQueue: MixEntry[];
   mixerSlots: number;
@@ -250,6 +254,7 @@ export function createInitialState(
     actions: noActions(),
     quest: { index: 0, start: noActions() },
     daily: { next: 0, lastDay: null },
+    social: { helped: {}, borrowDay: null },
     monsters: [],
     mixQueue: [],
     mixerSlots: mixer.initialSlots,
@@ -295,6 +300,12 @@ export interface StartMixParams {
   awaitProphecy?: boolean;
   /** Development-only: ignore the Town Hall unlock level. */
   skipUnlock?: boolean;
+  /**
+   * A friend's adult monster as the second parent (once a day; its id from `borrowedId`).
+   * It is never used up; `parentBId` is then ignored. The server checks the friendship and
+   * puts in its own copy of the monster.
+   */
+  borrowed?: Monster;
 }
 
 function beginMixing(state: PlayerState, entry: MixEntry, now: number): void {
@@ -312,8 +323,9 @@ export function startMix(
   if (!params.skipUnlock && !isMixerUnlocked(state, data)) return fail('mixerLocked');
   if (state.mixQueue.length >= state.mixerSlots) return fail('slotsFull');
   const a = state.monsters.find((m) => m.id === params.parentAId);
-  const b = state.monsters.find((m) => m.id === params.parentBId);
+  const b = params.borrowed ?? state.monsters.find((m) => m.id === params.parentBId);
   if (!a || !b) return fail('monsterNotFound');
+  if (params.borrowed && !canBorrow(state, now, data)) return fail('alreadyClaimed');
   const valid = validateParents(a, b, data);
   if (!valid.ok) return fail(valid.error);
   if (isMonsterBusy(state, a.id) || isMonsterBusy(state, b.id)) return fail('parentBusy');
@@ -330,7 +342,10 @@ export function startMix(
   next.resources.gold -= cost.gold;
   next.resources.soulCrystal -= cost.soulCrystal;
 
-  const consumedParentIds = [a, b].filter((p) => isParentConsumed(p, data)).map((p) => p.id);
+  // A borrowed monster goes back to its owner.
+  const own = params.borrowed ? [a] : [a, b];
+  const consumedParentIds = own.filter((p) => isParentConsumed(p, data)).map((p) => p.id);
+  if (params.borrowed) next.social.borrowDay = dayNumber(now, data);
   next.monsters = next.monsters.filter((m) => !consumedParentIds.includes(m.id));
   const entry: MixEntry = {
     id: newId(next, 'x'),

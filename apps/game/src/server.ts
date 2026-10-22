@@ -43,7 +43,7 @@ export class ServerLink {
   send(request: ServerRequest, importSave?: string): void {
     this.waiting += 1;
     this.queue = this.queue
-      .then(() => this.post(request, importSave))
+      .then(() => this.post('action', { request, importSave }))
       .then((answer) => {
         this.waiting -= 1;
         if (answer.error === 'conflict') return this.send({ kind: 'load' });
@@ -56,16 +56,35 @@ export class ServerLink {
       });
   }
 
-  private async post(request: ServerRequest, importSave?: string): Promise<ServerAnswer> {
+  /**
+   * Calls the `social` function (friends), after any actions still on their way. An
+   * answer carrying the player's save (help) is applied like an action's.
+   */
+  social(request: object): Promise<ServerAnswer> {
+    const run = this.queue.then(() => this.post('social', { request }));
+    this.queue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run.then(
+      (answer) => {
+        if (this.waiting === 0 && answer.save && answer.now) this.onSave(answer.save, answer.now);
+        return answer;
+      },
+      () => ({ ok: false, error: 'offline' }),
+    );
+  }
+
+  private async post(fn: 'action' | 'social', body: object): Promise<ServerAnswer> {
     const call = async (session: Session) =>
-      fetch(`${this.config.url}/functions/v1/action`, {
+      fetch(`${this.config.url}/functions/v1/${fn}`, {
         method: 'POST',
         headers: {
           apikey: this.config.key,
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ request, importSave }),
+        body: JSON.stringify(body),
       });
     let res = await call(await this.session());
     // A token the server no longer accepts: refresh it (or sign in again) and retry once.

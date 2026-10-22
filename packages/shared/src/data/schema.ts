@@ -131,6 +131,7 @@ export const XP_ACTIONS = [
   'gather',
   'defeatEnemy',
   'hatch',
+  'help',
 ] as const;
 
 const statBlockSchema = z.object({
@@ -355,6 +356,7 @@ export const rulesFileSchema = z.object({
       gather: nonNegInt,
       defeatEnemy: nonNegInt,
       hatch: nonNegInt,
+      help: nonNegInt,
     }),
     /** levels[i] = level i + 1: total XP to reach it and the reward paid on reaching it. */
     levels: z
@@ -385,6 +387,15 @@ export const rulesFileSchema = z.object({
     /** Seconds added to UTC before cutting days (25200 = WIB midnight). */
     dayOffsetSeconds: z.number().int(),
     rewards: z.array(battleRewardSchema).min(1),
+  }),
+  social: z.object({
+    helpSpeedUpSeconds: nonNegInt,
+    helpFriendGold: nonNegInt,
+    helpReward: villageAmountSchema,
+    nameMin: z.number().int().min(1),
+    nameMax: z.number().int().min(1),
+    friendCodeLength: z.number().int().min(4),
+    maxFriends: z.number().int().min(1),
   }),
   server: z.object({
     beatEverySeconds: z.number().positive(),
