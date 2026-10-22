@@ -1,6 +1,7 @@
 import {
   deepClone,
   gameData,
+  mainVillage,
   plotKey,
   plotsPerSide,
   townHallLevel,
@@ -21,7 +22,7 @@ export function mountDebugPanel(store: GameStore): void {
   };
   const lastStage = gameData.rules.growth.stages.at(-1)!.id;
   const setHall = (s: PlayerState, delta: number) => {
-    const hall = s.village.buildings.find((b) => b.type === gameData.townHallId);
+    const hall = mainVillage(s).buildings.find((b) => b.type === gameData.townHallId);
     if (hall) hall.level = Math.min(gameData.maxTownHallLevel, Math.max(1, hall.level + delta));
   };
 

@@ -17,6 +17,7 @@ import { aggroEncounters } from './aggro';
 import { settleUnits } from './units';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { settleBarracks } from './barracks';
+import { recordAction } from './player';
 import { assignWorkers, idleWorkers, releaseWorkers, settleTraining } from './workers';
 
 export interface Construction {
@@ -37,6 +38,8 @@ export interface Building {
   lastCollectAt: number;
   /** A planted crop (farms only); its harvest is fixed when planted. */
   crop: { endsAt: number; food: number } | null;
+  /** Drawn mirrored (the second facing); left out when not. */
+  flipped?: boolean;
 }
 
 export interface Obstacle {
@@ -96,18 +99,37 @@ export function sizeOf(type: string, data: GameData = gameData): number {
   return (data.buildingById.get(type) ?? obstacleDef(type, data)).size;
 }
 
-/** Level of the finished Balai Utama (0 if there is none). */
+/** The island being played (`state.village`). */
+export function currentIsland(state: PlayerState, data: GameData = gameData) {
+  return data.islands.islands.find((i) => i.id === state.island) ?? data.islands.islands[0]!;
+}
+
+/** The main island's village, where the Balai Utama stands. */
+export function mainVillage(state: PlayerState, data: GameData = gameData): Village {
+  const main = data.islands.islands[0]!.id;
+  return state.island === main ? state.village : (state.islands[main] ?? state.village);
+}
+
+/** Buildings on every island (population, features and barracks count everywhere). */
+export function allBuildings(state: PlayerState): Building[] {
+  const others = Object.values(state.islands);
+  if (others.length === 0) return state.village.buildings;
+  return [state.village, ...others].flatMap((v) => v.buildings);
+}
+
+/** Level of the finished Balai Utama on the main island (0 if there is none). */
 export function townHallLevel(state: PlayerState, data: GameData = gameData): number {
-  const hall = state.village.buildings.find((b) => b.type === data.townHallId);
+  const hall = mainVillage(state, data).buildings.find((b) => b.type === data.townHallId);
   return hall?.level ?? 0;
 }
 
+/** A finished building with this feature on any island. */
 export function hasFeature(
   state: PlayerState,
   feature: BuildingFeature,
   data: GameData = gameData,
 ) {
-  return state.village.buildings.some(
+  return allBuildings(state).some(
     (b) => b.level >= 1 && data.buildingById.get(b.type)?.feature === feature,
   );
 }
@@ -116,8 +138,10 @@ export function countBuildings(state: PlayerState, type: string): number {
   return state.village.buildings.filter((b) => b.type === type).length;
 }
 
-/** How many of `type` the current Balai Utama level allows. */
+/** How many of `type` the current Balai Utama level allows (an island may set its own). */
 export function maxCountFor(state: PlayerState, type: string, data: GameData = gameData): number {
+  const island = currentIsland(state, data).maxCount;
+  if (island) return island[type] ?? 0;
   const level = Math.max(1, townHallLevel(state, data));
   const table = buildingDef(type, data).maxCount;
   return table[Math.min(level, table.length) - 1] ?? 0;
@@ -321,12 +345,11 @@ export function settleVillage(state: PlayerState, now: number): PlayerState {
     settleUnits(settleMissions(settleBarracks(settleTraining(state, now), now), now), now),
     now,
   );
-  const done = trained.village.buildings.some(
-    (b) => b.construction && b.construction.endsAt <= now,
-  );
+  // Constructions on the other islands keep going while the player is away.
+  const done = allBuildings(trained).some((b) => b.construction && b.construction.endsAt <= now);
   if (!done) return trained;
   const next = trained === state ? deepClone(state) : trained;
-  for (const b of next.village.buildings) {
+  for (const b of allBuildings(next)) {
     if (!b.construction || b.construction.endsAt > now) continue;
     b.level = b.construction.toLevel;
     b.lastCollectAt = b.construction.endsAt;
@@ -359,7 +382,7 @@ const MISSING: Record<(typeof VILLAGE_RESOURCES)[number], ActionError> = {
 };
 
 /** The first resource the player is short of, as an error code. */
-function canPay(state: PlayerState, cost: VillageAmount): ActionError | null {
+export function canPay(state: PlayerState, cost: VillageAmount): ActionError | null {
   for (const r of VILLAGE_RESOURCES) if (state.resources[r] < cost[r]) return MISSING[r];
   return null;
 }
@@ -397,6 +420,8 @@ export function buildBuilding(
     const def = data.buildingById.get(params.type);
     if (!def) return fail('unknownBuilding');
     if (def.hidden) return fail('notAvailableYet');
+    // A Keajaiban is never built: it is won (quest or set prize) and placed from the Gudang.
+    if (def.feature === 'wonder') return fail('notUnlocked');
     const first = def.levels[0]!;
     if (townHallLevel(s, data) < first.requiresTownHall) return fail('townHallTooLow');
     if (countBuildings(s, def.id) >= maxCountFor(s, def.id, data)) return fail('maxCountReached');
@@ -425,6 +450,7 @@ export function buildBuilding(
     };
     next.village.buildings.push(building);
     if (!instant) assignWorkers(next, workers, { kind: 'building', buildingId: building.id });
+    recordAction(next, 'build', 1, data);
     return { ok: true, state: next, buildingId: building.id };
   });
 }
@@ -464,6 +490,7 @@ export function upgradeBuilding(
       };
       assignWorkers(next, workers, { kind: 'building', buildingId: nb.id });
     }
+    recordAction(next, 'build', 1, data);
     return { ok: true, state: next, collected };
   });
 }
@@ -566,6 +593,8 @@ export function buildLine(
       });
       return id;
     });
+    // One XP award per action, however long the line.
+    recordAction(next, 'build', 1, data);
     return { ok: true, state: next, buildingIds };
   });
 }
@@ -635,6 +664,7 @@ export function upgradeGroup(
     for (const nb of next.village.buildings) {
       if (ids.has(nb.id)) nb.level += 1;
     }
+    recordAction(next, 'build', 1, data);
     return { ok: true, state: next, count: group.length };
   });
 }
@@ -830,6 +860,7 @@ export function collectBuilding(
     const next = deepClone(s);
     next.resources[production.resource] += amount;
     next.village.buildings.find((x) => x.id === buildingId)!.lastCollectAt = now;
+    recordAction(next, 'collect', 1, data);
     return { ok: true, state: next, resource: production.resource, amount };
   });
 }
@@ -935,6 +966,7 @@ export function harvestCrop(
     const next = deepClone(s);
     next.resources.food += food;
     next.village.buildings.find((x) => x.id === buildingId)!.crop = null;
+    recordAction(next, 'harvest', 1, data);
     return { ok: true, state: next, food };
   });
 }
@@ -963,11 +995,13 @@ export function collectAll(
     const next = deepClone(s);
     const total: VillageAmount = { gold: 0, food: 0, wood: 0, stone: 0 };
     let count = 0;
+    let harvested = 0;
     for (const b of next.village.buildings) {
       if (!isReadyToCollect(s, b, now, data)) continue;
       if (b.crop && b.crop.endsAt <= now) {
         total.food += b.crop.food;
         b.crop = null;
+        harvested++;
       } else {
         const production = productionOf(s, b, data)!;
         total[production.resource] += pendingProduction(s, b, now, data);
@@ -977,6 +1011,8 @@ export function collectAll(
     }
     if (count === 0) return fail('nothingToCollect');
     applyAmount(next, total);
+    recordAction(next, 'harvest', harvested, data);
+    recordAction(next, 'collect', count - harvested, data);
     return { ok: true, state: next, ...total, count };
   });
 }
@@ -1100,9 +1136,10 @@ export function scatterObstacles(
   nextId: () => string,
   avoid: (x: number, y: number, size: number) => boolean = () => false,
   data: GameData = gameData,
+  nodeIds: readonly string[] = data.islands.islands[0]!.nodes,
 ): void {
   const { mapSize } = data.village.village;
-  const defs = data.wilds.nodes;
+  const defs = data.wilds.nodes.filter((d) => nodeIds.includes(d.id));
   const totalWeight = defs.reduce((sum, d) => sum + d.weight, 0);
   let attempts = 0;
   while (village.obstacles.length < target && attempts < target * 50) {
@@ -1114,4 +1151,39 @@ export function scatterObstacles(
     if (avoid(x, y, def.size) || !canPlace(village, def.size, x, y, data)) continue;
     village.obstacles.push({ id: nextId(), type: def.id, x, y, work: 0 });
   }
+}
+
+/**
+ * A new island: open starting plots, no buildings, its own wild nodes. Its first wild
+ * animals and enemies come at once.
+ */
+export function createIslandVillage(
+  rng: Rng,
+  now: number,
+  nextId: () => string,
+  nodeIds: readonly string[],
+  data: GameData = gameData,
+): Village {
+  const village: Village = {
+    buildings: [],
+    obstacles: [],
+    unlockedPlots: data.village.village.initialPlots.map(([px, py]) => plotKey(px, py)),
+    regrowAt: now,
+    animals: [],
+    animalsAt: now - data.wilds.animals.respawnHours * 3600,
+    ranchAnimals: [],
+    encounters: [],
+    encountersAt: now - data.wilds.encounters.respawnHours * 3600,
+    raidClock: 0,
+  };
+  scatterObstacles(
+    village,
+    data.village.village.initialObstacles,
+    rng,
+    nextId,
+    undefined,
+    data,
+    nodeIds,
+  );
+  return village;
 }

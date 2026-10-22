@@ -160,7 +160,16 @@ describe('game data', () => {
   });
 
   it('loads wilds.json and the bigger map with plots', () => {
-    expect(gameData.wilds.nodes.map((n) => n.id)).toEqual(['pohon', 'batu', 'semak', 'batu-emas']);
+    expect(gameData.wilds.nodes.map((n) => n.id)).toEqual([
+      'pohon',
+      'batu',
+      'semak',
+      'batu-emas',
+      'kaktus',
+      'batu-pasir',
+      'cemara',
+      'batu-es',
+    ]);
     const { mapSize, plotSize, initialPlots, plotCostGold } = gameData.village.village;
     expect(mapSize % plotSize).toBe(0);
     expect(plotCostGold.length).toBe((mapSize / plotSize) ** 2 - initialPlots.length);

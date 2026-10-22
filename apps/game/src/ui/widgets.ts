@@ -344,19 +344,21 @@ export class Modal {
 
 /**
  * Short message above the dock. Red (error) toasts buzz unless `sound` says otherwise;
- * pass null when the action already played its own sound.
+ * pass null when the action already played its own sound. `lift` raises it (px) so it
+ * can sit above another toast from the same action.
  */
 export function toast(
   scene: Phaser.Scene,
   message: string,
   color: number = COLORS.danger,
   sound: SoundId | null = color === COLORS.danger ? 'error' : null,
+  lift = 0,
 ): void {
   if (sound) playSfx(scene, sound);
   const { width, height } = cssSize(scene);
   const layout = uiLayout(width, height);
   const { play } = layout;
-  const baseY = contentBottom(layout, true) - 20;
+  const baseY = contentBottom(layout, true) - 20 - lift;
   const text = scene.add
     .text(
       0,

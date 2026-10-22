@@ -4,7 +4,10 @@ import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**'] },
+  {
+    // supabase/functions is Deno code (checked by the Supabase CLI), plus a generated bundle.
+    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', 'supabase/functions/**'],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

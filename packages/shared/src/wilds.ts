@@ -2,9 +2,11 @@ import { deepClone } from './clone';
 import { gameData, VILLAGE_RESOURCES, type GameData, type VillageAmount } from './data';
 import { ambushAt, type AmbushResult } from './aggro';
 import { advanceAnimals, type AnimalDone } from './animals';
+import { recordAction } from './player';
 import { createRng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import {
+  currentIsland,
   canPlace,
   isPlotUnlocked,
   obstacleDef,
@@ -136,6 +138,7 @@ export function advanceWilds(
   ]);
   releaseWorkers(next, (task) => task.kind === 'gathering' && !alive.has(task.targetId));
   next.rngState = rng.getState();
+  recordAction(next, 'gather', gathered.length + animals.length, data);
   return { state: next, gathered, animals };
 }
 
@@ -163,6 +166,11 @@ export function regrowWilds(
   const { village } = next;
   const rng = createRng(next.rngState);
   const n = plotsPerSide(data);
+  const { nodes } = currentIsland(next, data);
+  // Gold veins never regrow but still roll (keeps the main island's random sequence as it was).
+  const islandNodes = data.wilds.nodes.filter(
+    (d) => nodes.includes(d.id) || d.id === data.wilds.goldVeins.node,
+  );
   const { plotSize } = data.village.village;
   const counts = new Map<string, number>();
   const countKey = (px: number, py: number, type: string) => `${px},${py},${type}`;
@@ -177,7 +185,7 @@ export function regrowWilds(
         // Open land stays as the player cleared it: wilds only grow back on locked plots
         // (open land only has the wilds of the first game).
         if (isPlotUnlocked(village, px, py)) continue;
-        for (const def of data.wilds.nodes) {
+        for (const def of islandNodes) {
           if (!rng.chance(def.regrow.chancePerStep)) continue;
           const k = countKey(px, py, def.id);
           if ((counts.get(k) ?? 0) >= def.regrow.maxPerPlot) continue;

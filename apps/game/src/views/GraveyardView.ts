@@ -1,11 +1,5 @@
 import type Phaser from 'phaser';
-import {
-  hasGraveyard,
-  monsterName,
-  reviveCost,
-  reviveMonster,
-  type ReviveMethod,
-} from '@soul-monster/shared';
+import { hasGraveyard, monsterName, reviveCost, type ReviveMethod } from '@soul-monster/shared';
 import { formatNumber, t } from '../text';
 import { costLabel } from '../ui/cost';
 import { MINI_CARD_HEIGHT, miniCard } from '../ui/MonsterCard';
@@ -43,7 +37,7 @@ export class GraveyardView extends View {
       content.add(miniCard(scene, x, cy, cardW, m, () => undefined).setAlpha(0.75));
       const cost = reviveCost(m);
       const revive = (method: ReviveMethod) => () => {
-        if (this.run((s) => reviveMonster(s, m.id, method))) {
+        if (this.run('reviveMonster', { id: m.id, method })) {
           toast(scene, t('graveyard.revived', { name: monsterName(m) }), COLORS.good, 'revive');
         }
       };

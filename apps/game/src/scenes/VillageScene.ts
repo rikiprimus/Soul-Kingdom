@@ -2,8 +2,6 @@ import { soldierTexture } from '../art/soldierArt';
 import { banditTexture } from '../art/enemyArt';
 import Phaser from 'phaser';
 import {
-  buildBuilding,
-  buildLine,
   canPlace,
   canPlaceBuilding,
   isPlotUnlocked,
@@ -27,27 +25,20 @@ import {
   animalWorkers,
   jobSeconds,
   ranchAnimalsIn,
-  collectBuilding,
   constructionRemaining,
   cropStatus,
   gameData,
   getStage,
-  harvestCrop,
   isReadyToCollect,
   levelDef,
   mixRemaining,
-  moveBuilding,
   aggroRadius,
   type AmbushResult,
-  moveUnits,
-  retreatUnits,
-  guardNode,
-  sendTeam,
   unitPoint,
   hashSeed,
-  hatchEgg,
+  eggInNest,
+  soulEggStatus,
   soldierName,
-  moveGroup,
   groupMoveTiles,
   connectedGroup,
   pendingProduction,
@@ -74,6 +65,7 @@ import {
   type ArtTexture,
   type BuildingVariant,
 } from '../art/buildingArt';
+import { ISLAND_GROUND } from '../art/palette';
 import {
   footprintCenter,
   isoDrawOrder,
@@ -145,6 +137,8 @@ function wildScale(id: string): number {
 interface Placement {
   type: string;
   moveId?: string;
+  /** Placing this Gudang item. */
+  storedId?: string;
   x: number;
   y: number;
   size: number;
@@ -225,6 +219,9 @@ export class VillageScene extends Phaser.Scene {
   private selection: Selection = null;
   private selectionGfx?: Phaser.GameObjects.Graphics;
   private placement: Placement | null = null;
+  /** The ground drawing and the island it shows. */
+  private ground?: Phaser.GameObjects.Graphics;
+  private groundIsland = '';
   private grid?: Phaser.GameObjects.Graphics;
   private walkers: Walker[] = [];
   private people: Person[] = [];
@@ -373,7 +370,7 @@ export class VillageScene extends Phaser.Scene {
     };
     ev.on(EVT.selectMode, onSelectMode);
     const onRetreat = (ids: string[]) => {
-      const r = this.store.apply((st, n) => retreatUnits(st, { ids }, n));
+      const r = this.store.act('retreatUnits', { ids });
       this.game.events.emit(
         EVT.toast,
         r.ok
@@ -452,7 +449,11 @@ export class VillageScene extends Phaser.Scene {
 
   private drawGround() {
     const n = this.mapSize;
+    this.ground?.destroy();
     const g = this.add.graphics().setDepth(-1000);
+    this.ground = g;
+    this.groundIsland = this.store.state.island;
+    const look = ISLAND_GROUND[this.groundIsland] ?? ISLAND_GROUND.utama!;
     const corner = (u: number, v: number) => isoToWorld(u, v);
     // Cliff faces on the two front edges make the village an island.
     const leftFace = [
@@ -484,20 +485,20 @@ export class VillageScene extends Phaser.Scene {
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         const h = ((i * 73856093) ^ (j * 19349663)) >>> 0;
-        const base = (i + j) % 2 === 0 ? 0x78c350 : 0x70bb49;
-        const color = h % 11 === 0 ? darken(base, 0.08) : h % 13 === 0 ? 0x80c95a : base;
+        const base = (i + j) % 2 === 0 ? look.tiles[0] : look.tiles[1];
+        const color = h % 11 === 0 ? darken(base, 0.08) : h % 13 === 0 ? look.light : base;
         g.fillStyle(color, 1).fillPoints(
           [corner(i, j), corner(i + 1, j), corner(i + 1, j + 1), corner(i, j + 1)],
           true,
         );
-        if (h % 17 === 0) {
+        if (look.flowers && h % 17 === 0) {
           const c = isoToWorld(i + 0.5, j + 0.5);
           g.fillStyle(0xffffff, 0.8).fillCircle(c.x - 6, c.y, 1.6);
           g.fillStyle(0xffe066, 0.9).fillCircle(c.x + 5, c.y + 3, 1.6);
         }
       }
     }
-    g.lineStyle(3, 0x5a9e3a, 1).strokePoints(
+    g.lineStyle(3, look.edge, 1).strokePoints(
       [corner(0, 0), corner(n, 0), corner(n, n), corner(0, n)],
       true,
     );
@@ -627,6 +628,16 @@ export class VillageScene extends Phaser.Scene {
       const ready = this.store.state.mixQueue.some((e) => mixRemaining(e, now) === 0);
       return ready ? 'egg' : null;
     }
+    // A Telur Jiwa that can be cared for or hatched.
+    if (b.level >= 1 && gameData.buildingById.get(b.type)?.feature === 'nest') {
+      const egg = eggInNest(this.store.state);
+      const status = egg
+        ? soulEggStatus(egg, now)
+        : this.store.state.soulEggs.length
+          ? 'waiting'
+          : null;
+      return status && status !== 'caring' ? 'egg' : null;
+    }
     // Monster eggs hatch at the Kandang.
     if (b.level >= 1 && gameData.buildingById.get(b.type)?.feature === 'stable') {
       return this.store.state.eggs.some((e) => e.readyAt <= now) ? 'egg' : null;
@@ -643,6 +654,8 @@ export class VillageScene extends Phaser.Scene {
   /** Creates, updates or removes sprites so they match the store state. */
   private sync() {
     const now = this.store.now();
+    // Another island: its own ground (buildings and wilds swap below by id).
+    if (this.store.state.island !== this.groundIsland) this.drawGround();
     const { buildings, obstacles } = this.store.state.village;
     this.wallTiles = new Set(
       buildings
@@ -660,6 +673,7 @@ export class VillageScene extends Phaser.Scene {
         this.variantOf(b, now),
         b.construction?.toLevel ?? '-',
         this.bubbleKind(b, now) ?? '-',
+        b.flipped ? 'flip' : '-',
       ].join('|');
       const existing = this.sprites.get(b.id);
       if (existing?.signature === signature) {
@@ -750,7 +764,7 @@ export class VillageScene extends Phaser.Scene {
     const art = firstBuild
       ? constructionSiteTexture(this, size)
       : buildingTexture(this, b.type, b.level, this.variantOf(b, now));
-    const image = this.placeImage(art, b.x, b.y, size);
+    const image = this.placeImage(art, b.x, b.y, size).setFlipX(!!b.flipped && !firstBuild);
     const sprite: Sprite = {
       id: b.id,
       kind: 'building',
@@ -1090,7 +1104,7 @@ export class VillageScene extends Phaser.Scene {
       this.game.events.emit(EVT.toast, good ? { message, color: COLORS.good } : { message });
     for (const [id, view] of this.enemies) {
       if (!view.getBounds().contains(wx, wy)) continue;
-      const r = this.store.apply((s, n) => sendTeam(s, { monsterIds: ids, encounterId: id }, n));
+      const r = this.store.act('sendTeam', { monsterIds: ids, encounterId: id });
       if (!r.ok) say(errorText(r.error), false);
       else {
         playSfx(this, 'march');
@@ -1101,16 +1115,14 @@ export class VillageScene extends Phaser.Scene {
     }
     const hit = this.pick(wx, wy);
     if (hit?.kind === 'obstacle') {
-      const r = this.store.apply((s, n) => guardNode(s, { ids, obstacleId: hit.id }, n));
+      const r = this.store.act('guardNode', { ids, obstacleId: hit.id });
       if (!r.ok) say(errorText(r.error), false);
       else say(t('select.guarding', { n: r.moved.length }), true);
       return true;
     }
     if (hit) return false;
     const { u, v } = worldToIso(wx, wy);
-    const r = this.store.apply((s, n) =>
-      moveUnits(s, { ids, x: Math.floor(u), y: Math.floor(v) }, n),
-    );
+    const r = this.store.act('moveUnits', { ids, x: Math.floor(u), y: Math.floor(v) });
     if (!r.ok) say(errorText(r.error), false);
     else say(t('select.moved', { n: r.moved.length }), true);
     return true;
@@ -1265,7 +1277,7 @@ export class VillageScene extends Phaser.Scene {
     if (this.bubbleKind(b, now) === 'egg') {
       const egg = this.store.state.eggs.find((e) => e.readyAt <= now);
       if (gameData.buildingById.get(b.type)?.feature === 'stable' && egg) {
-        const r = this.store.apply((s, n) => hatchEgg(s, egg.id, n));
+        const r = this.store.act('hatchEgg', { id: egg.id });
         if (!r.ok) {
           this.game.events.emit(EVT.toast, { message: errorText(r.error) });
           return true;
@@ -1278,13 +1290,15 @@ export class VillageScene extends Phaser.Scene {
         });
         return true;
       }
+      // The nest's card shows the egg and its buttons.
+      if (gameData.buildingById.get(b.type)?.feature === 'nest') return false;
       this.game.events.emit(EVT.openPanel, 'mixer');
       return true;
     }
     const status = cropStatus(b, now);
     if (status === 'ready') {
       const from = this.spriteTop(sprite);
-      const r = this.store.apply((s, n) => harvestCrop(s, b.id, n));
+      const r = this.store.act('harvestCrop', { id: b.id });
       if (r.ok) {
         this.floatText(sprite, `+${formatNumber(r.food)}`, COLORS.food);
         this.flyResources({ food: r.food }, from.x, from.y);
@@ -1299,7 +1313,7 @@ export class VillageScene extends Phaser.Scene {
       pendingProduction(state, b, now) > 0
     ) {
       const from = this.spriteTop(sprite);
-      const r = this.store.apply((s, n) => collectBuilding(s, b.id, n));
+      const r = this.store.act('collectBuilding', { id: b.id });
       if (r.ok) {
         this.floatText(sprite, `+${formatNumber(r.amount)}`, COLORS[r.resource]);
         this.flyResources({ [r.resource]: r.amount }, from.x, from.y);
@@ -1615,7 +1629,9 @@ export class VillageScene extends Phaser.Scene {
       'moveId' in req
         ? this.store.state.village.buildings.find((b) => b.id === req.moveId)
         : undefined;
-    const type = moving?.type ?? ('type' in req ? req.type : '');
+    const stored =
+      'storedId' in req ? this.store.state.storage.find((i) => i.id === req.storedId) : undefined;
+    const type = moving?.type ?? stored?.type ?? ('type' in req ? req.type : '');
     if (!gameData.buildingById.has(type)) return;
     const size = sizeOf(type);
     let x: number;
@@ -1632,17 +1648,28 @@ export class VillageScene extends Phaser.Scene {
     const art = buildingTexture(
       this,
       type,
-      moving?.level || 1,
+      moving?.level || stored?.level || 1,
       type === 'ladang' ? 'crop-empty' : 'normal',
     );
     const ghost = this.add
       .image(0, 0, art.key, art.frame)
       .setOrigin(art.originX, art.originY)
       .setScale(1 / BUILDING_RES)
+      .setFlipX(!!(moving?.flipped ?? stored?.flipped))
       .setAlpha(0.8)
       .setDepth(1_500_001);
     const footprint = this.add.graphics().setDepth(1_500_000);
-    this.placement = { type, moveId: moving?.id, x, y, size, ghost, footprint, valid: false };
+    this.placement = {
+      type,
+      moveId: moving?.id,
+      storedId: stored?.id,
+      x,
+      y,
+      size,
+      ghost,
+      footprint,
+      valid: false,
+    };
     if (!moving && gameData.buildingById.get(type)?.lineBuild) {
       this.placement.line = { start: null, ghosts: [] };
     }
@@ -1700,6 +1727,7 @@ export class VillageScene extends Phaser.Scene {
       valid: pl.valid,
       type: pl.type,
       moving: !!pl.moveId,
+      stored: !!pl.storedId,
     };
     this.game.events.emit(EVT.placement, status);
   }
@@ -1790,9 +1818,11 @@ export class VillageScene extends Phaser.Scene {
     if (pl.line) {
       const start = pl.line.start;
       if (!start) return;
-      const r = this.store.apply((s, now) =>
-        buildLine(s, { type: pl.type, from: start, to: { x: pl.x, y: pl.y } }, now),
-      );
+      const r = this.store.act('buildLine', {
+        type: pl.type,
+        from: start,
+        to: { x: pl.x, y: pl.y },
+      });
       if (!r.ok) {
         this.game.events.emit(EVT.toast, { message: errorText(r.error) });
         return;
@@ -1805,9 +1835,7 @@ export class VillageScene extends Phaser.Scene {
       return;
     }
     if (pl.group) {
-      const moved = this.store.apply((s) =>
-        moveGroup(s, { buildingId: pl.moveId!, x: pl.x, y: pl.y }),
-      );
+      const moved = this.store.act('moveGroup', { buildingId: pl.moveId!, x: pl.x, y: pl.y });
       if (!moved.ok) {
         this.game.events.emit(EVT.toast, { message: errorText(moved.error) });
         return;
@@ -1820,10 +1848,15 @@ export class VillageScene extends Phaser.Scene {
       return;
     }
     const result = pl.moveId
-      ? this.store.apply((s) => moveBuilding(s, { buildingId: pl.moveId!, x: pl.x, y: pl.y }))
-      : this.store.apply((s, now) =>
-          buildBuilding(s, { type: pl.type, x: pl.x, y: pl.y, workers: opts.workers }, now),
-        );
+      ? this.store.act('moveBuilding', { buildingId: pl.moveId!, x: pl.x, y: pl.y })
+      : pl.storedId
+        ? this.store.act('placeStored', { itemId: pl.storedId!, x: pl.x, y: pl.y })
+        : this.store.act('buildBuilding', {
+            type: pl.type,
+            x: pl.x,
+            y: pl.y,
+            workers: opts.workers,
+          });
     if (!result.ok) {
       this.game.events.emit(EVT.toast, { message: errorText(result.error) });
       return;
@@ -1833,7 +1866,8 @@ export class VillageScene extends Phaser.Scene {
       pl.moveId ?? ('buildingId' in result ? (result.buildingId as string) : undefined);
     if (placed) this.feelBuilding(placed, pl.moveId ? 'small' : 'medium');
     playSfx(this, 'place');
-    const keepGoing = !pl.moveId && pl.size === 1 && levelDef(pl.type, 1)?.seconds === 0;
+    const keepGoing =
+      !pl.moveId && !pl.storedId && pl.size === 1 && levelDef(pl.type, 1)?.seconds === 0;
     if (keepGoing) {
       // Small decorations and walls: keep placing the next one beside it.
       this.moveGhost(pl.x + 1, pl.y);

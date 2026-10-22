@@ -43,7 +43,8 @@ export type Selection = {
 } | null;
 
 /** `group`: move the whole connected stretch of walls along with `moveId`. */
-export type PlacementRequest = { type: string } | { moveId: string; group?: boolean };
+export type PlacementRequest =
+  { type: string } | { moveId: string; group?: boolean } | { storedId: string };
 
 /** Sent with `confirmPlacement`: builders for a timed construction. */
 export interface PlacementConfirm {
@@ -55,6 +56,8 @@ export interface PlacementStatus {
   valid: boolean;
   type?: string;
   moving?: boolean;
+  /** Placing an item from the Gudang (free, at once). */
+  stored?: boolean;
   /** Line buildings (walls): segments in the current line and its total price. */
   line?: { started: boolean; count: number; cost: VillageAmount };
 }

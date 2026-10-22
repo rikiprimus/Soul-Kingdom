@@ -20,3 +20,13 @@ export function elementColors(element: ElementId): number[] {
 export function elementColor(element: ElementId): number {
   return elementColors(element)[0] ?? 0xcccccc;
 }
+
+/** Ground colours per island (islands.json ids): two tile shades, a light spot, the edge. */
+export const ISLAND_GROUND: Record<
+  string,
+  { tiles: [number, number]; light: number; edge: number; flowers: boolean }
+> = {
+  utama: { tiles: [0x78c350, 0x70bb49], light: 0x80c95a, edge: 0x5a9e3a, flowers: true },
+  gurun: { tiles: [0xe6c47e, 0xdfbb72], light: 0xeed392, edge: 0xb8955a, flowers: false },
+  salju: { tiles: [0xe9eff6, 0xdfe7f0], light: 0xf6f9fc, edge: 0xa9b8c8, flowers: false },
+};

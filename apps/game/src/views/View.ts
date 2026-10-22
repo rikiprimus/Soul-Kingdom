@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { ActionResult, PlayerState } from '@soul-monster/shared';
+import type { ActionName, ActionOutput, ActionParams, PlayerState } from '@soul-monster/shared';
 import type { GameStore } from '../store';
 import { errorText } from '../text';
 import { ScrollArea, toast } from '../ui/widgets';
@@ -65,14 +65,15 @@ export abstract class View {
   }
 
   /** Runs an action; shows the error text when it fails. */
-  protected run<T extends object>(
-    action: (state: PlayerState, now: number) => ActionResult<T>,
-  ): (ActionResult<T> & { ok: true }) | null {
-    const result = this.ctx.store.apply(action);
+  protected run<N extends ActionName>(
+    name: N,
+    params: ActionParams<N>,
+  ): Extract<ActionOutput<N>, { ok: true }> | null {
+    const result = this.ctx.store.act(name, params);
     if (!result.ok) {
       toast(this.scene, errorText(result.error));
       return null;
     }
-    return result;
+    return result as Extract<ActionOutput<N>, { ok: true }>;
   }
 }

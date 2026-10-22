@@ -48,6 +48,7 @@
     "monster": "Monster",
     "militer": "Militer",
     "dekorasi": "Dekorasi",
+    "keajaiban": "Keajaiban",
     "utama": "Utama"
   },
   "buildings": [
@@ -380,6 +381,73 @@
           "cost": { "gold": 500, "wood": 200, "stone": 300 },
           "seconds": 300,
           "requiresTownHall": 1
+        }
+      ]
+    },
+    {
+      "id": "sarang-telur",
+      "name": "Sarang Telur Jiwa",
+      "feature": "nest",
+      "description": "Rawat Telur Jiwa dari hadiah misi di sini. Telur menetas menjadi monster langka atau epik.",
+      "category": "monster",
+      "size": 2,
+      "maxCount": [0, 1, 1, 1, 1, 1],
+      "levels": [
+        {
+          "cost": { "gold": 1500, "wood": 500, "stone": 300 },
+          "seconds": 600,
+          "requiresTownHall": 2
+        }
+      ]
+    },
+    {
+      "id": "pohon-emas-purba",
+      "name": "Pohon Emas Purba",
+      "description": "Keajaiban: pohon tua berdaun emas. Menghasilkan emas dalam jumlah besar.",
+      "feature": "wonder",
+      "category": "keajaiban",
+      "size": 3,
+      "maxCount": [1, 1, 1, 1, 1, 1],
+      "levels": [
+        {
+          "cost": {},
+          "seconds": 0,
+          "requiresTownHall": 1,
+          "production": { "resource": "gold", "perHour": 3000, "capacity": 24000 }
+        }
+      ]
+    },
+    {
+      "id": "lumbung-abadi",
+      "name": "Lumbung Abadi",
+      "description": "Keajaiban: lumbung yang tak pernah kosong. Menghasilkan makanan dalam jumlah besar.",
+      "feature": "wonder",
+      "category": "keajaiban",
+      "size": 3,
+      "maxCount": [1, 1, 1, 1, 1, 1],
+      "levels": [
+        {
+          "cost": {},
+          "seconds": 0,
+          "requiresTownHall": 1,
+          "production": { "resource": "food", "perHour": 2000, "capacity": 16000 }
+        }
+      ]
+    },
+    {
+      "id": "kolam-jiwa",
+      "name": "Kolam Jiwa",
+      "description": "Keajaiban: kolam bercahaya tempat jiwa monster berkumpul. Menghasilkan emas sangat banyak.",
+      "feature": "wonder",
+      "category": "keajaiban",
+      "size": 3,
+      "maxCount": [1, 1, 1, 1, 1, 1],
+      "levels": [
+        {
+          "cost": {},
+          "seconds": 0,
+          "requiresTownHall": 1,
+          "production": { "resource": "gold", "perHour": 5000, "capacity": 40000 }
         }
       ]
     },

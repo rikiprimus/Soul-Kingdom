@@ -13,6 +13,13 @@ import {
   buildingsFileSchema,
   wildsFileSchema,
   adventureFileSchema,
+  questsFileSchema,
+  type QuestsFile,
+  type Prize,
+  collectionsFileSchema,
+  type CollectionsFile,
+  islandsFileSchema,
+  type IslandsFile,
   type AdventureFile,
   type Defender,
   type BuildingDef,
@@ -43,6 +50,9 @@ export interface RawGameData {
   buildings: unknown;
   wilds: unknown;
   adventure: unknown;
+  quests: unknown;
+  collections: unknown;
+  islands: unknown;
 }
 
 export interface GameData {
@@ -62,6 +72,9 @@ export interface GameData {
   readonly village: BuildingsFile;
   readonly wilds: WildsFile;
   readonly adventure: AdventureFile;
+  readonly quests: QuestsFile;
+  readonly collections: CollectionsFile;
+  readonly islands: IslandsFile;
   readonly buildingById: ReadonlyMap<string, BuildingDef>;
   readonly obstacleById: ReadonlyMap<string, ObstacleDef>;
   /** Id of the building with feature "townHall". */
@@ -111,7 +124,22 @@ export function loadGameData(raw: RawGameData): GameData {
   const village = parseFile(buildingsFileSchema, raw.buildings, 'buildings.json', issues);
   const wilds = parseFile(wildsFileSchema, raw.wilds, 'wilds.json', issues);
   const adventure = parseFile(adventureFileSchema, raw.adventure, 'adventure.json', issues);
-  if (!elements || !forms || !recipes || !rules || !text || !village || !wilds || !adventure) {
+  const quests = parseFile(questsFileSchema, raw.quests, 'quests.json', issues);
+  const collections = parseFile(collectionsFileSchema, raw.collections, 'collections.json', issues);
+  const islands = parseFile(islandsFileSchema, raw.islands, 'islands.json', issues);
+  if (
+    !elements ||
+    !forms ||
+    !recipes ||
+    !rules ||
+    !text ||
+    !village ||
+    !wilds ||
+    !adventure ||
+    !quests ||
+    !collections ||
+    !islands
+  ) {
     throw new DataValidationError(issues);
   }
 
@@ -382,6 +410,94 @@ export function loadGameData(raw: RawGameData): GameData {
     }
   }
 
+  // Quests: unique ids; building goals name a real building and a level it has.
+  const questIds = new Set<string>();
+  for (const q of quests.chain) {
+    const where = `quests.json: misi "${q.id}"`;
+    if (questIds.has(q.id)) issues.push(`${where} ganda`);
+    questIds.add(q.id);
+    for (const g of q.goals) {
+      if (g.kind !== 'building') continue;
+      const def = buildingInfo.buildingById.get(g.building);
+      if (!def) issues.push(`${where}: bangunan "${g.building}" tidak ada`);
+      else if (g.level > def.levels.length) {
+        issues.push(`${where}: "${g.building}" tidak punya level ${g.level}`);
+      }
+    }
+  }
+
+  // Rewards: a Keajaiban must be a building with feature "wonder".
+  const checkWonder = (where: string, prize: Prize) => {
+    if (prize.wonder && buildingInfo.buildingById.get(prize.wonder)?.feature !== 'wonder') {
+      issues.push(`${where}: "${prize.wonder}" bukan Keajaiban`);
+    }
+    for (const d of prize.decorations) {
+      if (buildingInfo.buildingById.get(d)?.category !== 'dekorasi') {
+        issues.push(`${where}: "${d}" bukan dekorasi`);
+      }
+    }
+  };
+  for (const q of quests.chain) checkWonder(`quests.json: misi "${q.id}"`, q.reward);
+  // Collection sets: unique ids, a tier with forms or a base unit with elements.
+  const setIds = new Set<string>();
+  for (const set of collections.sets) {
+    const where = `collections.json: set "${set.id}"`;
+    if (setIds.has(set.id)) issues.push(`${where} ganda`);
+    setIds.add(set.id);
+    checkWonder(where, set.reward);
+    if (set.kind === 'formTier' && !formsByTier.get(set.tier)?.length) {
+      issues.push(`${where}: tidak ada wujud tingkat ${set.tier}`);
+    }
+    if (set.kind === 'elementUnit' && !baseSet.has(set.unit)) {
+      issues.push(`${where}: unsur "${set.unit}" tidak dikenal`);
+    }
+  }
+  for (const b of buildingInfo.buildingById.values()) {
+    if (b.feature === 'wonder' && b.maxCount.some((m) => m > 1)) {
+      issues.push(`buildings.json: Keajaiban "${b.id}" maksimal 1`);
+    }
+  }
+
+  // Islands: unique ids; the first is the main village (open from the start, normal limits).
+  const islandIds = new Set<string>();
+  islands.islands.forEach((island, i) => {
+    const where = `islands.json: pulau "${island.id}"`;
+    if (islandIds.has(island.id)) issues.push(`${where} ganda`);
+    islandIds.add(island.id);
+    if (i === 0 && (island.maxCount || island.requiresTownHall > 1)) {
+      issues.push(`${where}: pulau utama tidak boleh punya maxCount atau syarat Balai > 1`);
+    }
+    for (const n of island.nodes) {
+      if (!buildingInfo.obstacleById.has(n)) issues.push(`${where}: rintangan "${n}" tidak ada`);
+    }
+    for (const b of Object.keys(island.maxCount ?? {})) {
+      if (!buildingInfo.buildingById.has(b)) issues.push(`${where}: bangunan "${b}" tidak ada`);
+      if (buildingInfo.buildingById.get(b)?.feature === 'townHall') {
+        issues.push(`${where}: Balai Utama hanya di pulau utama`);
+      }
+    }
+  });
+
+  // Sarang Telur Jiwa: odds sum to 1; each outcome has forms and plain elements that fit.
+  const { nest } = rules;
+  if (Math.abs(nest.hatch.reduce((s, h) => s + h.chance, 0) - 1) > PROBABILITY_EPSILON) {
+    issues.push('rules.json: peluang nest.hatch harus berjumlah 1');
+  }
+  for (const h of nest.hatch) {
+    const where = `rules.json: nest.hatch "${h.rarity}"`;
+    if (!formsByTier.get(h.formTier)?.length)
+      issues.push(`${where}: tidak ada wujud tingkat ${h.formTier}`);
+    if (h.units > (rules.mixer.maxElementUnitsByFormTier[String(h.formTier)] ?? 0)) {
+      issues.push(`${where}: ${h.units} unsur melebihi batas wujud tingkat ${h.formTier}`);
+    }
+    if (![...elementByComposition.values()].some((e) => e.composition.length === h.units)) {
+      issues.push(`${where}: tidak ada elemen biasa dengan ${h.units} unsur`);
+    }
+  }
+  if (![...buildingInfo.buildingById.values()].some((b) => b.feature === 'nest')) {
+    issues.push('buildings.json: butuh satu bangunan dengan feature "nest"');
+  }
+
   if (issues.length > 0) throw new DataValidationError(issues);
 
   return {
@@ -400,6 +516,9 @@ export function loadGameData(raw: RawGameData): GameData {
     village,
     wilds,
     adventure,
+    quests,
+    collections,
+    islands,
     ...buildingInfo,
   };
 }

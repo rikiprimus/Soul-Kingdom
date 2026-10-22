@@ -1,29 +1,27 @@
 import type { SoundId } from '../audio/synth';
 import {
+  type ActionName,
+  type ActionOutput,
+  type ActionParams,
   gatherWorkers,
-  recallWorkers,
-  sendWorkers,
-  collectBuilding,
   constructionRemaining,
   connectedGroup,
   cropStatus,
   gameData,
-  harvestCrop,
   levelDef,
   obstacleDef,
   pendingProduction,
   productionOf,
-  staffBuilding,
   staffWorkers,
-  unstaffBuilding,
   encounterGroup,
   encounterPower,
   missionFor,
-  sendTeam,
   teamPower,
   teamUnits,
   previewWinChance,
-  hatchEgg,
+  eggInNest,
+  soulEggStatus,
+  rarityOf,
   monsterName,
   soldierKindOf,
   barracksQueue,
@@ -36,31 +34,22 @@ import {
   jobSeconds,
   ranchAnimalsIn,
   ranchSlots,
-  sendToAnimal,
   type AnimalJob,
-  plantCrop,
-  sellBuilding,
+  isStorable,
   sellValue,
-  speedUpBuilding,
   speedUpCost,
   idleWorkers,
-  addConstructionWorkers,
   constructionTime,
   constructionWorkers,
   maxConstructionWorkers,
   populationCap,
   populationUsed,
-  trainWorker,
   trainingRemaining,
   townHallLevel,
-  upgradeBuilding,
-  upgradeGroup,
   scaleAmount,
-  buyPlot,
   nextPlotPrice,
   plotsPerSide,
   plotStatus,
-  type ActionResult,
   type Building,
   type PlayerState,
 } from '@soul-monster/shared';
@@ -95,9 +84,10 @@ export interface InfoContent {
 /** Side effects the card's buttons need from the UI scene. */
 export interface InfoActions {
   now(): number;
-  run<T extends object>(
-    action: (s: PlayerState, now: number) => ActionResult<T>,
-  ): (ActionResult<T> & { ok: true }) | null;
+  run<N extends ActionName>(
+    name: N,
+    params: ActionParams<N>,
+  ): Extract<ActionOutput<N>, { ok: true }> | null;
   openPanel(kind: PanelKind, targetId?: string): void;
   /** Opens the Serbu screen (Guild) or the Petualangan map (Gerbang Petualangan). */
   openBattles(source: 'serbu' | 'adventure'): void;
@@ -151,7 +141,7 @@ function plotInfo(state: PlayerState, id: string, a: InfoActions): InfoContent |
       disabled: !buyable,
       onClick: () =>
         a.confirm(t('plot.buyConfirm', { cost }), () => {
-          if (!a.run((s) => buyPlot(s, { px, py }))) return;
+          if (!a.run('buyPlot', { px, py })) return;
           a.toast(t('plot.bought'), COLORS.good, 'unlock-land');
           a.deselect();
         }),
@@ -223,7 +213,7 @@ function encounterInfo(state: PlayerState, id: string, a: InfoActions): InfoCont
       color: 0x3c9a5f,
       disabled: members.length === 0,
       onClick: () => {
-        const r = a.run((s, n) => sendTeam(s, { monsterIds: ids, encounterId: e.id }, n));
+        const r = a.run('sendTeam', { monsterIds: ids, encounterId: e.id });
         if (!r) return;
         a.toast(t('team.sent', { n: ids.length }), COLORS.good, 'march');
         a.clearTeam();
@@ -277,7 +267,8 @@ function animalInfo(state: PlayerState, id: string, a: InfoActions): InfoContent
       max: canSend,
       set,
     };
-    const send = (j: AnimalJob) => () => a.run((s) => sendToAnimal(s, animal.id, j, value));
+    const send = (j: AnimalJob) => () =>
+      a.run('sendToAnimal', { id: animal.id, job: j, count: value });
     if (crew === 0 || job === 'hunt') {
       content.buttons.push({
         label: t('animal.hunt', { time: formatDuration(left('hunt', crew + value)) }),
@@ -300,7 +291,7 @@ function animalInfo(state: PlayerState, id: string, a: InfoActions): InfoContent
     content.buttons.push({
       label: t('info.recallWorkers'),
       color: COLORS.panelLight,
-      onClick: () => a.run((s) => recallWorkers(s, animal.id)),
+      onClick: () => a.run('recallWorkers', { id: animal.id }),
     });
   }
   return content;
@@ -354,7 +345,7 @@ function obstacleInfo(state: PlayerState, id: string, a: InfoActions): InfoConte
     content.buttons.push({
       label: t('info.sendWorkers'),
       color: 0x3c9a5f,
-      onClick: () => a.run((s) => sendWorkers(s, o.id, value)),
+      onClick: () => a.run('sendWorkers', { id: o.id, count: value }),
     });
   } else if (crew < max) {
     content.lines.push(t('place.noWorkers'));
@@ -363,7 +354,7 @@ function obstacleInfo(state: PlayerState, id: string, a: InfoActions): InfoConte
     content.buttons.push({
       label: t('info.recallWorkers'),
       color: COLORS.panelLight,
-      onClick: () => a.run((s) => recallWorkers(s, o.id)),
+      onClick: () => a.run('recallWorkers', { id: o.id }),
     });
   }
   return content;
@@ -418,13 +409,13 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
       buttons.push({
         label: t('info.addWorkers'),
         color: 0x3c9a5f,
-        onClick: () => a.run((s, n) => addConstructionWorkers(s, b.id, value, n)),
+        onClick: () => a.run('addConstructionWorkers', { id: b.id, count: value }),
       });
     }
     buttons.push({
       label: t('info.speedUp', { gems: speedUpCost(constructionRemaining(b, now)) }),
       color: 0x2a8fb0,
-      onClick: () => a.run((s, n) => speedUpBuilding(s, b.id, n, speedUpCost)),
+      onClick: () => a.run('speedUpBuilding', { id: b.id }),
     });
   }
 
@@ -443,7 +434,7 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
       label: t('info.collect'),
       color: 0x3c9a5f,
       disabled: pendingProduction(state, b, now) <= 0,
-      onClick: () => a.run((s, n) => collectBuilding(s, b.id, n)),
+      onClick: () => a.run('collectBuilding', { id: b.id }),
     });
   }
 
@@ -466,13 +457,13 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
       buttons.push({
         label: t('info.plant', { gold: crop.plantGold }),
         color: 0x3c9a5f,
-        onClick: () => a.run((s, n) => plantCrop(s, b.id, n)),
+        onClick: () => a.run('plantCrop', { id: b.id }),
       });
     } else if (status === 'ready') {
       buttons.push({
         label: t('info.harvest'),
         color: 0x3c9a5f,
-        onClick: () => a.run((s, n) => harvestCrop(s, b.id, n)),
+        onClick: () => a.run('harvestCrop', { id: b.id }),
       });
     }
   }
@@ -497,7 +488,7 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
           label: t('info.trainWorker', { food: formatNumber(gameData.rules.workers.trainFood) }),
           color: 0x3c9a5f,
           onClick: () => {
-            if (a.run((s, n) => trainWorker(s, n))) a.toast(t('info.trainingStarted'), COLORS.good);
+            if (a.run('trainWorker', {})) a.toast(t('info.trainingStarted'), COLORS.good);
           },
         });
         break;
@@ -535,7 +526,7 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
             color: 0x3c9a5f,
             disabled: !ready,
             onClick: () => {
-              const r = a.run((st, n) => hatchEgg(st, egg.id, n));
+              const r = a.run('hatchEgg', { id: egg.id });
               if (r) a.toast(t('egg.hatched', { name: monsterName(r.monster) }), COLORS.good);
             },
           });
@@ -545,6 +536,54 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
       case 'mixer':
         buttons.push({ label: t('info.openMixer'), onClick: () => a.openPanel('mixer') });
         break;
+      case 'nest': {
+        if (b.level < 1) break;
+        const { steps } = gameData.rules.nest;
+        content.lines.push(t('nest.count', { n: state.soulEggs.length }));
+        const egg = eggInNest(state) ?? state.soulEggs[0];
+        if (!egg) {
+          content.lines.push(t('nest.none'));
+          break;
+        }
+        statuses.push(() => {
+          const e = state.soulEggs.find((x) => x.id === egg.id)!;
+          const status = soulEggStatus(e, a.now());
+          if (status === 'waiting') return t('nest.waiting');
+          if (status === 'ready') return t('nest.ready');
+          if (status === 'nextStep')
+            return t('nest.stepDone', { step: e.step, total: steps.length });
+          return t('nest.caring', {
+            step: e.step,
+            total: steps.length,
+            time: formatDuration(e.endsAt! - a.now()),
+          });
+        });
+        const status = soulEggStatus(egg, a.now());
+        if (status === 'ready') {
+          buttons.push({
+            label: t('nest.hatch'),
+            color: 0x3c9a5f,
+            onClick: () => {
+              const r = a.run('hatchSoulEgg', { id: egg.id });
+              if (r) {
+                const rarity = gameData.rules.rarity.names[rarityOf(r.monster)];
+                a.toast(t('nest.hatched', { name: monsterName(r.monster), rarity }), COLORS.good);
+              }
+            },
+          });
+        } else {
+          const food = steps[egg.step]?.food ?? 0;
+          buttons.push({
+            label: t(egg.step === 0 ? 'nest.start' : 'nest.care', { food }),
+            color: 0x3c9a5f,
+            disabled: status === 'caring',
+            onClick: () => {
+              if (a.run('careSoulEgg', { id: egg.id })) a.toast(t('nest.cared'), COLORS.good);
+            },
+          });
+        }
+        break;
+      }
       case 'serbu':
         content.lines.push(t('info.powerCap', { cap: serbuPowerCap(state) }));
         if (b.level >= 1) {
@@ -597,14 +636,14 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
           buttons.push({
             label: t('info.staffIn'),
             color: 0x3c9a5f,
-            onClick: () => a.run((s, n) => staffBuilding(s, b.id, value, n)),
+            onClick: () => a.run('staffBuilding', { id: b.id, count: value }),
           });
         }
         if (crew > 0) {
           buttons.push({
             label: t('info.staffOut'),
             color: COLORS.panelLight,
-            onClick: () => a.run((s, n) => unstaffBuilding(s, b.id, 1, n)),
+            onClick: () => a.run('unstaffBuilding', { id: b.id, count: 1 }),
           });
         }
         break;
@@ -669,7 +708,7 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
         }),
         color: COLORS.accentDark,
         onClick: () => {
-          const r = a.run((s, n) => upgradeGroup(s, b.id, n));
+          const r = a.run('upgradeGroup', { id: b.id });
           if (r) a.toast(t('info.upgradedGroup', { count: r.count }), COLORS.good);
         },
       });
@@ -701,7 +740,7 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
       color: COLORS.accentDark,
       disabled: !hallOk,
       onClick: () => {
-        const r = a.run((s, n) => upgradeBuilding(s, b.id, n, { workers }));
+        const r = a.run('upgradeBuilding', { id: b.id, workers });
         if (r?.collected) a.toast(`+${formatNumber(r.collected)}`, COLORS.good);
       },
     });
@@ -712,6 +751,25 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
     color: COLORS.panelLight,
     onClick: () => a.startMove(b.id),
   });
+  if (!def.lineBuild) {
+    buttons.push({
+      label: t('info.rotate'),
+      color: COLORS.panelLight,
+      onClick: () => a.run('rotateBuilding', { id: b.id }),
+    });
+  }
+  if (isStorable(b.type) && !b.construction) {
+    buttons.push({
+      label: t('info.store'),
+      color: COLORS.panelLight,
+      onClick: () => {
+        const r = a.run('storeBuilding', { id: b.id });
+        if (!r) return;
+        a.toast(t('info.storedAway', { name: def.name }), COLORS.good);
+        a.deselect();
+      },
+    });
+  }
   if (def.lineBuild && !b.construction) {
     const count = connectedGroup(state, b.id).length;
     if (count > 1) {
@@ -730,7 +788,7 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
       color: COLORS.danger,
       onClick: () =>
         a.confirm(t('info.sellConfirm', { name: def.name, cost: costLabel(refund) }), () => {
-          if (a.run((s, n) => sellBuilding(s, b.id, n))) a.deselect();
+          if (a.run('sellBuilding', { id: b.id })) a.deselect();
         }),
     });
   }

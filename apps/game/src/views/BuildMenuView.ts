@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import {
   countBuildings,
+  currentIsland,
   gameData,
   maxCountFor,
   townHallLevel,
@@ -82,7 +83,9 @@ export class BuildMenuView extends View {
     const max = maxCountFor(state, def.id);
     const lockedByHall = hall < first.requiresTownHall;
     const full = count >= max;
-    const available = !lockedByHall && !full;
+    // A Keajaiban is never built: it is won and placed from the Gudang.
+    const unwonWonder = def.feature === 'wonder';
+    const available = !lockedByHall && !full && !unwonWonder;
     card.add(
       roundedPanel(
         scene,
@@ -138,11 +141,16 @@ export class BuildMenuView extends View {
       );
     } else {
       const nextHall = this.nextHallFor(def);
-      const reason = lockedByHall
-        ? t('build.needsHall', { level: first.requiresTownHall })
-        : nextHall !== null
-          ? t('build.needsHall', { level: nextHall })
-          : t('build.limit');
+      const reason =
+        unwonWonder && !full
+          ? t('build.wonderLocked')
+          : lockedByHall
+            ? t('build.needsHall', { level: first.requiresTownHall })
+            : nextHall !== null
+              ? t('build.needsHall', { level: nextHall })
+              : max === 0
+                ? t('build.notOnIsland')
+                : t('build.limit');
       card.add(
         scene.add
           .text(w / 2, h - 22, reason, textStyle(11, COLORS.warn, { fontStyle: 'bold' }))
@@ -161,6 +169,8 @@ export class BuildMenuView extends View {
 
   /** Lowest Balai Utama level that allows one more of this building, if any. */
   private nextHallFor(def: BuildingDef): number | null {
+    // Other islands have fixed limits of their own.
+    if (currentIsland(this.state).maxCount) return null;
     const count = countBuildings(this.state, def.id);
     const i = def.maxCount.findIndex((m) => m > count);
     return i >= 0 ? i + 1 : null;

@@ -1,0 +1,138 @@
+{
+  "_notes": [
+    "Rantai misi (Tugas 1B.2): satu misi aktif pada satu waktu, berurutan. Misi awal sekaligus tutorial (punya `hint`).",
+    "Target `action`: jumlah aksi sejak misi dimulai (aksi = kunci rules.player.xp: build, harvest, collect, gather, defeatEnemy, hatch).",
+    "Target `building`: jumlah bangunan selesai dengan level minimal `level` (bangunan awal ikut dihitung).",
+    "Target `monsters`: jumlah monster yang dimiliki sekarang (telur awal yang menetas sebelum misi ini tetap terhitung).",
+    "Hadiah: emas/makanan/kayu/batu/kristal jiwa/permata, dan `soulEggs` = jumlah Telur Jiwa yang dirawat di Sarang Telur Jiwa (Tugas 1B.3), dan `wonder` = Keajaiban untuk misi besar (Tugas 1B.4); `decorations` = dekorasi. Keajaiban dan dekorasi hadiah masuk Gudang (Tugas 1B.5)."
+  ],
+  "chain": [
+    {
+      "id": "panen-pertama",
+      "title": "Panen pertama",
+      "hint": "Ketuk Ladang, pilih Tanam, tunggu tumbuh, lalu ketuk lagi untuk panen.",
+      "goals": [{ "kind": "action", "action": "harvest", "count": 1 }],
+      "reward": { "gold": 200 }
+    },
+    {
+      "id": "telur-pertama",
+      "title": "Monster pertamamu",
+      "hint": "Ketuk telur di Kandang saat sudah siap menetas.",
+      "goals": [{ "kind": "monsters", "count": 1 }],
+      "reward": { "food": 200 }
+    },
+    {
+      "id": "pungut-hasil",
+      "title": "Pungut hasil desa",
+      "hint": "Bangunan penghasil menampilkan ikon saat siap. Ketuk untuk memungut, atau tekan Pungut semua.",
+      "goals": [{ "kind": "action", "action": "collect", "count": 2 }],
+      "reward": { "gold": 300 }
+    },
+    {
+      "id": "kayu-pertama",
+      "title": "Kumpulkan dari alam",
+      "hint": "Ketuk pohon atau batu di tanah desa, lalu kirim pekerja untuk mengambilnya.",
+      "goals": [{ "kind": "action", "action": "gather", "count": 2 }],
+      "reward": { "wood": 300 }
+    },
+    {
+      "id": "ladang-kedua",
+      "title": "Ladang kedua",
+      "hint": "Buka Bangun, pilih Ladang, lalu taruh di tanah kosong.",
+      "goals": [{ "kind": "building", "building": "ladang", "level": 1, "count": 2 }],
+      "reward": { "gold": 300, "food": 200 }
+    },
+    {
+      "id": "rumah-pertama",
+      "title": "Rumah untuk warga",
+      "hint": "Rumah menambah populasi untuk pekerja, prajurit, dan monster.",
+      "goals": [{ "kind": "building", "building": "rumah", "level": 1, "count": 1 }],
+      "reward": { "gold": 400, "wood": 200 }
+    },
+    {
+      "id": "usir-bandit",
+      "title": "Usir bandit",
+      "hint": "Ketuk kelompok musuh di luar desa, pilih pasukan, lalu serang.",
+      "goals": [{ "kind": "action", "action": "defeatEnemy", "count": 1 }],
+      "reward": { "gold": 500, "soulCrystal": 1 }
+    },
+    {
+      "id": "balai-2",
+      "title": "Balai Utama Lv 2",
+      "goals": [{ "kind": "building", "building": "balai-utama", "level": 2, "count": 1 }],
+      "reward": { "gold": 800, "wood": 500, "stone": 300 }
+    },
+    {
+      "id": "sarang-telur",
+      "title": "Sarang Telur Jiwa",
+      "hint": "Bangun Sarang Telur Jiwa. Hadiahnya Telur Jiwa pertamamu: rawat di sarang sampai menetas.",
+      "goals": [{ "kind": "building", "building": "sarang-telur", "level": 1, "count": 1 }],
+      "reward": { "food": 500, "soulEggs": 1 }
+    },
+    {
+      "id": "penggilingan",
+      "title": "Penggilingan",
+      "goals": [{ "kind": "building", "building": "penggilingan", "level": 1, "count": 1 }],
+      "reward": { "food": 500 }
+    },
+    {
+      "id": "barak-petarung",
+      "title": "Latih prajurit",
+      "goals": [{ "kind": "building", "building": "petarung", "level": 1, "count": 1 }],
+      "reward": { "gold": 600, "decorations": ["lampu"] }
+    },
+    {
+      "id": "menara-jaga",
+      "title": "Jaga desa",
+      "goals": [{ "kind": "building", "building": "menara", "level": 1, "count": 1 }],
+      "reward": { "stone": 500 }
+    },
+    {
+      "id": "pemburu-bandit",
+      "title": "Pemburu bandit",
+      "goals": [{ "kind": "action", "action": "defeatEnemy", "count": 5 }],
+      "reward": { "gold": 1000, "gems": 5, "soulEggs": 1 }
+    },
+    {
+      "id": "balai-3",
+      "title": "Balai Utama Lv 3",
+      "goals": [{ "kind": "building", "building": "balai-utama", "level": 3, "count": 1 }],
+      "reward": { "gold": 1500, "wood": 1000, "stone": 800 }
+    },
+    {
+      "id": "petani-rajin",
+      "title": "Petani rajin",
+      "goals": [
+        { "kind": "action", "action": "harvest", "count": 10 },
+        { "kind": "action", "action": "collect", "count": 10 }
+      ],
+      "reward": { "gold": 2000, "food": 1000, "decorations": ["air-mancur"] }
+    },
+    {
+      "id": "balai-4",
+      "title": "Balai Utama Lv 4",
+      "goals": [{ "kind": "building", "building": "balai-utama", "level": 4, "count": 1 }],
+      "reward": {
+        "gold": 5000,
+        "wood": 3000,
+        "stone": 2000,
+        "gems": 5,
+        "soulEggs": 1,
+        "wonder": "pohon-emas-purba"
+      }
+    },
+    {
+      "id": "soul-mixer",
+      "title": "Soul Mixer",
+      "hint": "Soul Mixer mencampur dua monster dewasa menjadi bayi monster baru.",
+      "goals": [{ "kind": "building", "building": "soul-mixer", "level": 1, "count": 1 }],
+      "reward": { "soulCrystal": 5 }
+    },
+    {
+      "id": "campuran-pertama",
+      "title": "Keluarga monster",
+      "goals": [{ "kind": "action", "action": "hatch", "count": 2 }],
+      "reward": { "gold": 3000, "gems": 10 }
+    }
+  ]
+}

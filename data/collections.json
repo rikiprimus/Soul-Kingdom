@@ -1,0 +1,79 @@
+{
+  "_notes": [
+    "Koleksi set di Monsterpedia (Tugas 1B.4). Set lengkap bisa diklaim sekali.",
+    "`formTier`: punya (pernah memiliki) setiap wujud tingkat `tier`, elemen apa saja.",
+    "`elementUnit`: punya setiap elemen biasa (bukan rahasia) yang berisi unsur `unit` dengan paling banyak `maxUnits` unsur, wujud apa saja.",
+    "Hadiah: sumber daya, `soulEggs` (Telur Jiwa), `wonder` (id Keajaiban; maksimal 1 per jenis, masuk Gudang untuk dipasang gratis), `decorations` (dekorasi, masuk Gudang)."
+  ],
+  "sets": [
+    {
+      "id": "hewan-kecil",
+      "name": "Hewan Kecil",
+      "kind": "formTier",
+      "tier": 1,
+      "reward": { "gold": 2000, "soulEggs": 1 }
+    },
+    {
+      "id": "hewan-liar",
+      "name": "Hewan Liar",
+      "kind": "formTier",
+      "tier": 2,
+      "reward": { "food": 2000, "wonder": "lumbung-abadi" }
+    },
+    {
+      "id": "pemburu-gaib",
+      "name": "Pemburu & Makhluk Gaib",
+      "kind": "formTier",
+      "tier": 3,
+      "reward": { "gems": 10, "wonder": "kolam-jiwa" }
+    },
+    {
+      "id": "jiwa-api",
+      "name": "Jiwa Api",
+      "kind": "elementUnit",
+      "unit": "api",
+      "maxUnits": 2,
+      "reward": { "gold": 3000, "soulEggs": 1 }
+    },
+    {
+      "id": "jiwa-air",
+      "name": "Jiwa Air",
+      "kind": "elementUnit",
+      "unit": "air",
+      "maxUnits": 2,
+      "reward": { "food": 3000, "soulEggs": 1 }
+    },
+    {
+      "id": "jiwa-tanah",
+      "name": "Jiwa Tanah",
+      "kind": "elementUnit",
+      "unit": "tanah",
+      "maxUnits": 2,
+      "reward": { "stone": 2000, "soulEggs": 1 }
+    },
+    {
+      "id": "jiwa-angin",
+      "name": "Jiwa Angin",
+      "kind": "elementUnit",
+      "unit": "angin",
+      "maxUnits": 2,
+      "reward": { "wood": 2000, "soulEggs": 1 }
+    },
+    {
+      "id": "jiwa-cahaya",
+      "name": "Jiwa Cahaya",
+      "kind": "elementUnit",
+      "unit": "cahaya",
+      "maxUnits": 2,
+      "reward": { "gold": 3000, "gems": 5, "decorations": ["lampu"] }
+    },
+    {
+      "id": "jiwa-kegelapan",
+      "name": "Jiwa Kegelapan",
+      "kind": "elementUnit",
+      "unit": "kegelapan",
+      "maxUnits": 2,
+      "reward": { "gold": 3000, "gems": 5, "decorations": ["patung"] }
+    }
+  ]
+}

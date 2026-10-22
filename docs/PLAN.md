@@ -764,7 +764,7 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 
 ## Fase 1B — Konten & retensi (4–5 minggu)
 
-### - [ ] Tugas 1B.1 — Level & XP pemain
+### - [x] Tugas 1B.1 — Level & XP pemain
 
 - Membangun, memanen, mengambil sumber daya, mengalahkan musuh, dan menetaskan memberi XP (angka di data).
 - Naik level memberi hadiah sumber daya kecil.
@@ -772,7 +772,16 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 
 **Kriteria selesai:** tes untuk XP per aksi, naik level, dan hadiah; tampilan bilah XP di HUD.
 
-### - [ ] Tugas 1B.2 — Misi, tutorial & bonus harian
+> **Ringkasan (selesai 2026-10-22):**
+>
+> - **Data (`rules.player`, angka baru, bisa diubah):** XP per aksi — bangun/upgrade 10 (satu kali per aksi, termasuk tembok sebaris/segrup), panen ladang 5, ambil hasil bangunan 2, ambil alam liar/hewan 5, menang melawan musuh 20, menetas 25. Tabel 30 level: `levels[i].xp` = total XP (Lv 2 di 40, Lv 10 di 5.350, Lv 30 di ±102.000) dan hadiah naik level 100/50/50 × level (emas/makanan/kayu). Divalidasi zod (level 1 = 0 XP, XP naik terus).
+> - **Shared (`player.ts`, baru):** `playerLevel`, `levelProgress`, `gainXp` (menambah XP dan membayar hadiah setiap level yang dilewati, termasuk lompat beberapa level). Dipanggil di `buildBuilding`, `upgradeBuilding`, `buildLine`, `upgradeGroup`, `harvestCrop`, `collectBuilding`, `collectAll` (ladang = panen, bangunan = ambil), `advanceWilds` (simpul alam + hewan), `settleMissions` (menang melawan musuh liar & serangan desa), `fightPlaced` (Serbu & Petualangan), `hatchEgg`, `collectMix`. Level tidak membuka apa pun: pembatas bangunan tetap level Balai. **Simpanan v19** (`xp`, simpanan lama mulai Lv 1).
+> - **Client:** "Pemain Lv N" di baris status HUD, bilah XP tipis di tepi bawah HUD, toast "Naik level! … +hadiah" (dengan suara menang) yang diangkat di atas toast aksi (`toast(..., lift)`).
+> - **Tes:** `player.test.ts` (tabel level, progres, hadiah sekali per level termasuk lompat level, XP untuk bangun, panen/pungut semua, ambil alam liar, menang vs kalah, menetas, simpan/migrasi). Tes hadiah Serbu/Petualangan memakai pemain level maksimum agar hadiah level tidak ikut terhitung.
+> - **Dicek di browser:** panen ladang di 35 XP → Lv 2 dan hadiah masuk; "Pungut semua" melewati Lv 4; toast naik level tampil di atas toast pungut.
+> - **Belum:** `pnpm sim:economy` belum melaporkan level pemain; hadiah naik level belum terbang ke HUD seperti hasil pungut.
+
+### - [x] Tugas 1B.2 — Misi, tutorial & bonus harian
 
 - **Misi:**
   - rantai misi bertahap (tutorial sebagai misi awal);
@@ -784,7 +793,16 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 
 **Kriteria selesai:** tes untuk kemajuan misi, klaim hadiah, siklus bonus (termasuk hari terlewat), dan determinisme waktu.
 
-### - [ ] Tugas 1B.3 — Sarang Telur Jiwa
+> **Ringkasan (selesai 2026-10-22):**
+>
+> - **Data:** `data/quests.json` (baru) — rantai 17 misi berurutan, satu aktif; 7 misi awal sekaligus tutorial (`hint`). Target: `action` (aksi sejak misi dimulai: bangun, panen, pungut, ambil alam, kalahkan musuh, tetaskan), `building` (bangunan selesai minimal level tertentu, bangunan awal ikut), `monsters` (monster dimiliki — supaya telur awal yang sudah menetas tetap terhitung). Hadiah: emas/makanan/kayu/batu/kristal/permata. `rules.daily`: 7 hadiah berputar, hari berganti pukul 00.00 WIB (`dayOffsetSeconds` 25200). Divalidasi zod + cek silang id bangunan dan level.
+> - **Shared (`quests.ts`, baru):** `activeQuest`, `claimQuest` (bayar hadiah, misi berikutnya mulai menghitung dari saat klaim), `dayNumber`, `dailyStatus`, `claimDaily` (siklus hanya maju saat diklaim: hari terlewat tidak mengulang dan tidak melompat). `gainXp` → `recordAction`, yang juga menghitung aksi seumur permainan (`state.actions`). **Simpanan v20** (`actions`, `quest`, `daily`; simpanan lama mulai dari misi pertama).
+> - **Client:** kartu misi di kanan atas (judul, target dengan progres, petunjuk, tombol "Klaim hadiah"; disembunyikan saat panel terbuka); dialog Bonus Harian otomatis muncul saat tersedia (7 kotak hari, hari ini disorot, yang sudah diambil ✓). `rewardLabel` dipindah ke `ui/cost.ts` (dipakai Serbu juga).
+> - **Tes:** `quests.test.ts` (misi awal, hitungan aksi hanya sejak misi mulai, bangunan selesai vs sedang dibangun, monster dimiliki, seluruh rantai dibayar sekali, akhir rantai, batas hari WIB, sekali sehari berurutan dan berputar, hari terlewat, determinisme, simpan/migrasi, data misi salah ditolak).
+> - **Dicek di browser:** permainan baru → dialog Bonus Harian, ambil +500 emas, tidak muncul lagi hari itu; panen ladang → "Panen ladang (1/1)" → klaim +200 emas → misi "Monster pertamamu".
+> - **Catatan:** aksi yang dilakukan saat misi sudah selesai tapi belum diklaim tidak dihitung untuk misi berikutnya. Telur sebagai hadiah misi menyusul di Tugas 1B.3.
+
+### - [x] Tugas 1B.3 — Sarang Telur Jiwa
 
 - Telur didapat dari hadiah misi atau koleksi. **Tidak dijual** dengan uang asli maupun permata.
 - Merawat telur lewat beberapa langkah bertimer, dengan biaya makanan per langkah (angka di data).
@@ -793,7 +811,16 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 
 **Kriteria selesai:** tes untuk langkah dan timer, biaya, populasi penuh, dan sebaran kelangkaan (Monte Carlo).
 
-### - [ ] Tugas 1B.4 — Koleksi set & Keajaiban
+> **Ringkasan (selesai 2026-10-22):**
+>
+> - **Data:** bangunan baru `sarang-telur` (Sarang Telur Jiwa, feature `nest`, Balai Lv 2, maks 1, gambar buatan kode). `rules.nest`: 3 langkah rawat (30 mnt/300 makanan, 1 jam/600, 2 jam/1.200) dan hasil tetas langka 85 % (wujud tingkat 2, elemen 2 unsur) / epik 15 % (wujud tingkat 3, elemen 3 unsur). Hadiah misi `soulEggs`: misi baru "Sarang Telur Jiwa" (setelah Balai Lv 2), "Pemburu bandit", dan "Balai Utama Lv 4" masing-masing 1 telur. Divalidasi zod + cek silang (peluang = 1, wujud ada, unsur muat di wujud, ada elemen biasa dengan jumlah unsur itu, ada bangunan `nest`).
+> - **Shared (`nest.ts`, baru):** `careSoulEgg` (bayar makanan langkah berikutnya, mulai timer; satu telur dirawat pada satu waktu), `soulEggStatus`, `rollSoulEgg` (RNG berbenih; elemen rahasia tidak pernah keluar), `hatchSoulEgg` (butuh populasi, bayi masuk Monsterpedia, dihitung sebagai aksi tetas untuk XP/misi), `addSoulEggs`. Telur tidak dijual di mana pun. **Simpanan v21** (`soulEggs`).
+> - **Client:** kartu Sarang Telur Jiwa (jumlah telur, status langkah + hitung mundur, tombol Mulai rawat / Rawat / Tetaskan), gelembung telur di atas sarang saat ada yang bisa dilakukan, toast hasil dengan kelangkaan.
+> - **Tes:** `nest.test.ts` (butuh sarang, langkah & timer & biaya, satu telur sekaligus, makanan kurang, tetas hanya saat siap, populasi penuh, determinisme, Monte Carlo 100.000 tetasan: tidak pernah biasa, langka/epik sesuai peluang, tingkat wujud & jumlah unsur benar, hadiah telur dari misi, simpan/migrasi).
+> - **Dicek di browser:** sarang tampil dengan gelembung; telur siap → Tetaskan → Kura-kura Uap (langka), populasi 2→4, misi "Punya monster" selesai; telur berikutnya → Mulai rawat → makanan −300, langkah 1/3 dengan hitung mundur 30 menit.
+> - **Belum:** tombol Rawat pada kartu yang sedang terbuka baru aktif setelah kartu dibuka ulang saat timer habis (gelembung muncul sebagai tanda). Telur dari koleksi set menyusul di Tugas 1B.4.
+
+### - [x] Tugas 1B.4 — Koleksi set & Keajaiban
 
 - **Set di Monsterpedia** (mis. semua wujud tingkat 1, semua elemen api): lengkap → hadiah (telur, Keajaiban, sumber daya).
 - **Keajaiban:**
@@ -803,7 +830,16 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 
 **Kriteria selesai:** tes untuk deteksi set lengkap, klaim sekali, dan batas 1 Keajaiban per jenis.
 
-### - [ ] Tugas 1B.5 — Putar bangunan & Gudang
+> **Ringkasan (selesai 2026-10-22):**
+>
+> - **Data:** `data/collections.json` (baru) — 9 set: 3 set wujud per tingkat (Hewan Kecil/tingkat 1, Hewan Liar/tingkat 2, Pemburu & Makhluk Gaib/tingkat 3; elemen apa saja) dan 6 set elemen per unsur dasar (semua elemen biasa berisi unsur itu dengan ≤ 2 unsur; wujud apa saja). Hadiah = sumber daya, Telur Jiwa, atau Keajaiban. 3 Keajaiban baru di `buildings.json` (kategori "Keajaiban", feature `wonder`, maks 1, gratis & langsung jadi): Pohon Emas Purba (3.000 emas/jam, dari misi besar "Balai Utama Lv 4"), Lumbung Abadi (2.000 makanan/jam, set Hewan Liar), Kolam Jiwa (5.000 emas/jam, set Pemburu & Makhluk Gaib). Hadiah misi dan set memakai skema `prizeSchema` yang sama; divalidasi (id set unik, tingkat/unsur ada, Keajaiban benar-benar `wonder`, Keajaiban maks 1).
+> - **Shared (`collections.ts`, baru):** `setProgress` (dari Monsterpedia), `claimSet` (sekali per set), `payPrize` (sumber daya + Telur Jiwa + Keajaiban; dipakai juga oleh `claimQuest`), `ownsWonder`. Keajaiban yang dimenangkan masuk `state.wonders` dan dipasang lewat menu Bangun; `buildBuilding` menolak Keajaiban yang belum dimenangkan dan memakai tokennya saat dipasang. Keajaiban yang sudah dimiliki (terpasang atau belum) tidak diberikan lagi. **Simpanan v22** (`collections`, `wonders`).
+> - **Client:** tab "Set" di Monsterpedia (isi set dengan ??? untuk yang belum ditemukan, hadiah, tombol Klaim / Sudah diklaim); kategori Keajaiban di menu Bangun ("Menangkan dari set atau misi" bila belum dimenangkan); gambar buatan kode untuk tiga Keajaiban; `prizeLabel` untuk teks hadiah misi/set.
+> - **Tes:** `collections.test.ts` (isi set wujud & elemen, set lengkap, klaim sekali, Keajaiban dari set dipasang gratis & langsung, tidak bisa dipasang tanpa dimenangkan, maks 1 per jenis, Keajaiban dari misi besar, produksi, simpan/migrasi).
+> - **Dicek di browser:** tab Set menampilkan Hewan Kecil 6/6 & Hewan Liar 5/5; klaim Hewan Liar → +2.000 makanan, "Sudah diklaim"; menu Bangun → Keajaiban: hanya Lumbung Abadi yang bisa, dipasang gratis, token habis.
+> - **Belum:** menyimpan Keajaiban ke gudang menyusul di Tugas 1B.5.
+
+### - [x] Tugas 1B.5 — Putar bangunan & Gudang
 
 - **Putar bangunan dan dekorasi** 2 arah (cermin gambar buatan kode).
 - **Gudang:**
@@ -813,7 +849,15 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 
 **Kriteria selesai:** tes untuk simpan dan pasang (posisi bebas, wilayah terbuka) dan putar tersimpan; tampilan cermin benar.
 
-### - [ ] Tugas 1B.6 — Pulau tambahan
+> **Ringkasan (selesai 2026-10-22):**
+>
+> - **Shared (`storage.ts`, baru):** `rotateBuilding` (dua arah, `Building.flipped`; tembok tidak bisa diputar karena tersambung ke tetangga), `storeBuilding` (hanya dekorasi dan Keajaiban, tidak saat dibangun; Keajaiban memungut hasilnya dulu), `placeStored` (gratis dan langsung, di tanah terbuka yang kosong, level & arah tetap, batas jumlah tetap berlaku), `isStorable`, `addToStorage`. Monster tidak pernah masuk Gudang.
+> - **Keajaiban & hadiah:** Keajaiban hadiah set/misi kini masuk Gudang (menggantikan daftar `wonders` dari Tugas 1B.4) dan tidak bisa dibangun dari menu Bangun. Hadiah baru `decorations` (dekorasi masuk Gudang): misi "Latih prajurit" (Lampu), "Petani rajin" (Air Mancur), set Jiwa Cahaya (Lampu) & Jiwa Kegelapan (Patung). **Simpanan v23** (`storage`, `flipped`; Keajaiban yang sudah dimenangkan dipindah ke Gudang).
+> - **Client:** tombol "Putar" dan "Simpan ke Gudang" di kartu bangunan; tab "Gudang" di bilah bawah (kartu barang dengan tombol Pasang); mode pasang dari Gudang (petunjuk "dari Gudang: gratis", tanpa pilihan pekerja); bangunan, bayangan pasang, dan kartu Gudang digambar cermin (`setFlipX`) bila diputar.
+> - **Tes:** `storage.test.ts` (putar & tersimpan, tembok tidak berputar, simpan dekorasi dengan level & arah lalu pasang di mana saja yang terbuka, ditolak di petak terisi / tanah terkunci, Keajaiban memungut hasil sebelum disimpan, hanya dekorasi & Keajaiban, tidak saat dibangun, monster tidak bisa, batas jumlah, migrasi Keajaiban lama) + `collections.test.ts` diperbarui.
+> - **Dicek di browser:** Lumbung Abadi → Putar (gambar cermin, `flipped` tersimpan) → Simpan ke Gudang (+340 makanan terpungut) → tab Gudang → Pasang → bayangan tetap cermin → terpasang lagi, Gudang kosong.
+
+### - [x] Tugas 1B.6 — Pulau tambahan
 
 - Pulau bertema (gurun, salju) dibuka di Balai Lv tinggi.
 - Tiap pulau punya:
@@ -824,6 +868,16 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 - Pindah pulau lewat peta dunia sederhana.
 
 **Kriteria selesai:** tes untuk membuka pulau, batas bangunan per pulau, dan sumber daya bersama; perpindahan pulau berfungsi.
+
+> **Ringkasan (selesai 2026-10-22):**
+>
+> - **Data:** `data/islands.json` (baru) — Pulau Utama (desa pertama), Pulau Gurun (Balai Lv 4, 20.000 emas + 5.000 makanan, kaktus & batu pasir, musuh +1 baris tabel), Pulau Salju (Balai Lv 5, 60.000 emas + 15.000 makanan + 5.000 batu, cemara & bongkahan es, musuh +2 baris). Batas bangunan sendiri per pulau (`maxCount`; yang tidak disebut tidak bisa dibangun — Balai, Kandang, Soul Mixer, barak hanya di pulau utama). 4 rintangan baru di `wilds.json`. Divalidasi (id unik, pulau utama tanpa batas khusus, rintangan & bangunan ada, Balai tidak boleh di pulau lain).
+> - **Shared (`islands.ts`, baru):** `islandStatus`, `unlockIsland` (desa kosong dengan rintangan khas, musuh & hewan langsung muncul), `travelTo` (tukar `state.village` dengan `state.islands[id]`; tidak bisa saat tim sedang bertarung). Sumber daya, pekerja, monster, prajurit tetap satu. Level Balai dibaca dari pulau utama; populasi, fitur bangunan (Soul Mixer, Sarang, Kuburan), level barak, dan kepemilikan Keajaiban dihitung di semua pulau; konstruksi di pulau yang ditinggal tetap selesai. Serangan desa hanya di pulau utama. **Simpanan v24** (`island`, `islands`).
+> - **Client:** tab "Peta" (peta dunia: kartu pulau dengan status Kamu di sini / Pergi / Buka (harga) / Butuh Balai Lv N), tanah berwarna per pulau (pasir, salju), gambar buatan kode untuk kaktus, batu pasir, cemara, bongkahan es; menu Bangun menulis "Tidak bisa di pulau ini" untuk bangunan yang dilarang.
+> - **Tes:** `islands.test.ts` (syarat Balai & harga, desa baru dengan rintangan khas, buka sekali, pindah & kembali utuh, sumber daya & level Balai bersama, tidak bisa saat tim keluar, batas per pulau & Balai hanya di utama, rumah pulau menambah populasi, konstruksi selesai saat ditinggal, musuh lebih kuat, tanpa serangan desa, simpan/migrasi).
+> - **Catatan:** sempat membuat tes simulasi ekonomi lambat (72 dtk) karena urutan acak pulau utama berubah; diperbaiki dengan tetap mengundi urat emas saat tumbuh kembali sehingga urutannya sama seperti sebelumnya (22 dtk).
+> - **Dicek di browser:** Peta → Buka Pulau Gurun (−20.000 emas, −5.000 makanan) → Pergi: tanah pasir, kaktus & batu pasir, sumber daya sama, menu Bangun memakai batas pulau; kembali ke Pulau Utama: desa utuh.
+> - **Belum:** monster/prajurit tidak bisa dikirim antar pulau secara terpisah (ikut pemain); gambar khusus pulau (SpriteCook) belum dibuat.
 
 **Gerbang Fase 1B:** pemain punya alasan kembali besok: misi berikutnya, bonus harian, telur yang sedang dirawat, dan set yang hampir lengkap.
 
@@ -924,7 +978,7 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 > - **Irama serangan (diputuskan pemilik 2026-10-21): varian ringan** — mulai Balai Lv 3, tiap 1.200 detik bermain, curian 5 %. Di simulasi 4 hari: curian ±2–6 % dari pendapatan dan bot menang sekitar separuh serangan.
 > - **Catatan bot:** monster pertama bot gugur di serangan pertama dan bot tidak pernah menghidupkannya dari Kuburan, jadi bot bermain tanpa monster/Soul Mixer (perilaku bot, perlu dirapikan terpisah).
 
-### - [ ] Tugas 1.6 — Server Supabase
+### - [x] Tugas 1.6 — Server Supabase
 
 - Skema database dan migrasi untuk semua isi `PlayerState`.
 - Login anonim (Google menyusul di Fase 2).
@@ -936,6 +990,18 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 - Semua waktu memakai jam server; client hanya meminta dan menampilkan.
 - **Pengambilan sumber daya alam yang hanya berjalan saat bermain** butuh detak aktif dari client yang diverifikasi server (batas wajar per detak).
 - Pindahkan simpanan dari `localStorage` ke server, dengan migrasi data lama.
+
+> **Ringkasan (selesai 2026-10-22):**
+>
+> - **Keputusan pemilik (2026-10-22):** satu baris JSONB per pemain.
+> - **Shared (`server/actions.ts`, `server/handler.ts`, baru):** daftar 48 aksi bernama (parameter dicek zod) yang menjalankan fungsi shared yang sudah ada; `handleRequest(slot, request, now)` murni: `load` (selesaikan timer), `beat` (detik bermain dibatasi waktu nyata sejak detak terakhir + `rules.server.beatSlackSeconds`, maks `maxBeatSeconds`), `action`. `skipUnlock` selalu dibuang di server.
+> - **Supabase:** migrasi `players` (save jsonb, revision untuk cegah tulis ganda, beat_at; RLS: pemain hanya membaca barisnya), `config.toml` (login anonim aktif), edge function `action` (Deno; memakai bundel `pnpm build:server` → `supabase/functions/_shared/game.js`, di-gitignore), migrasi simpanan lokal pada kunjungan pertama. Satu fungsi `action` menggantikan daftar fungsi terpisah di rencana (mix-start, feed, harvest, battle-resolve, …).
+> - **Client:** semua tombol kini memanggil `store.act(nama, params)` — dijalankan lokal seketika, lalu dikirim ke server bila `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` terisi; jawaban server (keadaan + jam server) menggantikan keadaan lokal. Detik bermain dikirim tiap `beatEverySeconds`. Login anonim lewat REST Auth (tanpa dependensi baru), pesan galat server. Tanpa env: tetap offline seperti sebelumnya.
+> - **Tes:** `server/handler.test.ts` (aksi sama dengan client & jam server, galat diteruskan, permintaan buruk ditolak, `skipUnlock` diabaikan, semua aksi punya cek parameter, `load` menyelesaikan timer, batas detak, detak memajukan pengambilan, determinisme).
+> - **Dicek di browser dengan server tiruan lokal** (memakai bundel yang sama): login anonim + impor simpanan, aksi & detak diterima server, emas yang diubah di client ditimpa nilai server, server mati → peringatan dan game tetap jalan. Mode offline tetap normal.
+> - **Deploy (2026-10-22, proyek `alrkfeyjcsoqarcstymi`):** `supabase link`, `db push` (tabel `players`), `pnpm build:server`, `functions deploy action --use-api` (tanpa Docker). Dicek di browser: login anonim, simpanan lokal pindah ke server (8 bangunan, 80.000 emas sama persis), aksi tersimpan di server, emas 9.999.999 yang diubah di client ditimpa kembali ke 80.000, jam game mengikuti server; panggilan dengan anon key saja ditolak (401).
+> - **Perbaikan saat uji:** sesi anonim kini disimpan per URL proyek dan diperbarui otomatis bila server menolak token (sebelumnya sesi dari server tiruan terbawa).
+> - **Catatan:** setiap perubahan `packages/shared` atau `data/` perlu `pnpm build:server` + deploy ulang (lihat `docs/SERVER.md`).
 
 **Gerbang Fase 1:** satu sesi 10 menit terasa lengkap: panen, kirim pekerja, campur, bertarung, upgrade.
 

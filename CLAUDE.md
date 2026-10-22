@@ -55,6 +55,7 @@ soul-monster/
 - `pnpm art:wall <lembar.png> <config.json> <folder>` — potong gambar tiang + ruas tembok menjadi potongan yang disambung game (lihat `apps/game/art/tembok-pieces.json`)
 - `pnpm atlas` — kemas `apps/game/art/` menjadi atlas di `apps/game/public/atlas/`
 - `pnpm sim:economy` — simulasi ekonomi 14 hari (`--seed`, `--days`, `--detail`)
+- `pnpm build:server` — bundel `packages/shared` untuk edge function Supabase (lihat `docs/SERVER.md`)
 
 Setelah mengubah kode, selalu jalankan `pnpm test` dan `pnpm lint` sebelum menyatakan tugas selesai.
 

@@ -57,7 +57,16 @@ Sebelum dipakai di game yang dijual: pastikan paket Ludo Anda memberi **izin kom
 3. Catat asal-usulnya di tabel **Asal suara** di bawah (tanggal, paket Ludo, izin komersial).
 4. Muat ulang game.
 
-Volume tiap efek diatur di `apps/game/src/audio/sound.ts` (`VOLUME`). Musik: semua id `village`, `village-2`, `village-3`, … di `sounds.json` diputar bergantian mulai dari lagu acak, kerasnya disamakan otomatis, dan baru diunduh setelah desa tampil (filenya besar). Ambience berulang di bawahnya. Jeda hening di awal efek dilewati otomatis, dan efek yang terlalu pelan dikeraskan (sampai 4×). Hasil Ludo yang punya jeda hening di awal sebaiknya dipotong (misalnya dengan Audacity) supaya terasa langsung saat diketuk.
+Volume tiap efek diatur di `apps/game/src/audio/sound.ts` (`VOLUME`). Musik: semua id `village`, `village-2`, `village-3`, … di `sounds.json` diputar bergantian mulai dari lagu acak, kerasnya disamakan otomatis. Musik diunduh satu per satu setelah desa tampil: lagu pertama, lalu ambience, dan lagu berikutnya baru diunduh saat gilirannya tiba. Ambience berulang di bawahnya. Jeda hening di awal efek dilewati otomatis, dan efek yang terlalu pelan dikeraskan (sampai 4×). Hasil Ludo yang punya jeda hening di awal sebaiknya dipotong (misalnya dengan Audacity) supaya terasa langsung saat diketuk.
+
+**Ukuran musik untuk HP.** File musik Ludo saat ini ±2,7 MB per ±114 detik (±192 kbps stereo), total 10,6 MB untuk 3 lagu + ambience. Untuk musik latar di HP cukup:
+
+| File                                 | Saran                 | Perkiraan ukuran |
+| ------------------------------------ | --------------------- | ---------------- |
+| `villager*.mp3` (lagu desa)          | MP3 96 kbps, stereo   | ±1,4 MB per lagu |
+| `ambience.mp3` (suara alam berulang) | MP3 64 kbps, **mono** | ±0,9 MB          |
+
+Total turun dari 10,6 MB ke ±5 MB tanpa beda yang terdengar di speaker HP. Cara mengubah: Audacity → File → Export Audio → MP3 → Bitrate Mode _Constant_, Quality 96 kbps (ambience: 64 kbps dan Channels _Mono_). Dengan ffmpeg: `ffmpeg -i villager.mp3 -b:a 96k villager-kecil.mp3` dan `ffmpeg -i ambience.mp3 -ac 1 -b:a 64k ambience-kecil.mp3`. Ganti file di `apps/game/public/audio/` dengan nama yang sama dan perbarui baris ukurannya di tabel **Asal suara**.
 
 ## Daftar suara dan prompt
 

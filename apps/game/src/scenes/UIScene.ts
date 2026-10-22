@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import {
-  collectAll,
+  type ActionName,
+  type ActionOutput,
+  type ActionParams,
   constructionTime,
   gameData,
   maxConstructionWorkers,
@@ -9,8 +11,12 @@ import {
   isReadyToCollect,
   populationCap,
   populationUsed,
+  activeQuest,
+  buildingDef,
+  dailyStatus,
+  levelProgress,
+  playerLevel,
   townHallLevel,
-  type ActionResult,
   type PlayerState,
 } from '@soul-monster/shared';
 import { BUILDING_RES, buildingIcon } from '../art/buildingArt';
@@ -27,13 +33,24 @@ import { cssSize, dpr } from '../ui/dpr';
 import { errorText, formatDuration, formatNumber, t } from '../text';
 import { COLORS, textStyle } from '../ui/theme';
 import { canFullscreen, isFullscreen, toggleFullscreen } from '../ui/fullscreen';
-import { costLabel } from '../ui/cost';
+import { costLabel, prizeLabel, rewardLabel } from '../ui/cost';
 import { contentBottom, uiLayout, type UILayout } from '../ui/layout';
-import { Button, confirmDialog, icons, roundedPanel, stepper, toast } from '../ui/widgets';
+import {
+  Button,
+  confirmDialog,
+  icons,
+  Modal,
+  openModalCount,
+  roundedPanel,
+  stepper,
+  toast,
+} from '../ui/widgets';
 import { BuildMenuView } from '../views/BuildMenuView';
 import { CollectionView } from '../views/CollectionView';
 import { MixerView } from '../views/MixerView';
 import { PediaView } from '../views/PediaView';
+import { StorageView } from '../views/StorageView';
+import { WorldView } from '../views/WorldView';
 import { BarracksView } from '../views/BarracksView';
 import { GraveyardView } from '../views/GraveyardView';
 import { TeamView } from '../views/TeamView';
@@ -43,9 +60,17 @@ import { arcPoint, countUp, flyIconCount } from '../fx/math';
 import { isSoundOn, playSfx, setSoundOn } from '../audio/sound';
 
 export type PanelKind =
-  'build' | 'collection' | 'barracks' | 'mixer' | 'pedia' | 'team' | 'graveyard';
+  | 'build'
+  | 'collection'
+  | 'barracks'
+  | 'mixer'
+  | 'pedia'
+  | 'team'
+  | 'graveyard'
+  | 'storage'
+  | 'world';
 /** Tabs on the floating bar. Monsters and the Soul Mixer open from their buildings. */
-const DOCK_TABS: PanelKind[] = ['build', 'pedia'];
+const DOCK_TABS: PanelKind[] = ['build', 'pedia', 'storage', 'world'];
 const PANEL_DEPTH = 300;
 const DOCK_DEPTH = 360;
 const DOCK_KEY = 'soul-monster:dock-visible';
@@ -87,6 +112,14 @@ export class UIScene extends Phaser.Scene {
   private statusText?: Phaser.GameObjects.Text;
   private statusMaxWidth = 200;
   private resourceMaxWidth = 60;
+  /** Thin XP strip along the bottom edge of the HUD. */
+  private xpBar?: Phaser.GameObjects.Graphics;
+  /** Player level last shown, to announce a level-up once. */
+  private shownLevel = 0;
+  /** Active quest card at the top right. */
+  private questCard?: Phaser.GameObjects.Container;
+  /** The daily bonus dialog while it is open. */
+  private dailyModal?: Modal;
   private resourceIcons: Partial<
     Record<CollectFx['resource'], Phaser.GameObjects.Graphics | Phaser.GameObjects.Container>
   > = {};
@@ -133,11 +166,19 @@ export class UIScene extends Phaser.Scene {
     this.buildDock();
     if (openPanelKind) this.openPanel(openPanelKind, openPanelTarget, true);
 
+    // Server trouble: one toast at a time is enough (the game keeps going on the device).
+    let lastServerToast = 0;
+    this.store.onServerError = (error) => {
+      if (Date.now() - lastServerToast < 10_000) return;
+      lastServerToast = Date.now();
+      toast(this, errorText(error), COLORS.warn);
+    };
     const unsubscribe = this.store.subscribe(() => {
       this.pruneTeam();
       this.refreshHud();
       this.buildInfo();
       this.buildTeamBar();
+      this.buildQuestCard();
       this.panel?.view.render();
     });
     const timer = this.time.addEvent({
@@ -145,6 +186,7 @@ export class UIScene extends Phaser.Scene {
       loop: true,
       callback: () => {
         this.refreshHud();
+        this.maybeShowDaily();
         this.panel?.view.tick();
         for (const update of this.infoTimers) update();
         const now = this.store.now();
@@ -196,6 +238,7 @@ export class UIScene extends Phaser.Scene {
     this.scale.on('resize', onResize);
     this.events.once('shutdown', () => {
       unsubscribe();
+      this.store.onServerError = null;
       timer.remove();
       window.clearTimeout(resizeTimer);
       this.scale.off('resize', onResize);
@@ -213,6 +256,7 @@ export class UIScene extends Phaser.Scene {
 
     this.pruneTeam();
     this.buildTeamBar();
+    this.buildQuestCard();
 
     if (this.store.loadNotice && !this.shownLoadError) {
       this.shownLoadError = true;
@@ -336,6 +380,7 @@ export class UIScene extends Phaser.Scene {
     team = ids;
     this.game.events.emit(EVT.teamChanged, [...team]);
     this.buildTeamBar();
+    this.buildQuestCard();
     this.buildInfo();
   }
 
@@ -392,14 +437,171 @@ export class UIScene extends Phaser.Scene {
     this.teamBar = bar;
   }
 
+  // ---------- Quests & daily bonus ----------
+
+  /** The active quest with its goals, at the top right; a claim button once it is done. */
+  private buildQuestCard(): void {
+    this.questCard?.destroy();
+    this.questCard = undefined;
+    const active = activeQuest(this.store.state);
+    if (!active || this.panel) return;
+    const { quest, goals, complete } = active;
+    const L = this.layout;
+    const w = Math.min(230, L.width / 3);
+    const x = L.width - w - 10;
+    const y = L.hud.h + 8;
+    const card = this.add.container(0, 0).setDepth(DOCK_DEPTH);
+    const lines = [
+      this.add.text(
+        0,
+        0,
+        t('quest.title', { title: quest.title }),
+        textStyle(12, COLORS.gold, { fontStyle: 'bold', wordWrap: { width: w - 20 } }),
+      ),
+      ...quest.goals.map((g, i) => {
+        const goal =
+          g.kind === 'action'
+            ? t(`quest.goal.${g.action}`)
+            : g.kind === 'monsters'
+              ? t('quest.goal.monsters')
+              : t('quest.goal.building', {
+                  name: buildingDef(g.building).name,
+                  level: g.level,
+                });
+        const { current, target, done } = goals[i]!;
+        return this.add.text(
+          0,
+          0,
+          t('quest.goal', { goal, current, target }),
+          textStyle(11, done ? COLORS.good : COLORS.text, { wordWrap: { width: w - 20 } }),
+        );
+      }),
+    ];
+    if (quest.hint && !complete) {
+      lines.push(
+        this.add.text(
+          0,
+          0,
+          quest.hint,
+          textStyle(10, COLORS.textDim, { wordWrap: { width: w - 20 } }),
+        ),
+      );
+    }
+    let h = 8;
+    for (const line of lines) {
+      line.setPosition(x + 10, y + h);
+      h += line.height + 3;
+    }
+    const buttonH = 28;
+    h += complete ? buttonH + 10 : 5;
+    card.add(
+      roundedPanel(this, x, y, w, h, COLORS.panelDark, complete ? COLORS.good : COLORS.gold, 12),
+    );
+    card.add(this.add.zone(x, y, w, h).setOrigin(0).setInteractive());
+    card.add(lines);
+    if (complete) {
+      card.add(
+        new Button(this, x + w / 2, y + h - 6 - buttonH / 2, {
+          width: w - 20,
+          height: buttonH,
+          label: t('quest.claim'),
+          fontSize: 12,
+          color: COLORS.good,
+          onClick: () => {
+            const r = this.run('claimQuest', {});
+            if (r)
+              toast(this, t('quest.claimed', { reward: prizeLabel(r.reward) }), COLORS.good, 'win');
+          },
+        }),
+      );
+    }
+    this.questCard = card;
+  }
+
+  /** Opens the daily bonus dialog once it can be claimed and nothing else is in the way. */
+  private maybeShowDaily(): void {
+    if (this.dailyModal || openModalCount(this) > 0 || this.placement.active) return;
+    const status = dailyStatus(this.store.state, this.store.now());
+    if (!status.available) return;
+    const { rewards } = gameData.rules.daily;
+    const { width } = this.scale;
+    const mw = Math.min(width - 32, 560);
+    const modal = new Modal(this, {
+      width: mw,
+      height: 210,
+      title: t('daily.title'),
+      onClose: () => (this.dailyModal = undefined),
+    });
+    this.dailyModal = modal;
+    const gap = 6;
+    const cw = (mw - 24 - gap * (rewards.length - 1)) / rewards.length;
+    rewards.forEach((reward, i) => {
+      const cx = 12 + i * (cw + gap);
+      const today = i === status.index;
+      const taken = i < status.index;
+      modal.panel.add(
+        roundedPanel(
+          this,
+          cx,
+          48,
+          cw,
+          96,
+          today ? COLORS.panelLight : COLORS.panelDark,
+          today ? COLORS.gold : COLORS.stroke,
+          10,
+        ),
+      );
+      modal.panel.add(
+        this.add
+          .text(
+            cx + cw / 2,
+            60,
+            t('daily.day', { n: i + 1 }),
+            textStyle(11, today ? COLORS.gold : COLORS.textDim, { fontStyle: 'bold' }),
+          )
+          .setOrigin(0.5, 0),
+      );
+      modal.panel.add(
+        this.add
+          .text(
+            cx + cw / 2,
+            100,
+            taken ? '✓' : rewardLabel(reward),
+            textStyle(10, taken ? COLORS.good : COLORS.text, {
+              align: 'center',
+              wordWrap: { width: cw - 8 },
+            }),
+          )
+          .setOrigin(0.5),
+      );
+    });
+    modal.panel.add(
+      new Button(this, mw / 2, 176, {
+        width: 160,
+        height: 40,
+        label: t('daily.claim'),
+        color: COLORS.good,
+        onClick: () => {
+          const r = this.run('claimDaily', {});
+          modal.close();
+          if (r)
+            toast(this, t('daily.claimed', { reward: rewardLabel(r.reward) }), COLORS.good, 'coin');
+        },
+      }),
+    );
+  }
+
   /** Runs an action and shows its error; returns the result when it succeeded. */
-  private run<T extends object>(action: (s: PlayerState, now: number) => ActionResult<T>) {
-    const result = this.store.apply(action);
+  private run<N extends ActionName>(
+    name: N,
+    params: ActionParams<N>,
+  ): Extract<ActionOutput<N>, { ok: true }> | null {
+    const result = this.store.act(name, params);
     if (!result.ok) {
       toast(this, errorText(result.error));
       return null;
     }
-    return result;
+    return result as Extract<ActionOutput<N>, { ok: true }>;
   }
 
   // ---------- HUD ----------
@@ -507,6 +709,9 @@ export class UIScene extends Phaser.Scene {
       this.statusMaxWidth = r.w - 16;
     }
     hud.add(this.statusText);
+    this.xpBar = this.add.graphics();
+    hud.add(this.xpBar);
+    this.shownLevel = playerLevel(this.store.state.xp);
     this.refreshHud();
   }
 
@@ -520,8 +725,23 @@ export class UIScene extends Phaser.Scene {
       text.setScale(1);
       if (text.width > this.resourceMaxWidth) text.setScale(this.resourceMaxWidth / text.width);
     }
+    const xp = levelProgress(state.xp);
+    if (xp.level > this.shownLevel) {
+      const { reward } = gameData.rules.player.levels[xp.level - 1]!;
+      // Above the toast of the action that gave the XP.
+      toast(this, t('hud.levelUp', { level: xp.level, ...reward }), COLORS.good, 'win', 48);
+    }
+    this.shownLevel = xp.level;
+    const { hud } = this.layout;
+    this.xpBar
+      ?.clear()
+      .fillStyle(COLORS.panel, 1)
+      .fillRect(hud.x, hud.y + hud.h - 3, hud.w, 3)
+      .fillStyle(COLORS.accent, 1)
+      .fillRect(hud.x, hud.y + hud.h - 3, hud.w * (xp.needed ? xp.current / xp.needed : 1), 3);
     this.statusText?.setText(
       t('hud.status', {
+        player: xp.level,
         level: townHallLevel(state),
         idle: idleWorkers(state).length,
         workers: state.workers.length,
@@ -636,26 +856,35 @@ export class UIScene extends Phaser.Scene {
     const def = this.placement.type ? gameData.buildingById.get(this.placement.type) : undefined;
     const first = def?.levels[0];
     const line = this.placement.line;
-    const hint = this.placement.moving
-      ? t('place.moveHint')
-      : line && def
-        ? line.started
-          ? t('place.lineCost', {
-              name: def.name,
-              count: line.count,
-              cost: costLabel(line.cost),
-            })
-          : t('place.lineStart', { name: def.name })
-        : first
-          ? t('place.cost', { name: def.name, cost: costLabel(first.cost) })
-          : '';
+    const hint = this.placement.stored
+      ? t('place.stored', { name: def?.name ?? '' })
+      : this.placement.moving
+        ? t('place.moveHint')
+        : line && def
+          ? line.started
+            ? t('place.lineCost', {
+                name: def.name,
+                count: line.count,
+                cost: costLabel(line.cost),
+              })
+            : t('place.lineStart', { name: def.name })
+          : first
+            ? t('place.cost', { name: def.name, cost: costLabel(first.cost) })
+            : '';
     const w = Math.min(L.width - 20, 520);
     const h = L.dock.buttonH + 16;
     const x = (L.width - w) / 2;
     const y = L.height - 10 - h;
     // Timed constructions: choose how many workers build it (more = faster).
     let workers: number | undefined;
-    if (def && first && first.seconds > 0 && !this.placement.moving && !line) {
+    if (
+      def &&
+      first &&
+      first.seconds > 0 &&
+      !this.placement.moving &&
+      !this.placement.stored &&
+      !line
+    ) {
       const avail = Math.min(idleWorkers(this.store.state).length, maxConstructionWorkers(def.id));
       const sw = 230;
       if (avail === 0) {
@@ -794,11 +1023,18 @@ export class UIScene extends Phaser.Scene {
       graveyard: () => new GraveyardView(ctx),
       mixer: () => new MixerView(ctx),
       pedia: () => new PediaView(ctx),
+      storage: () =>
+        new StorageView(ctx, (storedId) => {
+          this.closePanel();
+          this.game.events.emit(EVT.startPlacement, { storedId });
+        }),
+      world: () => new WorldView(ctx),
     };
     const view = views[kind]();
     view.render();
     this.panel = { kind, targetId, view, layer };
     this.buildTeamBar();
+    this.buildQuestCard();
     this.buildInfo();
     this.buildDock();
   }
@@ -818,6 +1054,7 @@ export class UIScene extends Phaser.Scene {
       this.buildDock();
       this.buildInfo();
       this.buildTeamBar();
+      this.buildQuestCard();
     }
   }
 
@@ -833,7 +1070,7 @@ export class UIScene extends Phaser.Scene {
     }
     const content = infoContent(this.store.state, this.selection, {
       now: () => this.store.now(),
-      run: (action) => this.run(action),
+      run: (name, params) => this.run(name, params),
       openPanel: (kind, targetId) => this.openPanel(kind, targetId),
       openBattles: (source) => {
         this.closePanel();
@@ -1011,7 +1248,7 @@ export class UIScene extends Phaser.Scene {
         color: 0x3c9a5f,
         icon: icons.gold,
         onClick: () => {
-          const r = this.run((s, n) => collectAll(s, n));
+          const r = this.run('collectAll', {});
           if (!r) return;
           toast(this, `+${costLabel(r)}`, COLORS.good);
           const from = { x: L.width - 92 - L.dock.buttonW - L.dock.gap, y: L.dock.y };

@@ -1,13 +1,11 @@
 import type Phaser from 'phaser';
 import {
   compareMonsters,
-  feedMonster,
   foodToNextStage,
   isMonsterBusy,
   monsterName,
   populationCap,
   populationUsed,
-  releaseMonster,
   type Monster,
 } from '@soul-monster/shared';
 import { errorText, t } from '../text';
@@ -79,7 +77,7 @@ export class CollectionView extends View {
 
   private release(monster: Monster) {
     confirmDialog(this.scene, t('monster.releaseConfirm', { name: monsterName(monster) }), () => {
-      if (this.run((s) => releaseMonster(s, monster.id))) {
+      if (this.run('releaseMonster', { id: monster.id })) {
         toast(this.scene, t('monster.released', { name: monsterName(monster) }), COLORS.good);
       }
     });
@@ -92,7 +90,7 @@ export class CollectionView extends View {
       return;
     }
     const amount = Math.min(food, foodToNextStage(monster) - monster.food);
-    const result = this.run((s) => feedMonster(s, { monsterId: monster.id, amount }));
+    const result = this.run('feedMonster', { monsterId: monster.id, amount });
     if (result?.grew) {
       const grown = result.state.monsters.find((m) => m.id === monster.id);
       if (grown) {

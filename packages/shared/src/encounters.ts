@@ -3,7 +3,7 @@ import { gameData, type GameData } from './data';
 import type { WildEncounter } from './missions';
 import { createRng, type Rng } from './rng';
 import type { PlayerState } from './state';
-import { canPlace, isTileUnlocked, townHallLevel } from './village';
+import { canPlace, currentIsland, isTileUnlocked, townHallLevel } from './village';
 
 /** Seconds between encounter spawns. */
 export const encounterRespawnSeconds = (data: GameData = gameData) =>
@@ -81,7 +81,11 @@ export function spawnEncounters(
   const rng = createRng(next.rngState);
   const hall = townHallLevel(next, data);
   const target = encounterTarget(hall, data);
-  const level = encounterLevelIndex(hall, data);
+  // Other islands have stronger enemies (rows further down the table).
+  const level = Math.min(
+    encounterLevelIndex(hall, data) + currentIsland(next, data).encounterLevelBonus,
+    data.wilds.encounters.levels.length - 1,
+  );
   // A raid on the village is not one of the waiting groups.
   const waiting = () => next.village.encounters.filter((e) => !e.raid).length;
   while (waiting() < target) {

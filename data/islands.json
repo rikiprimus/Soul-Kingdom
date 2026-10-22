@@ -1,0 +1,72 @@
+{
+  "_notes": [
+    "Pulau (Tugas 1B.6). Pulau pertama adalah desa utama (Balai Utama, serangan desa, urat emas).",
+    "Pulau lain dibuka dengan Balai Utama minimal `requiresTownHall` dan membayar `cost`; mulai kosong dengan rintangan khas (`nodes`).",
+    "Sumber daya, pekerja, monster, prajurit, populasi, dan level Balai berlaku untuk semua pulau.",
+    "`encounterLevelBonus`: musuh liar memakai baris tabel musuh yang lebih tinggi (lebih kuat).",
+    "`maxCount`: batas bangunan di pulau itu (bangunan yang tidak disebut tidak bisa dibangun di sana). Pulau utama memakai batas biasa dari buildings.json."
+  ],
+  "islands": [
+    {
+      "id": "utama",
+      "name": "Pulau Utama",
+      "description": "Desa pertamamu, tempat Balai Utama berdiri.",
+      "requiresTownHall": 1,
+      "cost": {},
+      "nodes": ["pohon", "batu", "semak"],
+      "encounterLevelBonus": 0
+    },
+    {
+      "id": "gurun",
+      "name": "Pulau Gurun",
+      "description": "Pasir panas, kaktus raksasa, dan batu pasir yang kaya. Musuhnya lebih kuat.",
+      "requiresTownHall": 4,
+      "cost": { "gold": 20000, "food": 5000 },
+      "nodes": ["kaktus", "batu-pasir"],
+      "encounterLevelBonus": 1,
+      "maxCount": {
+        "rumah": 4,
+        "pasar": 2,
+        "ladang": 4,
+        "tambang-emas": 2,
+        "penggilingan": 1,
+        "menara": 2,
+        "tembok": 40,
+        "pohon-hias": 2,
+        "bunga": 4,
+        "lampu": 4,
+        "air-mancur": 1,
+        "patung": 1,
+        "pohon-emas-purba": 1,
+        "lumbung-abadi": 1,
+        "kolam-jiwa": 1
+      }
+    },
+    {
+      "id": "salju",
+      "name": "Pulau Salju",
+      "description": "Hutan cemara dan bongkahan es. Musuhnya jauh lebih kuat.",
+      "requiresTownHall": 5,
+      "cost": { "gold": 60000, "food": 15000, "stone": 5000 },
+      "nodes": ["cemara", "batu-es"],
+      "encounterLevelBonus": 2,
+      "maxCount": {
+        "rumah": 4,
+        "pasar": 2,
+        "ladang": 3,
+        "tambang-emas": 3,
+        "penggilingan": 2,
+        "menara": 3,
+        "tembok": 40,
+        "pohon-hias": 2,
+        "bunga": 4,
+        "lampu": 4,
+        "air-mancur": 1,
+        "patung": 1,
+        "pohon-emas-purba": 1,
+        "lumbung-abadi": 1,
+        "kolam-jiwa": 1
+      }
+    }
+  ]
+}

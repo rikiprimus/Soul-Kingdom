@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {
   elementUnits,
+  setProgress,
   gameData,
   monsterName,
   parseMonsterKey,
@@ -16,11 +17,20 @@ import { unitColor } from '../art/palette';
 import { t } from '../text';
 import { lastStageId } from '../ui/MonsterCard';
 import { COLORS, RARITY_COLORS, textStyle } from '../ui/theme';
-import { Button, Modal, darken, deferClick, pointerState, roundedPanel } from '../ui/widgets';
+import { prizeLabel } from '../ui/cost';
+import {
+  Button,
+  Modal,
+  darken,
+  deferClick,
+  pointerState,
+  roundedPanel,
+  toast,
+} from '../ui/widgets';
 import { GAP, gridColumns } from './CollectionView';
 import { View } from './View';
 
-type Tab = 'elements' | 'forms' | 'recipes';
+type Tab = 'elements' | 'forms' | 'recipes' | 'sets';
 let tab: Tab = 'elements';
 
 export class PediaView extends View {
@@ -52,8 +62,15 @@ export class PediaView extends View {
       ['elements', t('pedia.tabElements', { found: d.elements.size, total: d.elementCount })],
       ['forms', t('pedia.tabForms', { found: d.forms.size, total: d.formCount })],
       ['recipes', t('pedia.tabRecipes', { found: d.recipes.size, total: d.recipeCount })],
+      [
+        'sets',
+        t('pedia.tabSets', {
+          found: this.state.collections.length,
+          total: gameData.collections.sets.length,
+        }),
+      ],
     ];
-    const tw = (width - GAP * 2) / 3;
+    const tw = (width - GAP * (tabs.length - 1)) / tabs.length;
     tabs.forEach(([id, label], i) => {
       content.add(
         new Button(scene, left + i * (tw + GAP) + tw / 2, y + 17, {
@@ -73,6 +90,7 @@ export class PediaView extends View {
 
     if (tab === 'elements') return this.buildElements(content, d, left, y, width);
     if (tab === 'forms') return this.buildForms(content, d, left, y, width);
+    if (tab === 'sets') return this.buildSets(content, left, y, width);
     return this.buildRecipes(content, d, left, y, width);
   }
 
@@ -263,6 +281,99 @@ export class PediaView extends View {
           }),
         ),
       );
+      content.add(row);
+      y += rowH + GAP;
+    }
+    return y + 16;
+  }
+
+  /** Collection sets: what each needs, found so far, and its prize (claimed once). */
+  private buildSets(content: Phaser.GameObjects.Container, left: number, y: number, width: number) {
+    const { scene } = this;
+    for (const set of gameData.collections.sets) {
+      const p = setProgress(this.state, set);
+      const ready = p.complete && !p.claimed;
+      const row = scene.add.container(left, y);
+      const items = p.items
+        .map((i) =>
+          i.found
+            ? i.kind === 'form'
+              ? gameData.formById.get(i.id)!.name
+              : gameData.elementById.get(i.id)!.name
+            : t('pedia.unknown'),
+        )
+        .join(' · ');
+      const texts = [
+        scene.add.text(
+          14,
+          10,
+          t('set.title', { name: set.name, found: p.found, total: p.items.length }),
+          textStyle(14, p.claimed ? COLORS.good : COLORS.text, { fontStyle: 'bold' }),
+        ),
+        scene.add.text(
+          14,
+          32,
+          items,
+          textStyle(11, COLORS.textDim, { wordWrap: { width: width - 150 } }),
+        ),
+      ];
+      const itemsBottom = 32 + texts[1]!.height;
+      texts.push(
+        scene.add.text(
+          14,
+          itemsBottom + 6,
+          t('set.reward', { reward: prizeLabel(set.reward) }),
+          textStyle(11, COLORS.gold, { wordWrap: { width: width - 150 } }),
+        ),
+      );
+      const rowH = Math.max(72, itemsBottom + 6 + texts[2]!.height + 10);
+      row.add(
+        roundedPanel(
+          scene,
+          0,
+          0,
+          width,
+          rowH,
+          ready ? COLORS.panel : COLORS.panelDark,
+          ready ? COLORS.gold : null,
+          10,
+        ),
+      );
+      row.add(texts);
+      if (p.claimed) {
+        row.add(
+          scene.add
+            .text(
+              width - 70,
+              rowH / 2,
+              t('set.claimed'),
+              textStyle(12, COLORS.good, { fontStyle: 'bold' }),
+            )
+            .setOrigin(0.5),
+        );
+      } else {
+        row.add(
+          new Button(scene, width - 70, rowH / 2, {
+            width: 120,
+            height: 34,
+            label: t('set.claim'),
+            fontSize: 12,
+            color: ready ? COLORS.good : COLORS.disabled,
+            onClick: () => {
+              const r = this.run('claimSet', { id: set.id });
+              if (!r) return;
+              toast(
+                scene,
+                t('set.claimedToast', { name: set.name, reward: prizeLabel(r.reward) }),
+                COLORS.good,
+                'win',
+              );
+              if (r.reward.wonder && !r.wonder)
+                toast(scene, t('set.wonderOwned'), COLORS.warn, null, 48);
+            },
+          }),
+        );
+      }
       content.add(row);
       y += rowH + GAP;
     }

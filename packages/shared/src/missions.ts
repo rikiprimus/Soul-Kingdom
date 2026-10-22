@@ -10,10 +10,12 @@ import {
 } from './data';
 import { elementAdvantage } from './elements';
 import { getStage, monsterStats, powerPointsOf, type Monster, type MonsterKind } from './monster';
+import { recordAction } from './player';
 import { createRng } from './rng';
 import type { RaidMarch } from './raids';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { hasRoomFor } from './workers';
+import { hasFeature } from './village';
 
 /** A group of wild enemies waiting on the map (see encounters.ts for spawning). */
 export interface WildEncounter {
@@ -300,6 +302,7 @@ export function settleMissions(
       for (const r of VILLAGE_RESOURCES) next.resources[r] += f.reward[r];
       next.resources.soulCrystal += f.soulCrystal;
       next.village.encounters = next.village.encounters.filter((e) => e.id !== m.encounterId);
+      recordAction(next, 'defeatEnemy', 1, data);
     } else if (f.stolen) {
       // Raiders who beat the defence take their loot and leave.
       for (const r of VILLAGE_RESOURCES) {
@@ -336,9 +339,7 @@ export function reviveCost(kind: MonsterKind, data: GameData = gameData) {
 }
 
 export function hasGraveyard(state: PlayerState, data: GameData = gameData): boolean {
-  return state.village.buildings.some(
-    (b) => b.level >= 1 && data.buildingById.get(b.type)?.feature === 'graveyard',
-  );
+  return hasFeature(state, 'graveyard', data);
 }
 
 /** Revives a monster from the Kuburan with gold and food, or with gems. */

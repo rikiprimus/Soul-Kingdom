@@ -22,6 +22,8 @@ const baby = gameData.rules.growth.stages[0]!.id;
 /** A new game with one adult dragon (8 power points, inside the no-barracks cap). */
 function army(): PlayerState {
   const s = createInitialState(T0, 9);
+  // At the max player level, so no level-up reward mixes into the battle rewards.
+  s.xp = gameData.rules.player.levels.at(-1)!.xp;
   s.monsters.push({ id: 'm1', form: 'naga', element: 'api', stage: adult, food: 0 });
   return s;
 }

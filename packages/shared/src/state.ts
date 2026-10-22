@@ -1,4 +1,4 @@
-import { gameData, type GameData } from './data';
+import { gameData, XP_ACTIONS, type GameData } from './data';
 import {
   isParentConsumed,
   mixCost,
@@ -24,9 +24,13 @@ import { rollEgg, type BarracksTraining, type Egg, type Soldier } from './barrac
 import { encounterRespawnSeconds, spawnEncounters } from './encounters';
 import { isOnMission, type Mission } from './missions';
 import { deepClone } from './clone';
+import { recordAction, type XpAction } from './player';
 import { createRng, type RngState } from './rng';
 import type { AdventureProgress } from './adventure';
 import type { SerbuProgress } from './serbu';
+import type { DailyBonus, QuestProgress } from './quests';
+import type { SoulEgg } from './nest';
+import type { StoredItem } from './storage';
 import { settleUnits, type UnitPlace } from './units';
 import { createVillage, hasFeature, townHallLevel, type Village } from './village';
 import { createWorkers, hasRoomFor, type Worker, type WorkerTraining } from './workers';
@@ -66,7 +70,12 @@ export interface Monsterpedia {
 
 export interface PlayerState {
   resources: Resources;
+  /** The island being played. */
   village: Village;
+  /** Id of that island (islands.json). */
+  island: string;
+  /** The other opened islands, by id; they keep their buildings while the player is away. */
+  islands: Record<string, Village>;
   /** Workers (also the builders); each needs a population slot. */
   workers: Worker[];
   workerTraining: WorkerTraining[];
@@ -76,6 +85,12 @@ export interface PlayerState {
   soldiers: Soldier[];
   /** Unhatched monster eggs (the first monster comes from one). */
   eggs: Egg[];
+  /** Telur Jiwa from quest rewards, cared for in the Sarang Telur Jiwa. */
+  soulEggs: SoulEgg[];
+  /** Monsterpedia sets whose prize was claimed. */
+  collections: string[];
+  /** Gudang: decorations and Keajaiban off the map (won ones arrive here). Never monsters. */
+  storage: StoredItem[];
   /** Where each monster and soldier stands or walks in the village, by id. */
   units: Record<string, UnitPlace>;
   /** Teams out fighting wild encounters. */
@@ -83,6 +98,12 @@ export interface PlayerState {
   /** Fallen monsters, waiting in the Kuburan to be revived (they take no population). */
   graveyard: Monster[];
   bossesDefeated: number;
+  /** Total player XP; the level is derived from it (`playerLevel`). */
+  xp: number;
+  /** Lifetime count of each XP action (quest goals count from `quest.start`). */
+  actions: Record<XpAction, number>;
+  quest: QuestProgress;
+  daily: DailyBonus;
   monsters: Monster[];
   mixQueue: MixEntry[];
   mixerSlots: number;
@@ -154,7 +175,12 @@ export type ActionError =
   | 'plotLocked'
   | 'plotOutOfMap'
   | 'plotAlreadyOpen'
-  | 'plotNotAdjacent';
+  | 'plotNotAdjacent'
+  | 'alreadyClaimed'
+  | 'notStorable'
+  | 'cannotRotate'
+  | 'teamsAway'
+  | 'badRequest';
 
 export type ActionResult<T extends object = object> =
   ({ ok: true; state: PlayerState } & T) | { ok: false; error: ActionError };
@@ -181,6 +207,11 @@ function addMonster(state: PlayerState, kind: MonsterKind & { stage: string }): 
   return monster;
 }
 
+/** Zero count for every XP action. */
+export function noActions(): Record<XpAction, number> {
+  return Object.fromEntries(XP_ACTIONS.map((a) => [a, 0])) as Record<XpAction, number>;
+}
+
 export function createInitialState(
   now: number,
   seed: RngState,
@@ -201,15 +232,24 @@ export function createInitialState(
       encountersAt: now,
       raidClock: 0,
     },
+    island: data.islands.islands[0]!.id,
+    islands: {},
     workers: [],
     workerTraining: [],
     barracksQueue: [],
     soldiers: [],
     eggs: [],
+    soulEggs: [],
+    collections: [],
+    storage: [],
     units: {},
     missions: [],
     graveyard: [],
     bossesDefeated: 0,
+    xp: 0,
+    actions: noActions(),
+    quest: { index: 0, start: noActions() },
+    daily: { next: 0, lastDay: null },
     monsters: [],
     mixQueue: [],
     mixerSlots: mixer.initialSlots,
@@ -402,6 +442,7 @@ export function collectMix(
     element: entry.result.element,
     stage: firstStage(data),
   });
+  recordAction(next, 'hatch', 1, data);
   if (entry.result.recipeId && !next.pedia.recipes.includes(entry.result.recipeId)) {
     next.pedia.recipes.push(entry.result.recipeId);
   }

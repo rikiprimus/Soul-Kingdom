@@ -1,5 +1,6 @@
 import { soldierPower } from './barracks';
 import { deepClone } from './clone';
+import { allBuildings } from './village';
 import { gameData, type GameData } from './data';
 import { formTierOf, type MonsterKind } from './monster';
 import type { ActionError, ActionResult, PlayerState } from './state';
@@ -33,7 +34,7 @@ export function monsterSlots(kind: MonsterKind, data: GameData = gameData): numb
 /** Maximum population from every finished building with `population` (Balai, Rumah). */
 export function populationCap(state: PlayerState, data: GameData = gameData): number {
   let total = 0;
-  for (const b of state.village.buildings) {
+  for (const b of allBuildings(state)) {
     if (b.level < 1) continue;
     total += data.buildingById.get(b.type)?.levels[b.level - 1]?.population ?? 0;
   }

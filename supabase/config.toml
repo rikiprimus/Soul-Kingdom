@@ -1,0 +1,10 @@
+# Supabase CLI settings (Tugas 1.6). Only what differs from the defaults.
+project_id = "soul-monster"
+
+[auth]
+# Players start with an anonymous account; Google sign-in comes in Tugas 2.1.
+enable_anonymous_sign_ins = true
+
+[functions.action]
+# The function checks the player's token itself (anonymous users included).
+verify_jwt = true

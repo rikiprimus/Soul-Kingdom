@@ -6,7 +6,6 @@ import {
   isMonsterBusy,
   isOnMission,
   missionFor,
-  sendTeam,
   soldierName,
   previewWinChance,
 } from '@soul-monster/shared';
@@ -61,7 +60,7 @@ export class TeamView extends View {
         color: 0x3c9a5f,
         disabled: ids.length === 0 || !!busy,
         onClick: () => {
-          const r = this.run((s, now) => sendTeam(s, { monsterIds: ids, encounterId: e.id }, now));
+          const r = this.run('sendTeam', { monsterIds: ids, encounterId: e.id });
           if (!r) return;
           toast(scene, t('team.sent', { n: ids.length }), COLORS.good, 'march');
           team.clear();

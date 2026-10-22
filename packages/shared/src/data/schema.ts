@@ -123,6 +123,16 @@ export const battleRewardSchema = villageAmountSchema.extend({
 });
 export type BattleReward = z.infer<typeof battleRewardSchema>;
 
+/** Player actions that give XP and count towards quests. */
+export const XP_ACTIONS = [
+  'build',
+  'harvest',
+  'collect',
+  'gather',
+  'defeatEnemy',
+  'hatch',
+] as const;
+
 const statBlockSchema = z.object({
   hp: z.number().positive(),
   atk: z.number().positive(),
@@ -336,6 +346,51 @@ export const rulesFileSchema = z.object({
     /** The first monster hatches from this egg (random tier-1 form, base element). */
     startingEgg: z.object({ hatchSeconds: nonNegInt }),
   }),
+  player: z.object({
+    /** One entry per `XP_ACTIONS` item. */
+    xp: z.object({
+      build: nonNegInt,
+      harvest: nonNegInt,
+      collect: nonNegInt,
+      gather: nonNegInt,
+      defeatEnemy: nonNegInt,
+      hatch: nonNegInt,
+    }),
+    /** levels[i] = level i + 1: total XP to reach it and the reward paid on reaching it. */
+    levels: z
+      .array(z.object({ xp: nonNegInt, reward: villageAmountSchema }))
+      .min(1)
+      .refine((ls) => ls[0]!.xp === 0, 'player.levels[0].xp harus 0')
+      .refine(
+        (ls) => ls.every((l, i) => i === 0 || l.xp > ls[i - 1]!.xp),
+        'player.levels[].xp harus naik terus',
+      ),
+  }),
+  nest: z.object({
+    /** Care steps: food paid to start each one, then its timer. */
+    steps: z.array(z.object({ seconds: nonNegInt, food: nonNegInt })).min(1),
+    /** Hatch outcomes; chances sum to 1. */
+    hatch: z
+      .array(
+        z.object({
+          rarity: raritySchema,
+          chance: probability,
+          formTier: z.number().int().min(1),
+          units: z.number().int().min(1),
+        }),
+      )
+      .min(1),
+  }),
+  daily: z.object({
+    /** Seconds added to UTC before cutting days (25200 = WIB midnight). */
+    dayOffsetSeconds: z.number().int(),
+    rewards: z.array(battleRewardSchema).min(1),
+  }),
+  server: z.object({
+    beatEverySeconds: z.number().positive(),
+    beatSlackSeconds: z.number().min(0),
+    maxBeatSeconds: z.number().positive(),
+  }),
   debug: z.object({ enabledInDev: z.boolean(), skipMixerUnlock: z.boolean() }),
 });
 
@@ -352,6 +407,8 @@ export const buildingFeatures = [
   'arena',
   'defense',
   'serbu',
+  'nest',
+  'wonder',
 ] as const;
 
 export const buildingLevelSchema = z.object({
@@ -556,3 +613,99 @@ export const adventureFileSchema = z.object({
     .min(1),
 });
 export type AdventureFile = z.infer<typeof adventureFileSchema>;
+
+/** A quest or set reward: resources, Telur Jiwa, and at most one Keajaiban (building id). */
+export const prizeSchema = battleRewardSchema.extend({
+  soulEggs: nonNegInt.default(0),
+  wonder: z.string().min(1).optional(),
+  /** Decoration building ids, delivered to the Gudang. */
+  decorations: z.array(z.string().min(1)).default([]),
+});
+export type Prize = z.infer<typeof prizeSchema>;
+
+/** Quest chain (Tugas 1B.2): one active quest at a time, the first ones teach the game. */
+export const questsFileSchema = z.object({
+  _notes: z.array(z.string()).optional(),
+  chain: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        title: z.string().min(1),
+        hint: z.string().optional(),
+        goals: z
+          .array(
+            z.discriminatedUnion('kind', [
+              /** Actions done since the quest started. */
+              z.object({
+                kind: z.literal('action'),
+                action: z.enum(XP_ACTIONS),
+                count: z.number().int().min(1),
+              }),
+              /** Finished buildings of a type at `level` or higher (old ones count too). */
+              z.object({
+                kind: z.literal('building'),
+                building: z.string().min(1),
+                level: z.number().int().min(1).default(1),
+                count: z.number().int().min(1).default(1),
+              }),
+              /** Monsters owned right now (so one hatched before the quest counts). */
+              z.object({ kind: z.literal('monsters'), count: z.number().int().min(1) }),
+            ]),
+          )
+          .min(1),
+        reward: prizeSchema,
+      }),
+    )
+    .min(1),
+});
+export type QuestsFile = z.infer<typeof questsFileSchema>;
+export type Quest = QuestsFile['chain'][number];
+export type QuestGoal = Quest['goals'][number];
+
+/** Monsterpedia collection sets (Tugas 1B.4), each paid once when complete. */
+export const collectionsFileSchema = z.object({
+  _notes: z.array(z.string()).optional(),
+  sets: z
+    .array(
+      z.intersection(
+        z.object({ id: z.string().min(1), name: z.string().min(1), reward: prizeSchema }),
+        z.discriminatedUnion('kind', [
+          /** Every form of a tier (any element). */
+          z.object({ kind: z.literal('formTier'), tier: z.number().int().min(1) }),
+          /** Every plain element holding `unit` with at most `maxUnits` units (any form). */
+          z.object({
+            kind: z.literal('elementUnit'),
+            unit: z.string().min(1),
+            maxUnits: z.number().int().min(1),
+          }),
+        ]),
+      ),
+    )
+    .min(1),
+});
+export type CollectionsFile = z.infer<typeof collectionsFileSchema>;
+export type CollectionSet = CollectionsFile['sets'][number];
+
+/** Islands (Tugas 1B.6): the first is the main village; others open at a Balai level. */
+export const islandsFileSchema = z.object({
+  _notes: z.array(z.string()).optional(),
+  islands: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        description: z.string(),
+        requiresTownHall: z.number().int().min(1),
+        cost: villageAmountSchema,
+        /** Wild node types that grow there (wilds.json nodes). */
+        nodes: z.array(z.string().min(1)).min(1),
+        /** Wild enemies use this many rows higher in the encounter table. */
+        encounterLevelBonus: nonNegInt,
+        /** Building limits there; buildings left out cannot be built. Main island: none. */
+        maxCount: z.record(z.string(), nonNegInt).optional(),
+      }),
+    )
+    .min(1),
+});
+export type IslandsFile = z.infer<typeof islandsFileSchema>;
+export type IslandDef = IslandsFile['islands'][number];

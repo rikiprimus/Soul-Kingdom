@@ -60,6 +60,50 @@
       "work": { "workSeconds": 75, "maxWorkers": 2 },
       "regrow": { "chancePerStep": 0, "maxPerPlot": 0 },
       "refillHours": 6
+    },
+    {
+      "id": "kaktus",
+      "name": "Kaktus Raksasa",
+      "size": 1,
+      "weight": 5,
+      "yield": { "wood": 50, "food": 15 },
+      "ambushChance": 0.05,
+      "soulCrystalChance": 0.12,
+      "work": { "workSeconds": 70, "maxWorkers": 3 },
+      "regrow": { "chancePerStep": 0.45, "maxPerPlot": 5 }
+    },
+    {
+      "id": "batu-pasir",
+      "name": "Batu Pasir",
+      "size": 1,
+      "weight": 4,
+      "yield": { "stone": 60, "gold": 20 },
+      "ambushChance": 0.04,
+      "soulCrystalChance": 0.35,
+      "work": { "workSeconds": 100, "maxWorkers": 3 },
+      "regrow": { "chancePerStep": 0.35, "maxPerPlot": 4 }
+    },
+    {
+      "id": "cemara",
+      "name": "Cemara Salju",
+      "size": 1,
+      "weight": 5,
+      "yield": { "wood": 80 },
+      "ambushChance": 0.06,
+      "soulCrystalChance": 0.15,
+      "work": { "workSeconds": 90, "maxWorkers": 3 },
+      "regrow": { "chancePerStep": 0.4, "maxPerPlot": 5 }
+    },
+    {
+      "id": "batu-es",
+      "name": "Bongkahan Es",
+      "size": 1,
+      "weight": 4,
+      "yield": { "stone": 80 },
+      "ambushChance": 0.05,
+      "soulCrystalChance": 0.45,
+      "work": { "workSeconds": 120, "maxWorkers": 3 },
+      "regrow": { "chancePerStep": 0.3, "maxPerPlot": 4 }
     }
   ],
   "animals": {

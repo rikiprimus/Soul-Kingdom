@@ -1,8 +1,6 @@
 import Phaser from 'phaser';
 import {
   adventureNode,
-  attackBase,
-  attackNode,
   defendersPower,
   gameData,
   maxFormTier,
@@ -19,7 +17,6 @@ import {
   soldierName,
   type AdventureNode,
   type BattleEvent,
-  type BattleReward,
   type Defender,
   type SerbuBase,
   type SerbuResult,
@@ -31,7 +28,7 @@ import { soldierTexture } from '../art/soldierArt';
 import { playSfx } from '../audio/sound';
 import type { GameStore } from '../store';
 import { errorText, formatDuration, formatNumber, t } from '../text';
-import { costLabel } from '../ui/cost';
+import { rewardLabel } from '../ui/cost';
 import { cssSize, dpr } from '../ui/dpr';
 import { COLORS, textStyle } from '../ui/theme';
 import { Button, roundedPanel, ScrollArea, toast } from '../ui/widgets';
@@ -75,11 +72,6 @@ interface Replay {
 
 /** Order on the field, front to back: tanks first, archers last. */
 const ROLE_ORDER = ['penahan', 'petarung', 'penembak'];
-
-const rewardLabel = (r: BattleReward) =>
-  costLabel(r) +
-  (r.soulCrystal ? ` + ${r.soulCrystal} ${t('res.soulCrystal')}` : '') +
-  (r.gems ? ` + ${r.gems} ${t('res.gems')}` : '');
 
 /** What is attacked: a Serbu base or a Petualangan node. */
 interface Target {
@@ -980,11 +972,10 @@ export class SerbuScene extends Phaser.Scene {
     const names = new Map([...this.cells.keys()].map((id) => [id, this.unitLabel(id)]));
     const cells = [...this.cells].map(([id, c]) => ({ id, ...c }));
     const targetId = this.targetId;
-    const r = this.store.apply((s, now) =>
+    const r =
       this.source === 'adventure'
-        ? attackNode(s, { nodeId: targetId, cells }, now)
-        : attackBase(s, { baseId: targetId, cells }),
-    );
+        ? this.store.act('attackNode', { nodeId: targetId, cells })
+        : this.store.act('attackBase', { baseId: targetId, cells });
     if (!r.ok) {
       toast(this, errorText(r.error));
       return;

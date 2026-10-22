@@ -3,7 +3,7 @@ import { gameData, raritySchema } from './data';
 import { monsterKey } from './monster';
 import { createRng } from './rng';
 import type { Mission } from './missions';
-import type { PlayerState } from './state';
+import { noActions, type PlayerState } from './state';
 import { createWorkers } from './workers';
 import { animalRespawnSeconds } from './animals';
 import { encounterRespawnSeconds } from './encounters';
@@ -17,7 +17,7 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 18;
+export const SAVE_SCHEMA_VERSION = 24;
 
 const int = z.number().int();
 const villageAmountSchema = z.object({
@@ -26,12 +26,84 @@ const villageAmountSchema = z.object({
   wood: int.min(0),
   stone: int.min(0),
 });
+const actionCountsSchema = z.object({
+  build: int.min(0),
+  harvest: int.min(0),
+  collect: int.min(0),
+  gather: int.min(0),
+  defeatEnemy: int.min(0),
+  hatch: int.min(0),
+});
 const monsterSchema = z.object({
   id: z.string(),
   form: z.string(),
   element: z.string(),
   stage: z.string(),
   food: int.min(0),
+});
+
+const villageSchema = z.object({
+  buildings: z.array(
+    z.object({
+      id: z.string(),
+      type: z.string(),
+      x: int.min(0),
+      y: int.min(0),
+      level: int.min(0),
+      construction: z.object({ toLevel: int.min(1), endsAt: z.number() }).nullable(),
+      lastCollectAt: z.number(),
+      crop: z.object({ endsAt: z.number(), food: int.min(0) }).nullable(),
+      flipped: z.boolean().optional(),
+    }),
+  ),
+  obstacles: z.array(
+    z.object({
+      id: z.string(),
+      type: z.string(),
+      x: int.min(0),
+      y: int.min(0),
+      work: z.number().min(0),
+      refillAt: z.number().nullable().optional(),
+    }),
+  ),
+  unlockedPlots: z.array(z.string().regex(/^\d+,\d+$/)),
+  regrowAt: z.number(),
+  animals: z.array(
+    z.object({
+      id: z.string(),
+      type: z.string(),
+      x: int.min(0),
+      y: int.min(0),
+      work: z.number().min(0),
+      job: z.enum(['hunt', 'capture']).nullable(),
+    }),
+  ),
+  animalsAt: z.number(),
+  ranchAnimals: z.array(z.object({ id: z.string(), type: z.string(), buildingId: z.string() })),
+  encounters: z.array(
+    z.object({
+      id: z.string(),
+      level: int.min(0),
+      group: int.min(0),
+      x: int.min(0),
+      y: int.min(0),
+      count: int.min(1),
+      enemies: z.array(z.object({ form: z.string(), element: z.string(), stage: z.string() })),
+      leavesAt: z.number().nullable().optional(),
+      raid: z
+        .object({
+          warnLeft: z.number().min(0),
+          next: z.object({ x: int, y: int }).nullable(),
+          stepLeft: z.number().min(0),
+          stepSeconds: z.number().min(0),
+          breaking: z.string().nullable(),
+        })
+        .nullable()
+        .optional(),
+    }),
+  ),
+  encountersAt: z.number(),
+  raidClock: z.number().min(0),
 });
 
 const playerStateSchema = z.object({
@@ -43,68 +115,9 @@ const playerStateSchema = z.object({
     soulCrystal: int.min(0),
     gems: int.min(0),
   }),
-  village: z.object({
-    buildings: z.array(
-      z.object({
-        id: z.string(),
-        type: z.string(),
-        x: int.min(0),
-        y: int.min(0),
-        level: int.min(0),
-        construction: z.object({ toLevel: int.min(1), endsAt: z.number() }).nullable(),
-        lastCollectAt: z.number(),
-        crop: z.object({ endsAt: z.number(), food: int.min(0) }).nullable(),
-      }),
-    ),
-    obstacles: z.array(
-      z.object({
-        id: z.string(),
-        type: z.string(),
-        x: int.min(0),
-        y: int.min(0),
-        work: z.number().min(0),
-        refillAt: z.number().nullable().optional(),
-      }),
-    ),
-    unlockedPlots: z.array(z.string().regex(/^\d+,\d+$/)),
-    regrowAt: z.number(),
-    animals: z.array(
-      z.object({
-        id: z.string(),
-        type: z.string(),
-        x: int.min(0),
-        y: int.min(0),
-        work: z.number().min(0),
-        job: z.enum(['hunt', 'capture']).nullable(),
-      }),
-    ),
-    animalsAt: z.number(),
-    ranchAnimals: z.array(z.object({ id: z.string(), type: z.string(), buildingId: z.string() })),
-    encounters: z.array(
-      z.object({
-        id: z.string(),
-        level: int.min(0),
-        group: int.min(0),
-        x: int.min(0),
-        y: int.min(0),
-        count: int.min(1),
-        enemies: z.array(z.object({ form: z.string(), element: z.string(), stage: z.string() })),
-        leavesAt: z.number().nullable().optional(),
-        raid: z
-          .object({
-            warnLeft: z.number().min(0),
-            next: z.object({ x: int, y: int }).nullable(),
-            stepLeft: z.number().min(0),
-            stepSeconds: z.number().min(0),
-            breaking: z.string().nullable(),
-          })
-          .nullable()
-          .optional(),
-      }),
-    ),
-    encountersAt: z.number(),
-    raidClock: z.number().min(0),
-  }),
+  village: villageSchema,
+  island: z.string(),
+  islands: z.record(z.string(), villageSchema),
   workers: z.array(
     z.object({
       id: z.string(),
@@ -139,6 +152,11 @@ const playerStateSchema = z.object({
   eggs: z.array(
     z.object({ id: z.string(), form: z.string(), element: z.string(), readyAt: z.number() }),
   ),
+  collections: z.array(z.string()),
+  storage: z.array(
+    z.object({ id: z.string(), type: z.string(), level: int.min(1), flipped: z.boolean() }),
+  ),
+  soulEggs: z.array(z.object({ id: z.string(), step: int.min(0), endsAt: z.number().nullable() })),
   missions: z.array(
     z.object({
       id: z.string(),
@@ -162,6 +180,10 @@ const playerStateSchema = z.object({
   ),
   graveyard: z.array(monsterSchema),
   bossesDefeated: int.min(0),
+  xp: int.min(0),
+  actions: actionCountsSchema,
+  quest: z.object({ index: int.min(0), start: actionCountsSchema }),
+  daily: z.object({ next: int.min(0), lastDay: int.nullable() }),
   monsters: z.array(monsterSchema),
   mixQueue: z.array(
     z.object({
@@ -443,6 +465,51 @@ const migrations: Record<number, (state: unknown) => unknown> = {
   17: (raw) => {
     const state = raw as PlayerState;
     state.adventure = { cleared: [], refillAt: {} };
+    return state;
+  },
+  // v18 had no player level: everyone starts at level 1.
+  18: (raw) => {
+    const state = raw as PlayerState;
+    state.xp = 0;
+    return state;
+  },
+  // v19 had no quests or daily bonus: the chain starts at the first quest.
+  19: (raw) => {
+    const state = raw as PlayerState;
+    state.actions = noActions();
+    state.quest = { index: 0, start: noActions() };
+    state.daily = { next: 0, lastDay: null };
+    return state;
+  },
+  // v20 had no Telur Jiwa.
+  20: (raw) => {
+    const state = raw as PlayerState;
+    state.soulEggs = [];
+    return state;
+  },
+  // v21 had no collection sets (and no Keajaiban, see v22).
+  21: (raw) => {
+    const state = raw as PlayerState;
+    state.collections = [];
+    return state;
+  },
+  // v22 kept won Keajaiban as a list of ids; v23 has the Gudang, where they wait now.
+  22: (raw) => {
+    const state = raw as PlayerState & { wonders?: string[] };
+    state.storage = (state.wonders ?? []).map((type) => ({
+      id: `g${state.nextId++}`,
+      type,
+      level: 1,
+      flipped: false,
+    }));
+    delete state.wonders;
+    return state;
+  },
+  // v23 had one island: it becomes the main one.
+  23: (raw) => {
+    const state = raw as PlayerState;
+    state.island = gameData.islands.islands[0]!.id;
+    state.islands = {};
     return state;
   },
 };

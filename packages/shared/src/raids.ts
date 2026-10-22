@@ -480,6 +480,8 @@ export function advanceRaids(
   const events: RaidEvent[] = [];
   const raid = currentRaid(state);
   if (!raid) {
+    // Raids come for the Balai Utama, so only on the main island.
+    if (state.island !== data.islands.islands[0]!.id) return { state, events };
     if (townHallLevel(state, data) < raids.minTownHall) return { state, events };
     const raidClock = state.village.raidClock + seconds;
     // Just the clock: a shallow copy is enough (nothing else changes).

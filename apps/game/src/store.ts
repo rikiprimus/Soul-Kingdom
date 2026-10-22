@@ -9,12 +9,19 @@ import {
   settleVillage,
   type Gathered,
   createInitialState,
+  deserializeState,
+  gameData,
   loadWithBackup,
+  runAction,
   serializeState,
+  type ActionName,
+  type ActionOutput,
+  type ActionParams,
   type ActionResult,
   type Building,
   type PlayerState,
 } from '@soul-monster/shared';
+import { serverConfig, ServerLink } from './server';
 
 const SAVE_KEY = 'soul-monster:save';
 const CLOCK_KEY = 'soul-monster:clock-offset';
@@ -59,6 +66,12 @@ export class GameStore {
   readonly loadError: string | null = null;
   /** Set when the main save was unusable: 'restored' from the backup, or 'reset' to a new game. */
   readonly loadNotice: 'restored' | 'reset' | null = null;
+  /** The Supabase server when configured (Tugas 1.6); null plays offline. */
+  private readonly link: ServerLink | null = null;
+  /** Play seconds not yet reported to the server. */
+  private beatSeconds = 0;
+  /** Shows a server error (set by the UI). */
+  onServerError: ((error: string) => void) | null = null;
 
   constructor() {
     this.clockOffset = Number(readStorage(CLOCK_KEY) ?? 0) || 0;
@@ -74,6 +87,21 @@ export class GameStore {
     if (loaded.from === 'main' && saved) writeStorage(BACKUP_KEY, saved);
     this._state = loaded.state ?? createInitialState(this.now(), randomSeed());
     this.save();
+    const config = serverConfig();
+    if (config) {
+      this.link = new ServerLink(
+        config,
+        (save, now) => this.fromServer(save, now),
+        (error) => this.onServerError?.(error),
+      );
+      // The local save moves to the server the first time (ignored once it has one).
+      this.link.send({ kind: 'load' }, serializeState(this._state));
+      setInterval(() => this.sendBeat(), gameData.rules.server.beatEverySeconds * 1000);
+    }
+  }
+
+  get online(): boolean {
+    return this.link !== null;
   }
 
   get state(): PlayerState {
@@ -95,11 +123,35 @@ export class GameStore {
     return () => this.listeners.delete(listener);
   }
 
-  /** Runs a pure action; on success the new state is stored and broadcast. */
-  apply<T extends object>(action: (state: PlayerState, now: number) => ActionResult<T>) {
-    const result = action(this._state, this.now());
-    if (result.ok) this.set(result.state);
-    return result;
+  /**
+   * Runs a named action from @soul-monster/shared at once; online it also goes to the
+   * server, whose answer then replaces the local state.
+   */
+  act<N extends ActionName>(name: N, params: ActionParams<N>): ActionOutput<N> {
+    const result = runAction(this._state, name, params, this.now()) as ActionResult;
+    if (result.ok) {
+      this.set(result.state);
+      this.link?.send({ kind: 'action', name, params });
+    }
+    return result as ActionOutput<N>;
+  }
+
+  /** The server's state and clock win over the local guess. */
+  private fromServer(save: string, serverNow: number): void {
+    try {
+      const state = deserializeState(save);
+      this.clockOffset = serverNow - Math.floor(Date.now() / 1000);
+      this.set(state);
+    } catch (err) {
+      console.error(err);
+      this.onServerError?.('badSave');
+    }
+  }
+
+  private sendBeat(): void {
+    if (this.beatSeconds <= 0) return;
+    this.link?.send({ kind: 'beat', seconds: this.beatSeconds });
+    this.beatSeconds = 0;
   }
 
   set(state: PlayerState): void {
@@ -131,6 +183,8 @@ export class GameStore {
 
   /** Adds `seconds` of active play to the raid clock and any raid on its way. */
   raid(seconds: number): RaidEvent[] {
+    // Raids get play time continuously, so this is where the server's beat is counted.
+    this.beatSeconds += seconds;
     const r = advanceRaids(this._state, seconds, this.now());
     if (r.state !== this._state) this.set(r.state);
     return r.events;

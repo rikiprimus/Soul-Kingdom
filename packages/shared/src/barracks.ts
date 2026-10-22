@@ -3,7 +3,9 @@ import { gameData, type ElementId, type FormId, type GameData } from './data';
 import { monsterKey, type Monster } from './monster';
 import type { Rng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
+import { recordAction } from './player';
 import { populationFree } from './workers';
+import { allBuildings } from './village';
 
 /** A human soldier from one of the three barracks (Tugas 1A.13). `rank` is 0-based. */
 export interface Soldier {
@@ -156,7 +158,7 @@ export function trainSoldier(
 
 /** Sum of the levels of every finished soldier barracks. */
 export function combinedBarracksLevel(state: PlayerState, data: GameData = gameData): number {
-  return state.village.buildings
+  return allBuildings(state)
     .filter((b) => data.buildingById.get(b.type)?.feature === 'barracks')
     .reduce((sum, b) => sum + b.level, 0);
 }
@@ -205,5 +207,6 @@ export function hatchEgg(
   const key = monsterKey(monster);
   if (!next.pedia.monsters.includes(key)) next.pedia.monsters.push(key);
   next.eggs = next.eggs.filter((e) => e.id !== eggId);
+  recordAction(next, 'hatch', 1, data);
   return { ok: true, state: next, monster };
 }

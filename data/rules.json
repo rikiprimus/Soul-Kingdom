@@ -377,6 +377,73 @@
     "_startingEggNote": "Monster pertama menetas dari telur awal (wujud tingkat 1 dan elemen dasar acak berbenih), lahir sebagai bayi.",
     "startingEgg": { "hatchSeconds": 30 }
   },
+  "player": {
+    "_note": "Level & XP pemain (Tugas 1B.1). xp = XP per aksi (bangun/upgrade, panen ladang, ambil hasil bangunan, ambil alam liar/hewan, menang melawan musuh, menetas). levels[i] = level i+1: xp = total XP untuk mencapainya, reward = hadiah saat naik ke level itu. Level tidak membuka bangunan (pembatas tetap level Balai).",
+    "xp": { "build": 10, "harvest": 5, "collect": 2, "gather": 5, "defeatEnemy": 20, "hatch": 25 },
+    "levels": [
+      { "xp": 0, "reward": {} },
+      { "xp": 40, "reward": { "gold": 200, "food": 100, "wood": 100 } },
+      { "xp": 160, "reward": { "gold": 300, "food": 150, "wood": 150 } },
+      { "xp": 390, "reward": { "gold": 400, "food": 200, "wood": 200 } },
+      { "xp": 760, "reward": { "gold": 500, "food": 250, "wood": 250 } },
+      { "xp": 1290, "reward": { "gold": 600, "food": 300, "wood": 300 } },
+      { "xp": 1990, "reward": { "gold": 700, "food": 350, "wood": 350 } },
+      { "xp": 2890, "reward": { "gold": 800, "food": 400, "wood": 400 } },
+      { "xp": 4000, "reward": { "gold": 900, "food": 450, "wood": 450 } },
+      { "xp": 5350, "reward": { "gold": 1000, "food": 500, "wood": 500 } },
+      { "xp": 6940, "reward": { "gold": 1100, "food": 550, "wood": 550 } },
+      { "xp": 8790, "reward": { "gold": 1200, "food": 600, "wood": 600 } },
+      { "xp": 10920, "reward": { "gold": 1300, "food": 650, "wood": 650 } },
+      { "xp": 13340, "reward": { "gold": 1400, "food": 700, "wood": 700 } },
+      { "xp": 16070, "reward": { "gold": 1500, "food": 750, "wood": 750 } },
+      { "xp": 19120, "reward": { "gold": 1600, "food": 800, "wood": 800 } },
+      { "xp": 22500, "reward": { "gold": 1700, "food": 850, "wood": 850 } },
+      { "xp": 26220, "reward": { "gold": 1800, "food": 900, "wood": 900 } },
+      { "xp": 30300, "reward": { "gold": 1900, "food": 950, "wood": 950 } },
+      { "xp": 34750, "reward": { "gold": 2000, "food": 1000, "wood": 1000 } },
+      { "xp": 39580, "reward": { "gold": 2100, "food": 1050, "wood": 1050 } },
+      { "xp": 44800, "reward": { "gold": 2200, "food": 1100, "wood": 1100 } },
+      { "xp": 50420, "reward": { "gold": 2300, "food": 1150, "wood": 1150 } },
+      { "xp": 56460, "reward": { "gold": 2400, "food": 1200, "wood": 1200 } },
+      { "xp": 62920, "reward": { "gold": 2500, "food": 1250, "wood": 1250 } },
+      { "xp": 69820, "reward": { "gold": 2600, "food": 1300, "wood": 1300 } },
+      { "xp": 77170, "reward": { "gold": 2700, "food": 1350, "wood": 1350 } },
+      { "xp": 84970, "reward": { "gold": 2800, "food": 1400, "wood": 1400 } },
+      { "xp": 93240, "reward": { "gold": 2900, "food": 1450, "wood": 1450 } },
+      { "xp": 101990, "reward": { "gold": 3000, "food": 1500, "wood": 1500 } }
+    ]
+  },
+  "nest": {
+    "_note": "Sarang Telur Jiwa (Tugas 1B.3). Telur Jiwa hanya dari hadiah misi/koleksi, tidak dijual. Satu telur dirawat pada satu waktu: tiap langkah dibayar makanan lalu menunggu `seconds`. Setelah langkah terakhir selesai, telur bisa ditetaskan (butuh populasi). Hasil: kelangkaan menurut `chance`, wujud acak dari `formTier`, elemen biasa (bukan rahasia) acak dengan `units` unsur.",
+    "steps": [
+      { "seconds": 1800, "food": 300 },
+      { "seconds": 3600, "food": 600 },
+      { "seconds": 7200, "food": 1200 }
+    ],
+    "hatch": [
+      { "rarity": "langka", "chance": 0.85, "formTier": 2, "units": 2 },
+      { "rarity": "epik", "chance": 0.15, "formTier": 3, "units": 3 }
+    ]
+  },
+  "daily": {
+    "_note": "Bonus harian (Tugas 1B.2): satu hadiah per hari, berputar. Hari terlewat tidak mengulang dan tidak memajukan siklus: pemain lanjut dari hadiah berikutnya. Hari berganti pada pukul 00.00 waktu dengan selisih dayOffsetSeconds dari UTC (25200 = WIB).",
+    "dayOffsetSeconds": 25200,
+    "rewards": [
+      { "gold": 500 },
+      { "food": 400 },
+      { "wood": 400, "stone": 200 },
+      { "gold": 1000 },
+      { "food": 800, "wood": 600 },
+      { "soulCrystal": 2 },
+      { "gold": 2000, "gems": 5 }
+    ]
+  },
+  "server": {
+    "_note": "Server Supabase (Tugas 1.6). Detak aktif: client mengirim detik bermain (pengambilan alam, serangan desa) tiap beatEverySeconds; server hanya menerima paling banyak waktu nyata sejak detak sebelumnya + beatSlackSeconds, dan paling banyak maxBeatSeconds per detak.",
+    "beatEverySeconds": 5,
+    "beatSlackSeconds": 2,
+    "maxBeatSeconds": 15
+  },
   "debug": {
     "enabledInDev": true,
     "skipMixerUnlock": true,

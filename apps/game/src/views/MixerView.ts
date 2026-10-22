@@ -1,9 +1,5 @@
 import Phaser from 'phaser';
 import {
-  buyMixerSlot,
-  cancelMix,
-  collectMix,
-  confirmMix,
   eligibleParents,
   gameData,
   getForm,
@@ -14,12 +10,9 @@ import {
   mixRemaining,
   monsterName,
   nextMixerSlotGems,
-  prophesy,
   rarityOf,
   rarityRank,
-  speedUp,
   speedUpCost,
-  startMix,
   type Monster,
   type MixEntry,
   type MixResult,
@@ -142,7 +135,7 @@ export class MixerView extends View {
           label: t('mixer.buySlot', { gems: slotGems }),
           color: 0x2a8fb0,
           onClick: () => {
-            if (this.run((s) => buyMixerSlot(s)))
+            if (this.run('buyMixerSlot', {}))
               toast(scene, t('mixer.buySlot', { gems: slotGems }), COLORS.good);
           },
         }),
@@ -264,9 +257,7 @@ export class MixerView extends View {
       return b;
     };
     if (entry.status === 'prepared' && !entry.prophesied) {
-      button(30, t('mixer.start'), COLORS.accent, () =>
-        this.run((s, n) => confirmMix(s, entry.id, n)),
-      );
+      button(30, t('mixer.start'), COLORS.accent, () => this.run('confirmMix', { id: entry.id }));
       button(h - 30, t('mixer.prophecy', { gems: entry.cost.prophecyGems }), 0x2a8fb0, () =>
         this.prophesyEntry(entry.id),
       );
@@ -281,7 +272,7 @@ export class MixerView extends View {
         t('mixer.speedUp', { gems: speedUpCost(remaining ?? 0) }),
         0x2a8fb0,
         () => {
-          if (this.run((s, n) => speedUp(s, entry.id, n))) this.collect(entry.id);
+          if (this.run('speedUpMix', { id: entry.id })) this.collect(entry.id);
         },
       );
       this.timers.push({ entryId: entry.id, text: statusText, speed });
@@ -521,13 +512,12 @@ export class MixerView extends View {
         return;
       }
     }
-    const started = this.run((s, now) =>
-      startMix(
-        s,
-        { parentAId: a.id, parentBId: b.id, awaitProphecy: withProphecy, skipUnlock },
-        now,
-      ),
-    );
+    const started = this.run('startMix', {
+      parentAId: a.id,
+      parentBId: b.id,
+      awaitProphecy: withProphecy,
+      skipUnlock,
+    });
     if (!started) return;
     playSfx(scene, 'mixer');
     delete selection.a;
@@ -537,24 +527,24 @@ export class MixerView extends View {
   }
 
   private prophesyEntry(entryId: string) {
-    const result = this.run((s) => prophesy(s, entryId));
+    const result = this.run('prophesy', { id: entryId });
     if (result) this.showProphecy(entryId, result.result);
   }
 
   private continueEntry(entryId: string) {
-    if (this.run((s, now) => confirmMix(s, entryId, now))) {
+    if (this.run('confirmMix', { id: entryId })) {
       playSfx(this.scene, 'mixer');
       toast(this.scene, t('mixer.started'), COLORS.good);
     }
   }
 
   private cancelEntry(entryId: string) {
-    if (this.run((s) => cancelMix(s, entryId)))
+    if (this.run('cancelMix', { id: entryId }))
       toast(this.scene, t('mixer.cancelled'), COLORS.warn);
   }
 
   private collect(entryId: string) {
-    const result = this.run((s, now) => collectMix(s, entryId, now));
+    const result = this.run('collectMix', { id: entryId });
     if (result) this.showHatch(result.monster, result.result, result.newDiscovery);
   }
 

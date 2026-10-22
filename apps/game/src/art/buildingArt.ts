@@ -592,6 +592,108 @@ const DESIGNS: Record<string, Design> = {
       p.line(p.fp(0.96, 0.96, 8), p.fp(0.96, 0.06, 8), 0x2c2c38, 1.4);
     },
   },
+  'pohon-emas-purba': {
+    top: 110,
+    draw(p) {
+      p.flat(0.04, 0.04, 0.96, 0.96, 0xb8a27a);
+      p.box(0.25, 0.25, 0.75, 0.75, 8, 0x9a8a70);
+      // An old trunk with a crown of golden leaves and a few hanging coins.
+      p.cylinder(0.5, 0.5, 0.1, 50, 0x6a4a2a, 0x8a6a40, 8);
+      const c = p.fp(0.5, 0.5, 58);
+      for (const [dx, dy, r] of [
+        [0, -18, 30],
+        [-24, 0, 22],
+        [24, 0, 22],
+        [-12, -34, 18],
+        [14, -32, 18],
+      ] as const) {
+        p.ellipse({ x: c.x + dx, y: c.y + dy }, r, r * 0.8, 0xf5c542, 0xa87b14);
+      }
+      for (const [dx, dy] of [
+        [-18, 14],
+        [6, 18],
+        [22, 10],
+        [-4, -20],
+      ] as const) {
+        p.star({ x: c.x + dx, y: c.y + dy }, 3.5, 0xfff3b0);
+      }
+    },
+  },
+  'lumbung-abadi': {
+    top: 90,
+    draw(p) {
+      p.flat(0.04, 0.04, 0.96, 0.96, 0x8aa85a);
+      p.box(0.2, 0.2, 0.8, 0.8, 40, 0xb04a3a);
+      p.pyramid(0.16, 0.16, 0.84, 0.84, 40, 34, 0xf5c542);
+      // Golden sheaves and baskets of fruit spilling out in front.
+      for (const [u, v] of [
+        [0.88, 0.3],
+        [0.88, 0.55],
+        [0.3, 0.9],
+        [0.6, 0.9],
+      ] as const) {
+        p.cylinder(u, v, 0.05, 14, 0xd9a83a, 0xf0c860);
+      }
+      p.ellipse(p.fp(0.88, 0.8, 6), 7, 4, 0xff5c4a, 0x9a2a20);
+    },
+  },
+  'kolam-jiwa': {
+    top: 70,
+    draw(p) {
+      p.flat(0.04, 0.04, 0.96, 0.96, 0x6a7a9a);
+      const c = p.fp(0.5, 0.5);
+      p.ellipse(c, 44, 22, 0x8a8aa0, 0x4a4a60);
+      p.ellipse({ x: c.x, y: c.y + 1 }, 38, 18, 0x5b43c7, null);
+      p.ellipse({ x: c.x, y: c.y }, 26, 12, 0xc77dff, null, 0.6);
+      // Soul crystals around the rim and sparks over the water.
+      for (const [u, v] of [
+        [0.15, 0.5],
+        [0.85, 0.5],
+        [0.5, 0.15],
+        [0.5, 0.85],
+      ] as const) {
+        const at = p.fp(u, v);
+        p.poly(
+          [
+            { x: at.x, y: at.y - 26 },
+            { x: at.x + 6, y: at.y - 8 },
+            { x: at.x, y: at.y },
+            { x: at.x - 6, y: at.y - 8 },
+          ],
+          0xc77dff,
+        );
+      }
+      for (const [dx, dy] of [
+        [-12, -14],
+        [10, -20],
+        [2, -8],
+      ] as const) {
+        p.star({ x: c.x + dx, y: c.y + dy }, 3, 0xffffff);
+      }
+    },
+  },
+  'sarang-telur': {
+    top: 56,
+    draw(p) {
+      p.flat(0.04, 0.04, 0.96, 0.96, 0x7a9a5a);
+      // Four carved posts around a straw nest holding a glowing Telur Jiwa.
+      for (const [u, v] of [
+        [0.15, 0.15],
+        [0.85, 0.15],
+        [0.15, 0.85],
+        [0.85, 0.85],
+      ] as const) {
+        p.cylinder(u, v, 0.05, 22, 0x8a5a34, 0xa8744a);
+        p.ellipse(p.fp(u, v, 24), 3.5, 2.5, 0xc77dff, 0x7a3fb0);
+      }
+      const c = p.fp(0.5, 0.5);
+      p.ellipse({ x: c.x, y: c.y - 4 }, 26, 13, 0x9a7240, 0x5e4224);
+      p.ellipse({ x: c.x, y: c.y - 8 }, 20, 9, 0xc89a5a, 0x7a5a30);
+      p.ellipse({ x: c.x, y: c.y - 22 }, 15, 15, 0xc77dff, null, 0.25);
+      p.ellipse({ x: c.x, y: c.y - 20 }, 9, 12, 0xe6d2ff, 0x8a5cc7);
+      p.star({ x: c.x - 3, y: c.y - 25 }, 3, 0xffffff);
+    },
+  },
   peternakan: {
     top: 70,
     draw(p, level, variant) {
@@ -1063,6 +1165,134 @@ const DESIGNS: Record<string, Design> = {
           c,
         );
       }
+    },
+  },
+  kaktus: {
+    top: 60,
+    draw(p) {
+      const c = p.fp(0.5, 0.5);
+      p.ellipse({ x: c.x, y: c.y }, 12, 5, 0x000000, null, 0.18);
+      // A tall trunk with two raised arms.
+      const arm = (x0: number, y0: number, dx: number) =>
+        p.poly(
+          [
+            { x: x0, y: y0 },
+            { x: x0 + dx, y: y0 },
+            { x: x0 + dx, y: y0 - 16 },
+            { x: x0 + dx * 0.55, y: y0 - 16 },
+            { x: x0 + dx * 0.55, y: y0 - 5 },
+            { x: x0, y: y0 - 5 },
+          ],
+          0x4f9a4a,
+          0x2d5e2b,
+        );
+      arm(c.x - 4, c.y - 18, -11);
+      arm(c.x + 4, c.y - 26, 11);
+      p.poly(
+        [
+          { x: c.x - 5, y: c.y },
+          { x: c.x + 5, y: c.y },
+          { x: c.x + 5, y: c.y - 44 },
+          { x: c.x, y: c.y - 48 },
+          { x: c.x - 5, y: c.y - 44 },
+        ],
+        0x5aaa52,
+        0x2d5e2b,
+      );
+      p.line({ x: c.x, y: c.y - 2 }, { x: c.x, y: c.y - 44 }, 0x3f7f3a, 1.2);
+      p.ellipse({ x: c.x, y: c.y - 48 }, 3, 2.5, 0xff8fb0, 0xc04a70);
+    },
+  },
+  'batu-pasir': {
+    top: 30,
+    draw(p) {
+      const c = p.fp(0.5, 0.5);
+      p.ellipse({ x: c.x, y: c.y + 2 }, 16, 7, 0x000000, null, 0.18);
+      p.poly(
+        [
+          { x: c.x - 16, y: c.y + 2 },
+          { x: c.x - 13, y: c.y - 12 },
+          { x: c.x + 2, y: c.y - 18 },
+          { x: c.x + 15, y: c.y - 10 },
+          { x: c.x + 16, y: c.y + 1 },
+          { x: c.x + 4, y: c.y + 5 },
+        ],
+        0xd29a5a,
+        0x8a5a2c,
+      );
+      // Layered bands of sandstone.
+      p.line({ x: c.x - 14, y: c.y - 4 }, { x: c.x + 15, y: c.y - 3 }, 0xb57a3e, 1.6);
+      p.line({ x: c.x - 13, y: c.y - 9 }, { x: c.x + 14, y: c.y - 7 }, 0xe6b77a, 1.4);
+    },
+  },
+  cemara: {
+    top: 74,
+    draw(p) {
+      const base = p.fp(0.5, 0.5);
+      p.ellipse({ x: base.x, y: base.y }, 14, 6, 0x000000, null, 0.18);
+      p.poly(
+        [
+          { x: base.x - 3, y: base.y },
+          { x: base.x + 3, y: base.y },
+          { x: base.x + 2, y: base.y - 10 },
+          { x: base.x - 2, y: base.y - 10 },
+        ],
+        0x5a3a22,
+      );
+      for (const [w, y] of [
+        [17, 8],
+        [14, 22],
+        [10, 36],
+      ] as const) {
+        p.poly(
+          [
+            { x: base.x - w, y: base.y - y },
+            { x: base.x + w, y: base.y - y },
+            { x: base.x, y: base.y - y - 22 },
+          ],
+          0x1f5a4a,
+        );
+        // Snow resting on each layer.
+        p.poly(
+          [
+            { x: base.x - w * 0.6, y: base.y - y - 8 },
+            { x: base.x + w * 0.5, y: base.y - y - 9 },
+            { x: base.x, y: base.y - y - 22 },
+          ],
+          0xf4f8fc,
+          null,
+        );
+      }
+    },
+  },
+  'batu-es': {
+    top: 34,
+    draw(p) {
+      const c = p.fp(0.5, 0.5);
+      p.ellipse({ x: c.x, y: c.y + 2 }, 16, 7, 0x000000, null, 0.15);
+      p.poly(
+        [
+          { x: c.x - 15, y: c.y + 2 },
+          { x: c.x - 10, y: c.y - 16 },
+          { x: c.x - 1, y: c.y - 22 },
+          { x: c.x + 12, y: c.y - 13 },
+          { x: c.x + 15, y: c.y + 1 },
+          { x: c.x + 3, y: c.y + 5 },
+        ],
+        0x9fd8f0,
+        0x4a8cb0,
+      );
+      p.poly(
+        [
+          { x: c.x - 1, y: c.y - 22 },
+          { x: c.x + 12, y: c.y - 13 },
+          { x: c.x + 15, y: c.y + 1 },
+          { x: c.x + 3, y: c.y - 6 },
+        ],
+        0x7cc0e0,
+        null,
+      );
+      p.ellipse({ x: c.x - 6, y: c.y - 12 }, 3, 4, 0xffffff, null, 0.85);
     },
   },
   'batu-emas': {

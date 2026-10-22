@@ -30,6 +30,8 @@ const setHall = (s: PlayerState, level: number) => {
 function army(): PlayerState {
   const s = createInitialState(T0, 4);
   setHall(s, r1!.requiresTownHall);
+  // At the max player level, so no level-up reward mixes into the battle rewards.
+  s.xp = gameData.rules.player.levels.at(-1)!.xp;
   for (const [i, type] of ['petarung', 'lapangan-panah', 'barak-berkuda'].entries()) {
     s.village.buildings.push({
       id: `bb${i}`,

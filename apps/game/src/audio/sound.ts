@@ -156,20 +156,64 @@ export function playSfx(scene: Phaser.Scene, id: SoundId): void {
 }
 
 /**
- * Loads the music listed in the manifest in the background (the village is already
- * playable), then starts it. Safe to call again: loaded tracks are not fetched twice.
+ * Fetches the listed music files that are not cached yet, in the background, then calls
+ * `then` (at once when there is nothing to fetch).
  */
-export function loadMusic(scene: Phaser.Scene): void {
-  const missing = Object.entries(musicFiles).filter(
-    ([id]) => !scene.cache.audio.exists(musicKey(id)),
-  );
+function loadTracks(scene: Phaser.Scene, ids: readonly string[], then: () => void): void {
+  const missing = ids.filter((id) => musicFiles[id] && !scene.cache.audio.exists(musicKey(id)));
   if (missing.length === 0) {
-    startMusic(scene);
+    then();
     return;
   }
-  for (const [id, file] of missing) scene.load.audio(musicKey(id), `audio/${file}`);
-  scene.load.once(Phaser.Loader.Events.COMPLETE, () => startMusic(scene));
+  for (const id of missing) scene.load.audio(musicKey(id), `audio/${musicFiles[id]}`);
+  scene.load.once(Phaser.Loader.Events.COMPLETE, then);
   scene.load.start();
+}
+
+/**
+ * Starts the music once the village is playable, a file at a time so a phone is not
+ * downloading every track at once: the first village track (a random one), then the
+ * ambience, and each later track only when its turn comes. Safe to call again.
+ */
+export function loadMusic(scene: Phaser.Scene): void {
+  const tracks = villagePlaylist(Object.keys(musicFiles));
+  const manager = scene.sound;
+  const playing = (id: string) => manager.getAll(musicKey(id)).some((s) => s.isPlaying);
+  const startAmbience = () =>
+    loadTracks(scene, ['ambience'], () => {
+      const key = musicKey('ambience');
+      if (scene.cache.audio.exists(key) && !playing('ambience')) {
+        manager.play(key, { loop: true, volume: AMBIENCE_VOLUME });
+      }
+    });
+  if (tracks.length === 0 || tracks.some(playing)) {
+    startAmbience();
+    return;
+  }
+  const playTrack = (i: number) => {
+    const id = tracks[i % tracks.length]!;
+    loadTracks(scene, [id], () => {
+      if (!scene.cache.audio.exists(musicKey(id))) return;
+      if (!musicGain.has(id)) {
+        const buffer: unknown = scene.cache.audio.get(musicKey(id));
+        musicGain.set(
+          id,
+          buffer instanceof AudioBuffer ? loudnessGain(rmsOf(buffer), MUSIC_RMS_TARGET) : 1,
+        );
+      }
+      const sound = manager.add(musicKey(id), {
+        volume: MUSIC_VOLUME * (musicGain.get(id) ?? 1),
+      });
+      sound.once(Phaser.Sound.Events.COMPLETE, () => {
+        sound.destroy();
+        playTrack(i + 1);
+      });
+      sound.play();
+      // The ambience follows once the first track is in.
+      startAmbience();
+    });
+  };
+  playTrack(Math.floor(Math.random() * tracks.length));
 }
 
 /** Root-mean-square level of a decoded track (first channel). */
@@ -183,39 +227,4 @@ function rmsOf(buffer: AudioBuffer): number {
     n++;
   }
   return n > 0 ? Math.sqrt(sum / n) : 0;
-}
-
-/**
- * Starts the ambience loop and the village playlist (tracks in turn, starting from a random
- * one, each matched in loudness). Does nothing for parts that are already playing.
- */
-export function startMusic(scene: Phaser.Scene): void {
-  const manager = scene.sound;
-  const playing = (key: string) => manager.getAll(key).some((s) => s.isPlaying);
-  const ambience = musicKey('ambience');
-  if (scene.cache.audio.exists(ambience) && !playing(ambience)) {
-    manager.play(ambience, { loop: true, volume: AMBIENCE_VOLUME });
-  }
-  const tracks = villagePlaylist(Object.keys(musicFiles)).filter((id) =>
-    scene.cache.audio.exists(musicKey(id)),
-  );
-  if (tracks.length === 0 || tracks.some((id) => playing(musicKey(id)))) return;
-  for (const id of tracks) {
-    if (musicGain.has(id)) continue;
-    const buffer: unknown = scene.cache.audio.get(musicKey(id));
-    musicGain.set(
-      id,
-      buffer instanceof AudioBuffer ? loudnessGain(rmsOf(buffer), MUSIC_RMS_TARGET) : 1,
-    );
-  }
-  const playTrack = (i: number) => {
-    const id = tracks[i % tracks.length]!;
-    const sound = manager.add(musicKey(id), { volume: MUSIC_VOLUME * (musicGain.get(id) ?? 1) });
-    sound.once(Phaser.Sound.Events.COMPLETE, () => {
-      sound.destroy();
-      playTrack(i + 1);
-    });
-    sound.play();
-  };
-  playTrack(Math.floor(Math.random() * tracks.length));
 }

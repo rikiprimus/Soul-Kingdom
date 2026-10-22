@@ -10,6 +10,7 @@ import {
 } from './data';
 import { isOnMission, monsterPower } from './missions';
 import { monsterStats, powerPointsOf } from './monster';
+import { recordAction } from './player';
 import { createRng, type Rng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { townHallLevel } from './village';
@@ -221,6 +222,7 @@ export function fightPlaced(
   });
   const won = battle.winner === 'attackers';
   const reward = won ? onWin(next, rng) : noReward();
+  if (won) recordAction(next, 'defeatEnemy', 1, data);
   next.rngState = rng.getState();
   const dead = cells.map((c) => c.id).filter((id) => (battle.hp[id] ?? 0) <= 0);
   for (const id of dead) {

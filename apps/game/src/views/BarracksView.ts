@@ -10,7 +10,6 @@ import {
   soldierPower,
   soldierStats,
   soldierTrainCost,
-  trainSoldier,
   unlockedRanks,
 } from '@soul-monster/shared';
 import { soldierTexture } from '../art/soldierArt';
@@ -150,9 +149,7 @@ export class BarracksView extends View {
         }),
         color: 0x3c9a5f,
         onClick: () => {
-          const result = this.run((s, now) =>
-            trainSoldier(s, { buildingId: b.id, rank: kind.rank }, now),
-          );
+          const result = this.run('trainSoldier', { buildingId: b.id, rank: kind.rank });
           if (result) toast(scene, t('barracks.started', { name: soldierName(kind) }), COLORS.good);
         },
       }),
