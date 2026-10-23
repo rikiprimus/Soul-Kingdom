@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { deepClone } from './clone';
 import { gameData } from './data';
-import { sendTeam } from './missions';
 import { deserializeState, serializeState } from './save';
 import { createInitialState, type ActionResult, type PlayerState } from './state';
 import {
@@ -9,6 +8,7 @@ import {
   guardsOf,
   moveUnits,
   retreatUnits,
+  sendTeam,
   settleUnits,
   unitPoint,
   unitTile,
@@ -125,10 +125,15 @@ describe('moveUnits', () => {
       ok: false,
       error: 'monsterNotFound',
     });
-    const away = ok(
-      sendTeam(s, { monsterIds: ['m1'], encounterId: s.village.encounters[0]!.id }, T0),
-    );
-    expect(moveUnits(away.state, { ids: ['m1'], ...farTile(s) }, T0)).toEqual({
+    const away = deepClone(s);
+    away.missions.push({
+      id: 't0',
+      encounterId: s.village.encounters[0]!.id,
+      monsterIds: ['m1'],
+      arriveAt: T0 + 2,
+      fight: null,
+    });
+    expect(moveUnits(away, { ids: ['m1'], ...farTile(s) }, T0)).toEqual({
       ok: false,
       error: 'monsterBusy',
     });
@@ -199,5 +204,44 @@ describe('save migration v13', () => {
     const loaded = deserializeState(JSON.stringify({ schemaVersion: 13, state: v13 }));
     expect(loaded.units).toEqual({});
     expect(Object.keys(settleUnits(loaded, T0).units).sort()).toEqual(['m1', 'm2', 's1']);
+  });
+});
+
+describe('sending a team at an enemy', () => {
+  it('walks the team up to the enemy with no countdown and no fight yet', () => {
+    const s = village();
+    const e = { id: 'e1', level: 0, group: 0, ...farTile(s), count: 2, enemies: [] };
+    s.village.encounters = [e];
+    const r = ok(sendTeam(s, { monsterIds: ['m1', 's1'], encounterId: 'e1' }, T0));
+    expect(r.state.missions).toEqual([]);
+    for (const id of ['m1', 's1']) {
+      const end = r.state.units[id]!.path.at(-1)!;
+      expect(Math.max(Math.abs(end.x - e.x), Math.abs(end.y - e.y))).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('refuses empty, oversized or duplicate teams, unknown targets, busy and mixing units', () => {
+    const s = village();
+    s.village.encounters = [{ id: 'e1', level: 0, group: 0, ...farTile(s), count: 2, enemies: [] }];
+    const send = (st: PlayerState, monsterIds: string[], encounterId = 'e1') =>
+      sendTeam(st, { monsterIds, encounterId }, T0);
+    expect(send(s, [])).toEqual({ ok: false, error: 'invalidAmount' });
+    expect(send(s, ['m1', 'm1'])).toEqual({ ok: false, error: 'invalidAmount' });
+    const many = Array.from({ length: gameData.rules.skirmish.maxTeam + 1 }, (_, i) => `x${i}`);
+    expect(send(s, many)).toEqual({ ok: false, error: 'invalidAmount' });
+    expect(send(s, ['m1'], 'nope')).toEqual({ ok: false, error: 'encounterNotFound' });
+    expect(send(s, ['zz'])).toEqual({ ok: false, error: 'monsterNotFound' });
+    const fighting = deepClone(s);
+    fighting.missions.push({
+      id: 't0',
+      encounterId: 'e1',
+      monsterIds: ['m2'],
+      arriveAt: T0,
+      fight: null,
+    });
+    expect(send(fighting, ['m1'])).toEqual({ ok: false, error: 'encounterBusy' });
+    const mixing = deepClone(s);
+    mixing.mixQueue = [{ parents: [{ id: 'm1' }] } as unknown as PlayerState['mixQueue'][number]];
+    expect(send(mixing, ['m1'])).toEqual({ ok: false, error: 'monsterBusy' });
   });
 });

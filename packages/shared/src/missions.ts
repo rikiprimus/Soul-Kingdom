@@ -52,9 +52,9 @@ export interface MissionFight {
 }
 
 /**
- * A team sent against an encounter. It marches until `arriveAt`; the fight is simulated
- * when it gets there (no time limit: it lasts until one side has fallen) and its outcome
- * is applied when the fight ends.
+ * A fight with an encounter, started when our units came within its aggro radius
+ * (aggro.ts): the enemy closes in until `arriveAt`, then the fight is simulated (no time
+ * limit: it lasts until one side has fallen) and its outcome is applied when it ends.
  */
 export interface Mission {
   id: string;
@@ -196,42 +196,6 @@ export function previewWinChance(
   return estimateWinChance(teamFighters(state, ids, data), encounterFighters(e, data), runs, data, {
     untilDefeat: true,
   });
-}
-
-// ---------- Sending a team ----------
-
-export function sendTeam(
-  state: PlayerState,
-  params: { monsterIds: string[]; encounterId: string },
-  now: number,
-  data: GameData = gameData,
-): ActionResult<{ missionId: string }> {
-  const e = state.village.encounters.find((x) => x.id === params.encounterId);
-  if (!e) return fail('encounterNotFound');
-  if (missionFor(state, e.id)) return fail('encounterBusy');
-  const ids = params.monsterIds;
-  const { maxTeam, marchSeconds } = data.rules.skirmish;
-  if (ids.length < 1 || ids.length > maxTeam || new Set(ids).size !== ids.length) {
-    return fail('invalidAmount');
-  }
-  for (const id of ids) {
-    const known =
-      state.monsters.some((x) => x.id === id) || state.soldiers.some((x) => x.id === id);
-    if (!known) return fail('monsterNotFound');
-    const inMixer = state.mixQueue.some((q) => q.parents.some((p) => p.id === id));
-    if (inMixer || isOnMission(state, id)) return fail('monsterBusy');
-  }
-  const next = deepClone(state);
-  const missionId = `t${next.nextId}`;
-  next.nextId += 1;
-  next.missions.push({
-    id: missionId,
-    encounterId: e.id,
-    monsterIds: [...ids],
-    arriveAt: now + marchSeconds,
-    fight: null,
-  });
-  return { ok: true, state: next, missionId };
 }
 
 /** What finished missions did, for the client to show. */

@@ -5,7 +5,7 @@ import { claimDaily, claimQuest } from '../quests';
 import { sendToAnimal } from '../animals';
 import { hatchEgg, trainSoldier } from '../barracks';
 import { travelTo, unlockIsland } from '../islands';
-import { reviveMonster, sendTeam } from '../missions';
+import { reviveMonster } from '../missions';
 import { attackNode } from '../adventure';
 import { attackBase } from '../serbu';
 import {
@@ -22,7 +22,7 @@ import {
   type PlayerState,
 } from '../state';
 import { placeStored, rotateBuilding, storeBuilding } from '../storage';
-import { guardNode, moveUnits, retreatUnits } from '../units';
+import { guardNode, moveUnits, retreatUnits, sendTeam } from '../units';
 import {
   addConstructionWorkers,
   buildBuilding,

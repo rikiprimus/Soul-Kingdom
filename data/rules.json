@@ -98,9 +98,8 @@
     }
   },
   "skirmish": {
-    "_note": "Pertarungan tim melawan musuh liar (bukan Serbu). Tim berjalan selama marchSeconds, lalu bertempur tanpa batas waktu sampai musuh habis atau seluruh tim mati; pertarungan disimulasikan saat tim tiba. Anggota yang HP-nya habis mati: monster ke Kuburan, prajurit gugur.",
-    "maxTeam": 6,
-    "marchSeconds": 30
+    "_note": "Pertarungan tim melawan musuh liar (bukan Serbu). Tim (maks. maxTeam) berjalan sungguhan ke musuh tanpa hitung mundur; begitu masuk jarak deteksi musuh (wilds.encounters.aggro) musuh ikut mendekat dan pertarungan dimulai, tanpa batas waktu sampai musuh habis atau seluruh tim mati. Anggota yang HP-nya habis mati: monster ke Kuburan, prajurit gugur.",
+    "maxTeam": 6
   },
   "serbu": {
     "_note": "Tugas 1.4: Mode Serbu melawan markas NPC (sementara, sebelum markas pemain lain di Tugas 2.2). Medan sendiri grid (kolom x baris); pemain menaruh unit di placeColumns kolom kiri (1 unit per petak), pertahanan NPC di placeColumns kolom kanan (diacak berbenih). Maks. battle.maxUnits unit dan poin kekuatan <= batas gabungan barak. Batas waktu battle.maxTicks (habis = penyerang kalah). Unit yang gugur mati: monster ke Kuburan, prajurit hilang. Markas terbuka berurutan (markas sebelumnya harus sudah dikalahkan) dan butuh Balai requiresTownHall. Menang pertama = firstReward, menang lagi = repeatReward. Pertahanan: bandit (power = banditPower, lihat battle.bandit), monster (wujud/elemen/tahap), soldier (jenis prajurit + rank 0..), tower (level Menara Jaga, statistik raids.tower). trackEveryTicks = jarak rekaman posisi untuk pemutaran.",

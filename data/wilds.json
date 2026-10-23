@@ -159,7 +159,7 @@
   },
   "encounters": {
     "_aggroNote": "Musuh diam sampai prajurit/monster kita masuk jarak deteksi (banditTiles / monsterTiles), lalu mengejar dengan chaseTilesPerSecond dan menyerang (pertarungan simulator, tanpa batas waktu). Pekerja yang mengumpulkan di objek liar dalam jarak itu juga diserang.",
-    "aggro": { "banditTiles": 3, "monsterTiles": 4, "chaseTilesPerSecond": 2 },
+    "aggro": { "banditTiles": 3, "monsterTiles": 3, "chaseTilesPerSecond": 2 },
     "_ambushNote": "Setiap objek liar yang selesai dikumpulkan bisa memicu penyergapan (ambushChance node). Musuh dari daftar level Balai muncul di sana. Pengawal (kawal) bertarung dulu; tanpa pengawal atau bila pengawal kalah, tiap pekerja di objek itu mati dengan workerDeathChance. Musuh penyergapan pergi sendiri setelah leaveHours bila tidak sedang bertarung (tidak menumpuk).",
     "ambush": { "workerDeathChance": 0.5, "leaveHours": 6 },
     "respawnHours": 24,

@@ -3,7 +3,7 @@ import { aggroEncounters, aggroRadius, ambushAt } from './aggro';
 import { deepClone } from './clone';
 import { gameData } from './data';
 import { createInitialState, type PlayerState } from './state';
-import { guardNode, settleUnits } from './units';
+import { guardNode, sendTeam, settleUnits, unitPoint } from './units';
 import { advanceWilds } from './wilds';
 import { canPlace, settleVillage } from './village';
 import { createWorkers } from './workers';
@@ -53,7 +53,7 @@ describe('enemies chase whoever comes close', () => {
     expect(aggroEncounters(woke, T0 + 1)).toBe(woke);
   });
 
-  it('uses a wider reach for wild monsters than for bandits', () => {
+  it('reads the reach of bandits and wild monsters from the data', () => {
     const e = { ...bandits('e1', 0, 0), level: 1, group: 1, enemies: [] };
     expect(aggroRadius(e)).toBe(aggro.monsterTiles);
     expect(aggroRadius(bandits('e2', 0, 0))).toBe(aggro.banditTiles);
@@ -149,6 +149,36 @@ describe('ambushes while gathering', () => {
     busy.missions.push({ id: 't1', encounterId: e.id, monsterIds: [], arriveAt: T0, fight: null });
     expect(aggroEncounters(busy, e.leavesAt!).village.encounters.some((x) => x.id === e.id)).toBe(
       true,
+    );
+  });
+
+  it('engages a team walking at it as soon as it comes within reach: no countdown', () => {
+    const s = base();
+    const m1 = s.units.m1!;
+    // A free tile well outside the reach, straight along a row from the cat.
+    let at: { x: number; y: number } | null = null;
+    for (const dx of [9, -9, 8, -8, 7, -7]) {
+      if (canPlace(s.village, 1, m1.x + dx, m1.y)) {
+        at = { x: m1.x + dx, y: m1.y };
+        break;
+      }
+    }
+    if (!at) throw new Error('no free tile');
+    s.village.encounters = [bandits('e1', at.x, at.y)];
+    const sent = sendTeam(s, { monsterIds: ['m1'], encounterId: 'e1' }, T0);
+    if (!sent.ok) throw new Error(sent.error);
+    let now = T0;
+    let state = settleVillage(sent.state, now);
+    while (state.missions.length === 0 && now < T0 + 60) state = settleVillage(state, ++now);
+    const m = state.missions[0]!;
+    expect(m.monsterIds).toContain('m1');
+    // It woke the moment the cat walked into reach, and closes the rest by chase speed.
+    const pt = unitPoint(state.units.m1!, now);
+    const d = Math.hypot(pt.x - at.x, pt.y - at.y);
+    expect(d).toBeLessThanOrEqual(aggro.banditTiles);
+    expect(d).toBeGreaterThan(aggro.banditTiles - gameData.rules.units.walkTilesPerSecond);
+    expect(m.arriveAt - now).toBeLessThanOrEqual(
+      Math.ceil(aggro.banditTiles / aggro.chaseTilesPerSecond),
     );
   });
 

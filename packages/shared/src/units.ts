@@ -1,6 +1,6 @@
 import { deepClone } from './clone';
 import { gameData, type GameData } from './data';
-import { isOnMission } from './missions';
+import { isOnMission, missionFor } from './missions';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { canPlace, sizeOf, type Tile } from './village';
 
@@ -215,6 +215,28 @@ export function moveUnits(
   const { x, y } = params;
   if (x < 0 || y < 0 || x >= mapSize || y >= mapSize) return fail('blocked');
   return sendUnits(state, params.ids, { x, y }, null, now, data);
+}
+
+/**
+ * "Ketuk musuh" / Kirim tim: the team walks up to the enemy, no countdown. The fight
+ * starts by itself once they come within its aggro radius (aggro.ts: it closes in too).
+ */
+export function sendTeam(
+  state: PlayerState,
+  params: { monsterIds: string[]; encounterId: string },
+  now: number,
+  data: GameData = gameData,
+): ActionResult<{ moved: string[] }> {
+  const e = state.village.encounters.find((x) => x.id === params.encounterId);
+  if (!e) return fail('encounterNotFound');
+  if (missionFor(state, e.id)) return fail('encounterBusy');
+  const ids = params.monsterIds;
+  if (ids.length > data.rules.skirmish.maxTeam) return fail('invalidAmount');
+  for (const id of ids) {
+    if (!unitIds(state).includes(id)) return fail('monsterNotFound');
+    if (state.mixQueue.some((q) => q.parents.some((p) => p.id === id))) return fail('monsterBusy');
+  }
+  return sendUnits(state, ids, { x: e.x, y: e.y }, null, now, data);
 }
 
 /** "Menjauh": the selected units fall back to the Kandang, away from the wild enemies. */

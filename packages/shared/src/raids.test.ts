@@ -3,7 +3,7 @@ import { aggroEncounters } from './aggro';
 import { deepClone } from './clone';
 import { gameData, VILLAGE_RESOURCES } from './data';
 import { spawnEncounters, encounterRespawnSeconds } from './encounters';
-import { sendTeam, settleMissions, type WildEncounter } from './missions';
+import { settleMissions, type WildEncounter } from './missions';
 import {
   advanceRaids,
   currentRaid,
@@ -233,9 +233,9 @@ describe('who defends', () => {
     s.monsters.push({ id: 'm1', form: 'kucing', element: 'api', stage: adult, food: 0 });
     s.units = { m1: place(30, 30) };
     s.village.encounters = [raider(14, 23)];
-    const sent = sendTeam(s, { monsterIds: ['m1'], encounterId: 'r1' }, T0);
-    if (!sent.ok) throw new Error(sent.error);
-    expect(advanceRaids(sent.state, 30, T0).state).toBe(sent.state);
+    // The team reached it: the fight is on.
+    s.missions.push({ id: 't0', encounterId: 'r1', monsterIds: ['m1'], arriveAt: T0, fight: null });
+    expect(advanceRaids(s, 30, T0).state).toBe(s);
   });
 });
 

@@ -871,10 +871,13 @@ export class VillageScene extends Phaser.Scene {
     }
     this.reportMissions(missionsBefore, enemySpots);
     const sent = new Set(missionsBefore.map((m) => m.id));
-    if (this.store.state.missions.some((m) => !sent.has(m.id) && m.fight === null)) {
+    const spotted = this.store.state.missions.filter((m) => !sent.has(m.id));
+    if (spotted.some((m) => m.fight === null)) {
       playSfx(this, 'enemy');
       this.game.events.emit(EVT.toast, { message: t('ambush.chase') });
     }
+    for (const m of spotted) this.closeIn(m);
+    this.sendEnemiesHome();
     const dt = this.activeSeconds();
     this.tickGathering(dt);
     this.tickRaid(dt);
@@ -2411,6 +2414,46 @@ export class VillageScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * The enemy spotted the team: its group walks most of the way to the nearest member
+   * while the team covers the rest, meeting where the fight is drawn (until `arriveAt`).
+   */
+  private closeIn(m: Mission) {
+    const e = this.store.state.village.encounters.find((x) => x.id === m.encounterId);
+    const view = this.enemies.get(m.encounterId);
+    if (!e || e.raid || !view) return;
+    const from = worldToIso(view.x, view.y);
+    const nearest = this.walkers
+      .filter((w) => m.monsterIds.includes(w.monsterId))
+      .map((w) => ({ du: w.cu - from.u, dv: w.cv - from.v }))
+      .sort((a, b) => Math.hypot(a.du, a.dv) - Math.hypot(b.du, b.dv))[0];
+    if (!nearest) return;
+    const d = Math.hypot(nearest.du, nearest.dv);
+    // Stop about a tile short of the unit; the enemy closes 60% of that gap.
+    const k = d > 1 ? ((d - 1) / d) * 0.6 : 0;
+    const to = isoToWorld(from.u + nearest.du * k, from.v + nearest.dv * k);
+    this.tweens.killTweensOf(view);
+    this.tweens.add({
+      targets: view,
+      x: to.x,
+      y: to.y,
+      duration: Math.max(300, (m.arriveAt - this.store.nowExact()) * 1000),
+    });
+  }
+
+  /** Enemies left standing after a fight walk back to their own tile. */
+  private sendEnemiesHome() {
+    const state = this.store.state;
+    for (const e of state.village.encounters) {
+      if (e.raid || state.missions.some((m) => m.encounterId === e.id)) continue;
+      const view = this.enemies.get(e.id);
+      if (!view || this.tweens.isTweening(view)) continue;
+      const home = isoToWorld(e.x + 0.5, e.y + 0.5);
+      if (Math.abs(view.x - home.x) + Math.abs(view.y - home.y) < 1) continue;
+      this.tweens.add({ targets: view, x: home.x, y: home.y, duration: 1200 });
+    }
+  }
+
   /** Walkers on a mission march to their enemy and scuffle there; afterwards they go home. */
   private moveOnMission(w: Walker): boolean {
     const state = this.store.state;
@@ -2418,7 +2461,10 @@ export class VillageScene extends Phaser.Scene {
     const e = mission && state.village.encounters.find((x) => x.id === mission.encounterId);
     if (mission && e) {
       const i = mission.monsterIds.indexOf(w.monsterId);
-      const spot = { u: e.x + 0.5 + ((i % 3) - 1) * 0.7, v: e.y + 1.4 + Math.floor(i / 3) * 0.6 };
+      // In front of the enemy group, wherever it closed in to.
+      const view = this.enemies.get(e.id);
+      const at = view && !e.raid ? worldToIso(view.x, view.y) : { u: e.x + 0.5, v: e.y + 0.5 };
+      const spot = { u: at.u + ((i % 3) - 1) * 0.7, v: at.v + 0.9 + Math.floor(i / 3) * 0.6 };
       w.away = true;
       w.nextMoveAt = this.time.now + 500;
       if (Math.abs(w.u - spot.u) + Math.abs(w.v - spot.v) > 0.05) {

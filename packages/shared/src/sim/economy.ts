@@ -14,17 +14,10 @@ import {
 import { gameData, VILLAGE_RESOURCES, type GameData, type VillageAmount } from '../data';
 import { spawnEncounters } from '../encounters';
 import { aggroRadius } from '../aggro';
-import {
-  encounterPower,
-  isOnMission,
-  previewWinChance,
-  sendTeam,
-  teamPower,
-  teamUnits,
-} from '../missions';
+import { encounterPower, isOnMission, previewWinChance, teamPower, teamUnits } from '../missions';
 import { formTierOf, foodToNextStage, isFinalStage } from '../monster';
 import { advanceRaids, currentRaid, raidRoute } from '../raids';
-import { moveUnits } from '../units';
+import { moveUnits, sendTeam } from '../units';
 import {
   collectMix,
   createInitialState,
@@ -447,7 +440,9 @@ export function simulateEconomy(
       const units = teamUnits(s, team, data);
       if (teamPower(units, e, data) < encounterPower(e, units, data)) continue;
       if (previewWinChance(s, team, e, 30, data) >= player.minWinChance) {
+        // The team walks there and the enemy engages on contact; one target at a time.
         tryDo(sendTeam(s, { monsterIds: team, encounterId: e.id }, now, data));
+        return;
       }
     }
   }

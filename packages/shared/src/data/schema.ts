@@ -295,7 +295,6 @@ export const rulesFileSchema = z.object({
   skirmish: z.object({
     maxTeam: z.number().int().min(1),
     /** Walk to the enemy; the fight itself has no time limit. */
-    marchSeconds: z.number().positive(),
   }),
   barracks: z.object({
     queueMax: z.number().int().min(1),

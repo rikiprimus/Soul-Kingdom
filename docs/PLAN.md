@@ -1007,6 +1007,83 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 
 ---
 
+## Fase 1C — Rombak objek (dari docs/OBJEK.md)
+
+Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) (2026-10-23). Angka di sana (baris bertanda \*) masih kira-kira: pindahkan ke `data/*.json`, uji dengan `pnpm sim:economy`, lalu sesuaikan. Gambar objek baru dibuat dengan SpriteCook di tugas objek itu sendiri (skill `soul-monster-art-style`); yang belum ada memakai gambar buatan kode. Setiap tugas yang mengubah `packages/shared` atau `data/` perlu `pnpm build:server` + deploy ulang (lihat `docs/SERVER.md`). Kerjakan 1C.1 lebih dulu; sisanya boleh berurutan sesuai nomor.
+
+### - [ ] Tugas 1C.1 — Ganti nama, id & migrasi simpanan
+
+- Soul Mixer → **Altar** (`altar`): hasil campuran langsung menjadi monster **bayi** saat waktu campur selesai (tidak lewat telur / Sarang Telur), butuh slot populasi kosong.
+- Kandang Monster dihapus; gambarnya dipakai **Gudang** (`gudang`, 3×3, 1 level, ada di desa awal) yang membuka panel Gudang.
+- **Sarang Telur Jiwa** bisa dibangun sejak Balai 1; koleksi monster (beri makan, lepas) pindah ke sana; telur awal menunggu sampai Sarang dibangun (usul misi pertama "Bangun Sarang Telur Jiwa").
+- Id baru: Guild `barak` → `guild`, Barak Prajurit `petarung` → `barak`, Barak Berkuda `barak-berkuda` → `kandang-kuda` (urutan migrasi hati-hati: `barak` lama = Guild). Nama tampilan: Barak, Lapangan Pemanah, Kandang Kuda.
+- Naikkan versi simpanan dengan migrasi; perbarui `text.json`, CLAUDE.md (Soul Mixer → Altar, hasil langsung bayi), dan dokumen.
+
+**Kriteria selesai:** simpanan lama termuat tanpa kehilangan bangunan/monster; Altar memberi bayi langsung; Sarang Telur bisa dibangun di Balai 1 dan memegang koleksi monster; Gudang menggantikan Kandang.
+
+### - [ ] Tugas 1C.2 — Level baru bangunan lama
+
+- Balai Utama sampai Lv 8 (biaya, waktu, populasi, waktu latih pekerja makin cepat per level).
+- Rumah, Pasar, Ladang sampai Lv 6; Tambang Emas & Penggilingan sampai Lv 8 dengan slot pekerja 1/1/2/2/3/4/5/6; Peternakan Lv 5; Barak, Lapangan Pemanah, Kandang Kuda Lv 6; Menara Jaga Lv 5; Tembok Lv 8 (gambar ruas baru lewat `pnpm art:wall`).
+- Batas jumlah per Balai sampai Lv 8 untuk semua bangunan. Kandang Kuda terbuka di Balai 3.
+- **Keputusan pemilik dibutuhkan:** tombol "tambah slot populasi" di Balai (harga, batas); batas harga percepat untuk Balai Lv 7–8 (sekarang 1 permata/menit = sampai 21.600 permata).
+
+**Kriteria selesai:** semua level baru ada di `data/` dan lolos validasi; `pnpm sim:economy` menunjukkan kemajuan Balai yang masuk akal.
+
+### - [ ] Tugas 1C.3 — Bangunan produksi baru
+
+- **Tambang Batu** (`tambang-batu`) dan **Tukang Kayu** (`tukang-kayu`): pekerja di dalam, jalan saat game ditutup, 8 level (seperti Tambang Emas).
+- **Mansion** (`mansion`, nama tampilan bahasa Indonesia mis. Rumah Bangsawan): populasi lebih banyak, terbuka Balai 4, 6 level.
+
+**Kriteria selesai:** kayu & batu bisa dihasilkan tanpa alam liar; simulasi ekonomi diuji ulang.
+
+### - [ ] Tugas 1C.4 — Dekorasi berpopulasi & Monumen Keajaiban
+
+- Pohon Hias / Taman Bunga / Lampu +2, Air Mancur +5, Patung Naga +10, **Monumen Keajaiban** (2×2, Balai 5, maks 2) +15 populasi.
+- **Keputusan pemilik dibutuhkan:** batas total populasi dari dekorasi (tanpa batas ±275).
+
+### - [ ] Tugas 1C.5 — Undian Harian di Pasar
+
+- Gratis 1× sehari per akun, hasil acak dihitung server; level Pasar tertinggi memperbagus tabel hadiah. Tidak ada undian tambahan dengan permata; tidak memberi monster (aturan 7).
+- **Keputusan pemilik dibutuhkan:** Telur Jiwa sebagai hadiah langka atau tidak.
+
+### - [ ] Tugas 1C.6 — Pertahanan: Menara Sihir & Gerbang
+
+- **Menara Sihir** (`menara-sihir`, 5 level, Balai 3): jangkauan 4 petak, serangan kuat dengan kerusakan area kecil, tembakan lambat (simulator pertarungan perlu kerusakan area).
+- **Gerbang** (`gerbang`, 8 level): dipasang di barisan tembok; terbuka = unit sendiri lewat, tertutup otomatis saat serangan desa, musuh harus menjebol. Butuh potongan gerbang di `tembok-pieces.json` dan jalur yang membedakan unit sendiri dan musuh.
+
+### - [ ] Tugas 1C.7 — Bengkel & mesin perang
+
+- **Bengkel** (`bengkel`, 6 level, Balai 4): dua mesin, **Ketapel** (jarak jauh, kuat melawan bangunan) dan **Pendobrak** (hanya menyerang tembok/gerbang/bangunan). Tiap level Bengkel menaikkan kedua mesin ke versi berikutnya (nama & rupa berubah, statistik ×1 … ×2,8); mesin yang sudah dibuat ikut naik.
+- Rumus batas kekuatan Serbu menjadi gabungan level empat bangunan (Barak, Lapangan Pemanah, Kandang Kuda, Bengkel).
+
+### - [ ] Tugas 1C.8 — Gerbang Petualangan 4 level
+
+- Tiap level membuka satu wilayah: Hutan Berbisik, Rawa Kabut, Gunung Api, lalu **wilayah ke-4 baru** (bos & titik sumber daya dirancang di `data/adventure.json`).
+
+### - [ ] Tugas 1C.9 — Goblin, berburu & bertahan
+
+- Musuh liar baru **Goblin** (baris 1–2, lincah dan rapuh; statistik di `rules.json`, gambar orisinal).
+- **Buru** memakai prajurit, **Tangkap** memakai pekerja.
+- Saat serangan desa, unit yang ≤ 4 petak dari desa ikut bertahan (angka di `rules.json`); pekerja di luar lari ke Balai Utama dan tidak bisa diserang.
+
+### - [ ] Tugas 1C.10 — Pohon Jiwa (penyembuhan)
+
+- Unit menyimpan HP setelah bertarung (sekarang tidak), lalu pulih per menit di desa; Pohon Jiwa (5 level, Militer) mempercepat pemulihan, Lv 3+ menyembuhkan pembela saat serangan desa.
+- **Keputusan pemilik dibutuhkan:** "Sembuhkan semua" dengan permata (belum ada di aturan 7).
+
+### - [ ] Tugas 1C.11 — Perpustakaan & riset
+
+- Rancang pohon riset bersama pemilik dulu (cabang Produksi, Militer, Monster; termasuk petunjuk resep rahasia Altar). Satu riset berjalan sekaligus, biaya emas + Kristal Jiwa + waktu, efek dihitung server. Perpustakaan 5 level (Utama, Balai 3).
+
+### - [ ] Tugas 1C.12 — Guild komunitas
+
+- Setelah Tugas 2.1: buat / gabung guild, misi guild yang menambah pengalaman guild, perang guild. Level bangunan Guild menaikkan anggota maksimal (10–30) dan hadiah Serbu & misi guild. Guild terbuka di Balai 3 dan tetap menjadi pintu masuk Serbu.
+
+**Gerbang Fase 1C:** semua objek di `docs/OBJEK.md` ada di game (atau sengaja ditunda dengan catatan), simulasi ekonomi 14 hari tetap masuk akal.
+
+---
+
 ## Fase 2 — Online dan Android (4–6 minggu)
 
 ### - [ ] Tugas 2.1 — Akun dan teman
@@ -1091,6 +1168,8 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 - **Kartu info:** muncul di atas (atau di bawah) objek yang diklik, bukan di pojok.
 - **Objek liar tidak tumbuh lagi di wilayah terbuka (2026-10-21):** pohon/batu/semak hanya tumbuh di wilayah terkunci; wilayah terbuka hanya punya objek liar dari awal permainan (`regrowWilds`). Batu emas tetap terisi lagi. Untuk menjaga Balai Lv 4 dalam ±3 hari (simulasi ekonomi), biaya kayu Balai Lv 4 turun 9.000 → 7.000; menaikkan hasil kayu/batu/semak tidak berpengaruh di simulasi (yang menahan biaya Balai sendiri).
 - **Rumah lebih besar (2026-10-21):** populasi Rumah 10 / 15 / 20 / 25 / 30 per level (dulu 4–8), jatah Rumah 2 / 4 / 6 / 8 / 10 / 12 per level Balai (dulu 1–6). Desa awal tetap tanpa Rumah. Alasan pemilik: pemain membawa 8–10 prajurit + monster ke pertarungan, jadi bandit tetap pada `powerScale` 2,5 (diukur: 3 Rekrut menang 100 % melawan bandit level 0; hasil simulator cenderung 0 % atau 100 %, varians kerusakan hampir tidak berpengaruh).
+
+- **Tarung musuh liar tanpa hitung mundur (2026-10-23):** "Kirim tim" / ketuk musuh kini membuat pasukan berjalan sungguhan ke musuh (`sendTeam` di `units.ts`); `skirmish.marchSeconds` dihapus. Begitu pasukan masuk jarak 3 petak (`wilds.encounters.aggro`, bandit dan monster liar sama), musuh ikut mendekat dan pertarungan langsung dimulai. Belum di-deploy ke server.
 
 ### Ide pemilik (2026-10-21, belum dijadwalkan)
 
