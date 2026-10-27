@@ -10,6 +10,7 @@ import {
   raidDefenders,
   raidDps,
   raidRoute,
+  towerReach,
   wallBreakSeconds,
 } from './raids';
 import { deserializeState, serializeState } from './save';
@@ -319,5 +320,24 @@ describe('raid saves', () => {
     delete v15.village.raidClock;
     const loaded = deserializeState(JSON.stringify({ schemaVersion: 15, state: v15 }));
     expect(loaded.village.raidClock).toBe(0);
+  });
+});
+
+describe('tower and wall levels (Tugas 1C.2)', () => {
+  it('a watchtower reaches as far as its level range, never less than the base reach', () => {
+    const def = gameData.buildingById.get(raids.tower.building)!;
+    expect(raids.tower.levels.length).toBe(def.levels.length);
+    raids.tower.levels.forEach((stats, i) => {
+      const b = { type: raids.tower.building, level: i + 1 } as Building;
+      expect(towerReach(b)).toBe(Math.max(raids.tower.reachTiles, stats.range));
+    });
+  });
+
+  it('every wall level is sturdier than the last', () => {
+    const def = gameData.buildingById.get(raids.wall.building)!;
+    expect(raids.wall.hpByLevel.length).toBe(def.levels.length);
+    for (let i = 1; i < raids.wall.hpByLevel.length; i++) {
+      expect(raids.wall.hpByLevel[i]).toBeGreaterThan(raids.wall.hpByLevel[i - 1]!);
+    }
   });
 });

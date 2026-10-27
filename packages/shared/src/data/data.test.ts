@@ -80,10 +80,10 @@ describe('game data', () => {
   it('rejects barracks without a known soldier and soldiers with an unknown role', () => {
     expectRejected(
       corrupt((raw) => {
-        raw.buildings.buildings.find((b: { id: string }) => b.id === 'petarung').trainsSoldier =
+        raw.buildings.buildings.find((b: { id: string }) => b.id === 'barak').trainsSoldier =
           'ksatria';
       }),
-      /"petarung" \(barracks\) butuh trainsSoldier/,
+      /"barak" \(barracks\) butuh trainsSoldier/,
     );
     expectRejected(
       corrupt((raw) => {
@@ -125,8 +125,8 @@ describe('game data', () => {
 
   it('loads buildings.json with one town hall', () => {
     expect(gameData.townHallId).toBe('balai-utama');
-    expect(gameData.maxTownHallLevel).toBe(6);
-    expect(gameData.buildingById.get('soul-mixer')!.levels[0]!.requiresTownHall).toBe(
+    expect(gameData.maxTownHallLevel).toBe(8);
+    expect(gameData.buildingById.get('altar')!.levels[0]!.requiresTownHall).toBe(
       gameData.rules.mixer.unlockTownHallLevel,
     );
   });
@@ -140,19 +140,34 @@ describe('game data', () => {
     );
   });
 
+  it('rejects an Undian Harian table with a non-decoration or out-of-order levels', () => {
+    expectRejected(
+      corrupt((raw) => {
+        raw.rules.marketDraw.tables[0].prizes[0].prize.decorations = ['balai-utama'];
+      }),
+      /bukan dekorasi/,
+    );
+    expectRejected(
+      corrupt((raw) => {
+        raw.rules.marketDraw.tables[1].minLevel = 1;
+      }),
+      /minLevel harus naik berurutan/,
+    );
+  });
+
   it('rejects maxCount tables that do not match the town hall levels', () => {
     expectRejected(
       corrupt((raw) => {
         raw.buildings.buildings[1].maxCount = [1, 2];
       }),
-      /maxCount harus berisi 6 angka/,
+      /maxCount harus berisi 8 angka/,
     );
   });
 
-  it('rejects a Soul Mixer that unlocks at a different level than rules.mixer', () => {
+  it('rejects an Altar that unlocks at a different level than rules.mixer', () => {
     expectRejected(
       corrupt((raw) => {
-        const mixer = raw.buildings.buildings.find((b: { id: string }) => b.id === 'soul-mixer');
+        const mixer = raw.buildings.buildings.find((b: { id: string }) => b.id === 'altar');
         mixer.levels[0].requiresTownHall = 2;
       }),
       /rules\.mixer\.unlockTownHallLevel/,

@@ -142,7 +142,7 @@ describe('construction', () => {
 
   it('enforces town hall level, count limits, space and resources', () => {
     const s = rich();
-    expect(buildBuilding(s, { type: 'soul-mixer', ...freeSpot(s, 3) }, T0)).toEqual({
+    expect(buildBuilding(s, { type: 'altar', ...freeSpot(s, 3) }, T0)).toEqual({
       ok: false,
       error: 'townHallTooLow',
     });
@@ -272,7 +272,7 @@ describe('the mixer building', () => {
   it('unlocks the mixer only with a finished Soul Mixer', () => {
     const s = setHall(rich(), gameData.rules.mixer.unlockTownHallLevel);
     expect(isMixerUnlocked(s)).toBe(false);
-    const r = ok(buildBuilding(s, { type: 'soul-mixer', ...freeSpot(s, 3) }, T0));
+    const r = ok(buildBuilding(s, { type: 'altar', ...freeSpot(s, 3) }, T0));
     expect(isMixerUnlocked(r.state)).toBe(false);
     expect(isMixerUnlocked(settleVillage(r.state, T0 + 10 ** 6))).toBe(true);
   });

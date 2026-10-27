@@ -163,7 +163,7 @@
     "_ambushNote": "Setiap objek liar yang selesai dikumpulkan bisa memicu penyergapan (ambushChance node). Musuh dari daftar level Balai muncul di sana. Pengawal (kawal) bertarung dulu; tanpa pengawal atau bila pengawal kalah, tiap pekerja di objek itu mati dengan workerDeathChance. Musuh penyergapan pergi sendiri setelah leaveHours bila tidak sedang bertarung (tidak menumpuk).",
     "ambush": { "workerDeathChance": 0.5, "leaveHours": 6 },
     "respawnHours": 24,
-    "groupsByTownHall": [2, 2, 3, 3, 4, 4],
+    "groupsByTownHall": [2, 2, 3, 3, 4, 4, 5, 5],
     "levels": [
       {
         "townHall": 1,

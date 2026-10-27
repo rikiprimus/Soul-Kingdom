@@ -123,6 +123,14 @@ export const battleRewardSchema = villageAmountSchema.extend({
 });
 export type BattleReward = z.infer<typeof battleRewardSchema>;
 
+export const prizeSchema = battleRewardSchema.extend({
+  soulEggs: nonNegInt.default(0),
+  wonder: z.string().min(1).optional(),
+  /** Decoration building ids, delivered to the Gudang. */
+  decorations: z.array(z.string().min(1)).default([]),
+});
+export type Prize = z.infer<typeof prizeSchema>;
+
 /** Player actions that give XP and count towards quests. */
 export const XP_ACTIONS = [
   'build',
@@ -291,7 +299,13 @@ export const rulesFileSchema = z.object({
       hpByLevel: z.array(z.number().positive()).min(1),
     }),
   }),
-  population: z.object({ workerSlots: z.number().int().min(1) }),
+  population: z.object({
+    workerSlots: z.number().int().min(1),
+    /** Buildings of this category are decorations: their population is capped together. */
+    decorationCategory: z.string().min(1),
+    /** Most population all decorations together may give, one entry per Balai Utama level. */
+    decorationCapByTownHall: z.array(nonNegInt).min(1),
+  }),
   skirmish: z.object({
     maxTeam: z.number().int().min(1),
     /** Walk to the enemy; the fight itself has no time limit. */
@@ -334,7 +348,8 @@ export const rulesFileSchema = z.object({
   }),
   workers: z.object({
     trainFood: nonNegInt,
-    trainSeconds: nonNegInt,
+    /** Seconds to train one worker, one entry per Balai Utama level. */
+    trainSecondsByTownHall: z.array(nonNegInt).min(1),
     startingWorkers: nonNegInt,
     /** Workers that can wait in the Balai Utama training queue at once. */
     trainQueueMax: z.number().int().min(1),
@@ -387,6 +402,19 @@ export const rulesFileSchema = z.object({
     dayOffsetSeconds: z.number().int(),
     rewards: z.array(battleRewardSchema).min(1),
   }),
+  marketDraw: z.object({
+    /** The building that holds the draw (Pasar); its highest finished level picks the table. */
+    building: z.string().min(1),
+    /** Prize tables by Pasar level, rising `minLevel`; the highest one reached is used. */
+    tables: z
+      .array(
+        z.object({
+          minLevel: z.number().int().min(1),
+          prizes: z.array(z.object({ weight: z.number().positive(), prize: prizeSchema })).min(1),
+        }),
+      )
+      .min(1),
+  }),
   social: z.object({
     helpSpeedUpSeconds: nonNegInt,
     helpFriendGold: nonNegInt,
@@ -409,6 +437,8 @@ export const buildingFeatures = [
   'house',
   'stable',
   'mixer',
+  'altar',
+  'storage',
   'barracks',
   'staffed',
   'ranch',
@@ -449,6 +479,8 @@ export const buildingLevelSchema = z.object({
   animalSlots: z.number().int().positive().optional(),
   /** Food a Peternakan can hold before it must be collected. */
   ranchCapacity: z.number().int().positive().optional(),
+  /** Barracks: extra training queue slots from this level on (added to rules.barracks.queueMax). */
+  queueBonus: z.number().int().positive().optional(),
 });
 
 export const buildingDefSchema = z.object({
@@ -625,13 +657,6 @@ export const adventureFileSchema = z.object({
 export type AdventureFile = z.infer<typeof adventureFileSchema>;
 
 /** A quest or set reward: resources, Telur Jiwa, and at most one Keajaiban (building id). */
-export const prizeSchema = battleRewardSchema.extend({
-  soulEggs: nonNegInt.default(0),
-  wonder: z.string().min(1).optional(),
-  /** Decoration building ids, delivered to the Gudang. */
-  decorations: z.array(z.string().min(1)).default([]),
-});
-export type Prize = z.infer<typeof prizeSchema>;
 
 /** Quest chain (Tugas 1B.2): one active quest at a time, the first ones teach the game. */
 export const questsFileSchema = z.object({

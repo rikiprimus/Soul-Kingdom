@@ -31,6 +31,7 @@ import { createRng, type RngState } from './rng';
 import type { AdventureProgress } from './adventure';
 import type { SerbuProgress } from './serbu';
 import type { DailyBonus, QuestProgress } from './quests';
+import type { MarketDraw } from './market';
 import type { SoulEgg } from './nest';
 import type { StoredItem } from './storage';
 import { settleUnits, type UnitPlace } from './units';
@@ -106,6 +107,8 @@ export interface PlayerState {
   actions: Record<XpAction, number>;
   quest: QuestProgress;
   daily: DailyBonus;
+  /** Undian Harian at the Pasar (Tugas 1C.5). */
+  marketDraw: MarketDraw;
   /** Help given and monster borrowed today (Tugas 2.1). */
   social: SocialDay;
   monsters: Monster[];
@@ -158,6 +161,7 @@ export type ActionError =
   | 'encounterBusy'
   | 'monsterBusy'
   | 'noGraveyard'
+  | 'noNest'
   | 'unknownBuilding'
   | 'buildingNotFound'
   | 'townHallTooLow'
@@ -181,6 +185,7 @@ export type ActionError =
   | 'plotAlreadyOpen'
   | 'plotNotAdjacent'
   | 'alreadyClaimed'
+  | 'noMarket'
   | 'notStorable'
   | 'cannotRotate'
   | 'teamsAway'
@@ -254,6 +259,7 @@ export function createInitialState(
     actions: noActions(),
     quest: { index: 0, start: noActions() },
     daily: { next: 0, lastDay: null },
+    marketDraw: { lastDay: null },
     social: { helped: {}, borrowDay: null },
     monsters: [],
     mixQueue: [],
@@ -277,13 +283,15 @@ export function createInitialState(
   return settleUnits(spawnEncounters(spawnAnimals(state, now, data), now, data), now, data);
 }
 
-/** The mixer needs a finished Soul Mixer building and a high enough Balai Utama. */
+/** The mixer needs a finished Altar building and a high enough Balai Utama. */
 export function isMixerUnlocked(state: PlayerState, data: GameData = gameData): boolean {
   return (
     townHallLevel(state, data) >= data.rules.mixer.unlockTownHallLevel &&
-    hasFeature(state, 'mixer', data)
+    (hasFeature(state, 'altar', data) || hasFeature(state, 'mixer', data))
   );
 }
+
+export const isAltarUnlocked = isMixerUnlocked;
 
 /** A monster in a running mix or out on a mission. */
 export function isMonsterBusy(state: PlayerState, monsterId: string): boolean {

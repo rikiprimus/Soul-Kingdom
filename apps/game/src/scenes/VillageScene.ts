@@ -50,6 +50,7 @@ import {
   raidPoint,
   raidRoute,
   type Building,
+  type VillageResource,
   type Monster,
   type PlayerState,
   type RaidEvent,
@@ -211,7 +212,7 @@ interface AnimalView {
   nextMoveAt: number;
 }
 
-type BubbleKind = 'gold' | 'food' | 'seed' | 'egg';
+type BubbleKind = VillageResource | 'seed' | 'egg';
 const CLIFF = 46;
 
 export class VillageScene extends Phaser.Scene {
@@ -624,12 +625,14 @@ export class VillageScene extends Phaser.Scene {
   }
 
   private bubbleKind(b: Building, now: number): BubbleKind | null {
-    if (b.level >= 1 && gameData.buildingById.get(b.type)?.feature === 'mixer') {
+    const feat = gameData.buildingById.get(b.type)?.feature;
+    if (b.level >= 1 && (feat === 'altar' || feat === 'mixer')) {
       const ready = this.store.state.mixQueue.some((e) => mixRemaining(e, now) === 0);
       return ready ? 'egg' : null;
     }
-    // A Telur Jiwa that can be cared for or hatched.
-    if (b.level >= 1 && gameData.buildingById.get(b.type)?.feature === 'nest') {
+    // A Telur Jiwa that can be cared for or hatched, or a monster egg waiting to hatch.
+    if (b.level >= 1 && feat === 'nest') {
+      if (this.store.state.eggs.some((e) => e.readyAt <= now)) return 'egg';
       const egg = eggInNest(this.store.state);
       const status = egg
         ? soulEggStatus(egg, now)
@@ -638,8 +641,8 @@ export class VillageScene extends Phaser.Scene {
           : null;
       return status && status !== 'caring' ? 'egg' : null;
     }
-    // Monster eggs hatch at the Kandang.
-    if (b.level >= 1 && gameData.buildingById.get(b.type)?.feature === 'stable') {
+    // Monster eggs hatch at Kandang (if stable feature exists).
+    if (b.level >= 1 && feat === 'stable') {
       return this.store.state.eggs.some((e) => e.readyAt <= now) ? 'egg' : null;
     }
     const status = cropStatus(b, now);
@@ -647,8 +650,7 @@ export class VillageScene extends Phaser.Scene {
     if (status === 'empty') return b.construction ? null : 'seed';
     const state = this.store.state;
     if (b.construction || !isReadyToCollect(state, b, now)) return null;
-    const resource = productionOf(state, b)?.resource;
-    return resource === 'gold' || resource === 'food' ? resource : null;
+    return productionOf(state, b)?.resource ?? null;
   }
 
   /** Creates, updates or removes sprites so they match the store state. */
@@ -828,6 +830,8 @@ export class VillageScene extends Phaser.Scene {
     const icon = this.add.graphics();
     if (kind === 'gold') icons.gold(icon, 16);
     else if (kind === 'food') icons.food(icon, 16);
+    else if (kind === 'wood') icons.wood(icon, 16);
+    else if (kind === 'stone') icons.stone(icon, 16);
     else if (kind === 'egg') {
       icon.fillStyle(0xf6efe0).fillEllipse(0, 1, 13, 17);
       icon.fillStyle(0x8a6cff).fillCircle(-2, -2, 2.2).fillCircle(3, 3, 2.6);
@@ -1276,27 +1280,32 @@ export class VillageScene extends Phaser.Scene {
     const now = this.store.now();
     const b = this.store.state.village.buildings.find((x) => x.id === sprite.id);
     if (!b) return false;
-    // A ready egg on the Soul Mixer opens the mixer straight away.
+    // A ready egg on Altar or Sarang Telur.
     if (this.bubbleKind(b, now) === 'egg') {
-      const egg = this.store.state.eggs.find((e) => e.readyAt <= now);
-      if (gameData.buildingById.get(b.type)?.feature === 'stable' && egg) {
-        const r = this.store.act('hatchEgg', { id: egg.id });
-        if (!r.ok) {
-          this.game.events.emit(EVT.toast, { message: errorText(r.error) });
+      const feat = gameData.buildingById.get(b.type)?.feature;
+      if (feat === 'nest' || feat === 'stable') {
+        const egg = this.store.state.eggs.find((e) => e.readyAt <= now);
+        if (egg) {
+          const r = this.store.act('hatchEgg', { id: egg.id });
+          if (!r.ok) {
+            this.game.events.emit(EVT.toast, { message: errorText(r.error) });
+            return true;
+          }
+          playSfx(this, 'ready');
+          this.feelBuilding(b.id, 'medium', 'sparkle');
+          this.game.events.emit(EVT.toast, {
+            message: t('egg.hatched', { name: monsterName(r.monster) }),
+            color: COLORS.good,
+          });
           return true;
         }
-        playSfx(this, 'ready');
-        this.feelBuilding(b.id, 'medium', 'sparkle');
-        this.game.events.emit(EVT.toast, {
-          message: t('egg.hatched', { name: monsterName(r.monster) }),
-          color: COLORS.good,
-        });
+        // The nest's card shows the soul egg and its buttons.
+        return false;
+      }
+      if (feat === 'altar' || feat === 'mixer') {
+        this.game.events.emit(EVT.openPanel, 'mixer');
         return true;
       }
-      // The nest's card shows the egg and its buttons.
-      if (gameData.buildingById.get(b.type)?.feature === 'nest') return false;
-      this.game.events.emit(EVT.openPanel, 'mixer');
-      return true;
     }
     const status = cropStatus(b, now);
     if (status === 'ready') {

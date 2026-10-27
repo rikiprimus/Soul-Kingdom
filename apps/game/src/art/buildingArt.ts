@@ -442,7 +442,7 @@ const DESIGNS: Record<string, Design> = {
       }
     },
   },
-  kandang: {
+  gudang: {
     top: 80,
     draw(p, level) {
       p.flat(0.02, 0.02, 0.98, 0.98, 0x9ccf6a);
@@ -465,7 +465,7 @@ const DESIGNS: Record<string, Design> = {
       p.line(p.fp(0.98, 0.98, 6), p.fp(0.98, 0, 6), 0xf2e6d0, 1.6);
     },
   },
-  'soul-mixer': {
+  altar: {
     top: 120,
     draw(p) {
       p.cylinder(0.5, 0.5, 0.82, 8, 0x8c86a6, 0xb9b3d1);
@@ -528,6 +528,105 @@ const DESIGNS: Record<string, Design> = {
       p.ellipse(p.fp(0.79, 0.87, 11), 9, 4.5, C.gold, darken(C.gold, 0.45));
       p.ellipse(p.fp(0.68, 0.97), 2.5, 2.5, 0x2c2c38);
       p.ellipse(p.fp(0.9, 0.97), 2.5, 2.5, 0x2c2c38);
+    },
+  },
+  'tambang-batu': {
+    top: 90,
+    draw(p, level) {
+      p.flat(0.02, 0.02, 0.98, 0.98, 0xb8ab94);
+      // Terraced grey cliff with cut blocks stacked in front.
+      const h = 40 + level * 6;
+      p.box(0.08, 0.05, 0.75, 0.62, h, 0x9a958c);
+      p.box(0.08, 0.05, 0.5, 0.4, h + 16, 0x85807a);
+      for (const [u, v] of [
+        [0.62, 0.72],
+        [0.78, 0.72],
+        [0.7, 0.86],
+      ] as const) {
+        p.box(u - 0.07, v - 0.06, u + 0.07, v + 0.06, 10, C.stone);
+      }
+      p.box(0.7 - 0.07, 0.72 - 0.06, 0.7 + 0.07, 0.72 + 0.06, 9, C.stoneDark, 10);
+      // Wooden pulley frame over the cliff edge.
+      const a = p.fp(0.2, 0.68);
+      const b = p.fp(0.42, 0.68);
+      p.line(a, { x: a.x, y: a.y - 34 }, C.wood, 3);
+      p.line(b, { x: b.x, y: b.y - 34 }, C.wood, 3);
+      p.line({ x: a.x - 3, y: a.y - 34 }, { x: b.x + 3, y: b.y - 34 }, C.wood, 3);
+      p.line(
+        { x: (a.x + b.x) / 2, y: a.y - 34 },
+        { x: (a.x + b.x) / 2, y: a.y - 14 },
+        0x3a2a1c,
+        1.4,
+      );
+      p.box(0.27, 0.64, 0.35, 0.72, 7, C.stone, 6);
+    },
+  },
+  'tukang-kayu': {
+    top: 90,
+    draw(p, level) {
+      p.flat(0.02, 0.02, 0.98, 0.98, 0xc9a97a);
+      // Log cabin with a stack of logs and a sawhorse.
+      const h = 30 + level * 4;
+      const wall = p.box(0.15, 0.12, 0.62, 0.58, h, C.wood);
+      for (let i = 1; i < 4; i++) wall.left(0, 1, (h * i) / 4 - 1, (h * i) / 4 + 1, 0x7a4a26);
+      wall.left(0.4, 0.62, 0, h * 0.7, 0x4a2e1a);
+      p.pyramid(0.1, 0.08, 0.67, 0.63, h, 22, C.roofBrown);
+      for (const [v, z] of [
+        [0.72, 5],
+        [0.84, 5],
+        [0.78, 14],
+      ] as const) {
+        p.line(p.fp(0.6, v, z), p.fp(0.95, v, z), 0x8a5a32, 9);
+        p.ellipse(p.fp(0.95, v, z), 4, 4, 0xe2c08a, 0x7a4a26);
+      }
+      // Sawhorse with a big saw, sawdust on the ground.
+      const s = p.fp(0.8, 0.3);
+      p.line({ x: s.x - 10, y: s.y }, { x: s.x - 4, y: s.y - 12 }, 0x7a4a26, 2);
+      p.line({ x: s.x + 10, y: s.y }, { x: s.x + 4, y: s.y - 12 }, 0x7a4a26, 2);
+      p.line({ x: s.x - 12, y: s.y - 12 }, { x: s.x + 12, y: s.y - 12 }, 0x8a5a32, 4);
+      p.poly(
+        [
+          { x: s.x - 2, y: s.y - 14 },
+          { x: s.x + 16, y: s.y - 24 },
+          { x: s.x + 18, y: s.y - 20 },
+          { x: s.x + 1, y: s.y - 12 },
+        ],
+        0xc8ccd4,
+        0x6a6e78,
+      );
+      p.ellipse(p.fp(0.75, 0.42), 8, 3, 0xf0d9a6, null, 0.9);
+    },
+  },
+  mansion: {
+    top: 130,
+    draw(p, level) {
+      p.flat(0.02, 0.02, 0.98, 0.98, 0x9ccf6a);
+      // Two-storey manor with a blue roof, a balcony and a small flower bed by the door.
+      const h = 46 + level * 5;
+      const wall = p.box(0.14, 0.14, 0.78, 0.74, h, 0xf1e6cf);
+      wall.left(0.05, 0.95, h * 0.48, h * 0.53, 0xa86b3c);
+      for (const t of [0.12, 0.42, 0.72]) {
+        wall.left(t, t + 0.14, h * 0.62, h * 0.86, 0x5a7fb5);
+        wall.left(t, t + 0.14, h * 0.14, h * 0.38, 0x5a7fb5);
+      }
+      wall.right(0.15, 0.3, h * 0.62, h * 0.86, 0x5a7fb5);
+      wall.right(0.4, 0.6, 0, h * 0.4, 0x6b3f22);
+      wall.right(0.7, 0.85, h * 0.62, h * 0.86, 0x5a7fb5);
+      // Balcony rail on the right face.
+      wall.right(0.3, 0.7, h * 0.5, h * 0.56, C.wood);
+      const apex = p.pyramid(0.1, 0.1, 0.82, 0.78, h, 34, C.roofBlue);
+      if (level >= 5) {
+        p.box(0.66, 0.08, 0.84, 0.26, h + 16, C.stone);
+        p.pyramid(0.64, 0.06, 0.86, 0.28, h + 16, 22, C.roofBlue);
+      }
+      if (level >= 3) flag(p, apex, 22, 0x8a6cff);
+      for (const [u, c] of [
+        [0.88, 0xff7aa8],
+        [0.92, 0xffe066],
+        [0.96, 0xffffff],
+      ] as const) {
+        p.ellipse(p.fp(u, 0.88), 2.4, 2, c);
+      }
     },
   },
   penggilingan: {
@@ -866,7 +965,7 @@ const DESIGNS: Record<string, Design> = {
       p.ellipse({ x: c.x - 15, y: c.y - 21.5 }, 0.9, 0.9, 0x111111);
     },
   },
-  'barak-berkuda': {
+  'kandang-kuda': {
     top: 80,
     draw(p, level) {
       p.flat(0.02, 0.02, 0.98, 0.98, 0xc9b98f);
@@ -896,7 +995,7 @@ const DESIGNS: Record<string, Design> = {
       flag(p, p.fp(0.12, 0.12, h + 14), 26, 0x3f6fb8);
     },
   },
-  barak: {
+  guild: {
     top: 90,
     draw(p, level) {
       p.flat(0.02, 0.02, 0.98, 0.98, 0xc2b38e);
@@ -915,7 +1014,7 @@ const DESIGNS: Record<string, Design> = {
       flag(p, p.fp(0.2, 0.2, h), 30, 0xc0392b);
     },
   },
-  petarung: {
+  barak: {
     top: 80,
     draw(p, level) {
       p.flat(0.02, 0.02, 0.98, 0.98, 0xc9b98f);
@@ -1101,6 +1200,35 @@ const DESIGNS: Record<string, Design> = {
         }
       }
       p.ellipse({ x: top.x, y: top.y - 8 }, 3, 6, 0xbfe6ff, null, 0.9);
+    },
+  },
+  'monumen-keajaiban': {
+    top: 150,
+    draw(p) {
+      p.flat(0.06, 0.06, 0.94, 0.94, 0xd9ccae, 0, C.stoneDark);
+      p.box(0.24, 0.24, 0.76, 0.76, 10, C.stoneDark);
+      // White obelisk banded with the six base elements, a glowing crystal on top.
+      const h = 96;
+      const pillar = p.box(0.36, 0.36, 0.64, 0.64, h, 0xf2eee4, 10);
+      const bands = [0xff6b35, 0x3fa7ff, 0xa8743f, 0x7fe0b0, 0xffe066, 0x7b4bb3];
+      bands.forEach((color, i) => {
+        const z = h * (0.12 + i * 0.13);
+        pillar.left(0.1, 0.9, z, z + 5, color);
+        pillar.right(0.1, 0.9, z, z + 5, darken(color, 0.15));
+      });
+      const apex = p.pyramid(0.34, 0.34, 0.66, 0.66, h + 10, 14, 0xf2eee4);
+      const gem = { x: apex.x, y: apex.y - 12 };
+      p.ellipse(gem, 12, 12, 0xd9c4ff, null, 0.35);
+      p.poly(
+        [
+          { x: gem.x, y: gem.y - 11 },
+          { x: gem.x + 6, y: gem.y },
+          { x: gem.x, y: gem.y + 8 },
+          { x: gem.x - 6, y: gem.y },
+        ],
+        0xd6b8ff,
+        0x6a3fb0,
+      );
     },
   },
   patung: {
@@ -1375,6 +1503,12 @@ const DESIGNS: Record<string, Design> = {
     },
   },
 };
+
+// Legacy/compatibility aliases for procedural fallbacks
+if (DESIGNS.gudang) DESIGNS.kandang = DESIGNS.gudang;
+if (DESIGNS.altar) DESIGNS['soul-mixer'] = DESIGNS.altar;
+if (DESIGNS['kandang-kuda']) DESIGNS['barak-berkuda'] = DESIGNS['kandang-kuda'];
+if (DESIGNS.barak) DESIGNS.petarung = DESIGNS.barak;
 
 function sizeOfType(type: string): number {
   return (gameData.buildingById.get(type) ?? gameData.obstacleById.get(type))?.size ?? 1;

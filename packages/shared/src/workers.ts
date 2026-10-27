@@ -1,6 +1,6 @@
 import { soldierPower } from './barracks';
 import { deepClone } from './clone';
-import { allBuildings } from './village';
+import { allBuildings, townHallLevel } from './village';
 import { gameData, type GameData } from './data';
 import { formTierOf, type MonsterKind } from './monster';
 import type { ActionError, ActionResult, PlayerState } from './state';
@@ -36,9 +36,28 @@ export function populationCap(state: PlayerState, data: GameData = gameData): nu
   let total = 0;
   for (const b of allBuildings(state)) {
     if (b.level < 1) continue;
-    total += data.buildingById.get(b.type)?.levels[b.level - 1]?.population ?? 0;
+    const def = data.buildingById.get(b.type);
+    if (def?.category === data.rules.population.decorationCategory) continue;
+    total += def?.levels[b.level - 1]?.population ?? 0;
   }
-  return total;
+  return total + decorationPopulation(state, data).counted;
+}
+
+/**
+ * Population from decorations on every island: what they give (`raw`), the most the Balai
+ * Utama level allows (`cap`), and what counts (`counted`, the smaller of the two).
+ */
+export function decorationPopulation(state: PlayerState, data: GameData = gameData) {
+  const { decorationCategory, decorationCapByTownHall: table } = data.rules.population;
+  let raw = 0;
+  for (const b of allBuildings(state)) {
+    if (b.level < 1) continue;
+    const def = data.buildingById.get(b.type);
+    if (def?.category !== decorationCategory) continue;
+    raw += def.levels[b.level - 1]?.population ?? 0;
+  }
+  const cap = table[Math.min(Math.max(1, townHallLevel(state, data)), table.length) - 1]!;
+  return { raw, cap, counted: Math.min(raw, cap) };
 }
 
 /** Slots used by workers, soldiers (also those in training) and monsters. */
@@ -115,6 +134,12 @@ export function settleTraining(state: PlayerState, now: number): PlayerState {
   return next;
 }
 
+/** Seconds to train one worker: a higher Balai Utama trains faster. */
+export function workerTrainSeconds(state: PlayerState, data: GameData = gameData): number {
+  const table = data.rules.workers.trainSecondsByTownHall;
+  return table[Math.min(Math.max(1, townHallLevel(state, data)), table.length) - 1]!;
+}
+
 /** Queue a new worker at the Balai Utama: costs food and a free population slot. */
 export function trainWorker(
   state: PlayerState,
@@ -122,14 +147,14 @@ export function trainWorker(
   data: GameData = gameData,
 ): ActionResult<{ endsAt: number }> {
   const s = settleTraining(state, now);
-  const { trainFood, trainSeconds, trainQueueMax } = data.rules.workers;
+  const { trainFood, trainQueueMax } = data.rules.workers;
   if (s.workerTraining.length >= trainQueueMax) return fail('trainingQueueFull');
   if (populationFree(s, data) < data.rules.population.workerSlots) return fail('populationFull');
   if (s.resources.food < trainFood) return fail('notEnoughFood');
   const next = s === state ? deepClone(s) : s;
   next.resources.food -= trainFood;
   const last = next.workerTraining[next.workerTraining.length - 1];
-  const endsAt = Math.max(now, last?.endsAt ?? now) + trainSeconds;
+  const endsAt = Math.max(now, last?.endsAt ?? now) + workerTrainSeconds(s, data);
   next.workerTraining.push({ endsAt });
   return { ok: true, state: next, endsAt };
 }

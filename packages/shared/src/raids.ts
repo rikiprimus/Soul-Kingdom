@@ -84,10 +84,20 @@ export function wallBreakSeconds(wall: Building, dps: number, data: GameData = g
   return hp / dps;
 }
 
+/** A watchtower's stats at its level. */
+export function towerStats(b: Building, data: GameData = gameData) {
+  const { levels } = data.rules.raids.tower;
+  return levels[Math.min(Math.max(1, b.level), levels.length) - 1]!;
+}
+
+/** Tiles a watchtower reaches to join a defence: the base reach, or its range if longer. */
+export function towerReach(b: Building, data: GameData = gameData): number {
+  return Math.max(data.rules.raids.tower.reachTiles, towerStats(b, data).range);
+}
+
 /** A watchtower as a fighter that never moves, with the stats of its level. */
 export function towerFighter(b: Building, data: GameData = gameData): Fighter {
-  const { levels } = data.rules.raids.tower;
-  const stats = levels[Math.min(Math.max(1, b.level), levels.length) - 1]!;
+  const stats = towerStats(b, data);
   return { id: `tower:${b.id}`, stats: { ...stats }, element: null, skill: false, fixed: true };
 }
 
@@ -229,7 +239,7 @@ export function raidDefenders(
   now: number,
   data: GameData = gameData,
 ): { unitIds: string[]; towerIds: string[] } {
-  const { defendTiles, tower } = data.rules.raids;
+  const { defendTiles } = data.rules.raids;
   const p = raidPoint(e);
   const cx = p.x + 0.5;
   const cy = p.y + 0.5;
@@ -248,7 +258,7 @@ export function raidDefenders(
     .filter((b) => {
       if (!isTower(b, data)) return false;
       const half = sizeOf(b.type, data) / 2;
-      return Math.hypot(b.x + half - cx, b.y + half - cy) <= tower.reachTiles;
+      return Math.hypot(b.x + half - cx, b.y + half - cy) <= towerReach(b, data);
     })
     .map((b) => b.id);
   return { unitIds, towerIds };

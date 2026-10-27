@@ -30,6 +30,7 @@ export function prizeLabel(p: Prize): string {
   const parts =
     VILLAGE_RESOURCES.some((k) => p[k] > 0) || p.soulCrystal || p.gems ? [rewardLabel(p)] : [];
   if (p.soulEggs) parts.push(t('prize.soulEggs', { n: p.soulEggs }));
+  for (const d of p.decorations) parts.push(gameData.buildingById.get(d)?.name ?? d);
   if (p.wonder) parts.push(gameData.buildingById.get(p.wonder)?.name ?? p.wonder);
   return parts.length > 0 ? parts.join(' + ') : t('cost.free');
 }

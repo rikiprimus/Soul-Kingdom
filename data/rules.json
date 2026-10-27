@@ -26,7 +26,7 @@
     "stages": [
       { "id": "bayi", "name": "Bayi", "statMultiplier": 0.4, "foodToNextPerPowerPoint": 50 },
       { "id": "remaja", "name": "Remaja", "statMultiplier": 0.7, "foodToNextPerPowerPoint": 150 },
-      { "id": "dewasa", "name": "Dewasa", "statMultiplier": 1.0 }
+      { "id": "dewasa", "name": "Dewasa", "statMultiplier": 1 }
     ]
   },
   "stats": {
@@ -71,12 +71,12 @@
     "maxUnits": 30,
     "powerPoints": { "1": 1, "2": 2, "3": 4, "4": 8, "5": 15 },
     "powerCapByCombinedBarracksLevel": [
-      10, 20, 28, 36, 45, 54, 64, 75, 86, 98, 110, 124, 138, 154, 170, 188
+      10, 20, 28, 36, 45, 54, 64, 75, 86, 98, 110, 124, 138, 154, 170, 188, 206, 226, 246
     ],
     "grid": { "columns": 6, "rows": 5 },
     "advantageStep": 0.25,
     "advantageMin": 0.5,
-    "advantageMax": 2.0,
+    "advantageMax": 2,
     "maxTicks": 3000,
     "ticksPerSecond": 20,
     "arenaTeamSize": 3,
@@ -273,7 +273,7 @@
     ]
   },
   "raids": {
-    "_note": "Tugas 1.7: serangan ke desa. Hanya berjalan saat bermain: setiap intervalSeconds detik bermain (mulai Balai minTownHall) satu kelompok dari daftar musuh liar level Balai (wilds.json) muncul tepat di luar desa. Setelah warnSeconds peringatan mereka berjalan walkTilesPerSecond petak/detik menuju Balai Utama lewat petak bebas. Bangunan dan alam liar tidak bisa dilewati; Tembok menghalangi jalan, jadi musuh memilih rute tercepat: memutar, atau menjebol satu ruas (lama = HP ruas / kerusakan per detik penyerang; ruas itu hancur). Pertarungan mulai saat monster/prajurit kita ada dalam defendTiles petak, Menara Jaga dalam reachTiles, atau musuh tiba di Balai; hanya unit dalam defendTiles dan menara yang mencapai yang ikut bertahan (maks. battle.maxUnits). Menara bertarung di tempat dengan statistik per level. Kalah = musuh mencuri stealRatio emas/makanan/kayu/batu lalu pergi; menang = hadiah kelompok itu.",
+    "_note": "Tugas 1.7: serangan ke desa. Hanya berjalan saat bermain: setiap intervalSeconds detik bermain (mulai Balai minTownHall) satu kelompok dari daftar musuh liar level Balai (wilds.json) muncul tepat di luar desa. Setelah warnSeconds peringatan mereka berjalan walkTilesPerSecond petak/detik menuju Balai Utama lewat petak bebas. Bangunan dan alam liar tidak bisa dilewati; Tembok menghalangi jalan, jadi musuh memilih rute tercepat: memutar, atau menjebol satu ruas (lama = HP ruas / kerusakan per detik penyerang; ruas itu hancur). Pertarungan mulai saat monster/prajurit kita ada dalam defendTiles petak, Menara Jaga dalam reachTiles (atau range levelnya bila lebih jauh), atau musuh tiba di Balai; hanya unit dalam defendTiles dan menara yang mencapai yang ikut bertahan (maks. battle.maxUnits). Menara bertarung di tempat dengan statistik per level. Kalah = musuh mencuri stealRatio emas/makanan/kayu/batu lalu pergi; menang = hadiah kelompok itu.",
     "minTownHall": 3,
     "intervalSeconds": 1200,
     "warnSeconds": 60,
@@ -286,13 +286,15 @@
       "levels": [
         { "hp": 600, "atk": 20, "def": 15, "spd": 8, "range": 6 },
         { "hp": 1000, "atk": 32, "def": 20, "spd": 8, "range": 6 },
-        { "hp": 1600, "atk": 48, "def": 26, "spd": 8, "range": 6 }
+        { "hp": 1600, "atk": 48, "def": 26, "spd": 8, "range": 6 },
+        { "hp": 2400, "atk": 68, "def": 33, "spd": 8, "range": 7 },
+        { "hp": 3400, "atk": 90, "def": 40, "spd": 8, "range": 7 }
       ]
     },
-    "wall": { "building": "tembok", "hpByLevel": [400, 1000, 2000] }
+    "wall": { "building": "tembok", "hpByLevel": [400, 1000, 2000, 3200, 4600, 6200, 8000, 10000] }
   },
   "barracks": {
-    "_note": "Barak Prajurit (id `petarung`), Barak Panahan (`lapangan-panah`), dan Barak Berkuda (`barak-berkuda`) melatih prajurit manusia, bukan monster (Tugas 1A.13). Prajurit tidak punya elemen, tidak tumbuh, dan tidak bisa jadi induk. Level barak membuka pangkat: pangkat ke-n terbuka di level n. Statistik hp/atk/def dikali statMultiplier pangkat (spd dan range tidak); poin kekuatan = powerPoints + powerBonus; biaya dan waktu dikali costMultiplier dan timeMultiplier. Slot populasi = poin kekuatan.",
+    "_note": "Barak (id `barak`), Lapangan Pemanah (`lapangan-panah`), dan Kandang Kuda (`kandang-kuda`) melatih prajurit manusia, bukan monster (Tugas 1A.13). Prajurit tidak punya elemen, tidak tumbuh, dan tidak bisa jadi induk. Level barak membuka pangkat: pangkat ke-n terbuka di level n; level di atas jumlah pangkat hanya menaikkan batas kekuatan Serbu. Antrean latihan = queueMax + jumlah queueBonus level barak (buildings.json). Statistik hp/atk/def dikali statMultiplier pangkat (spd dan range tidak); poin kekuatan = powerPoints + powerBonus; biaya dan waktu dikali costMultiplier dan timeMultiplier. Slot populasi = poin kekuatan.",
     "queueMax": 3,
     "soldiers": [
       {
@@ -352,13 +354,15 @@
     "walkTilesPerSecond": 1.5
   },
   "population": {
-    "_note": "Populasi dari Balai Utama dan Rumah (buildings.json). Pekerja memakai workerSlots; monster memakai battle.powerPoints sesuai tingkat wujud (bayi dan dewasa sama); prajurit memakai poin kekuatannya.",
-    "workerSlots": 1
+    "_note": "Populasi dari Balai Utama dan Rumah (buildings.json). Pekerja memakai workerSlots; monster memakai battle.powerPoints sesuai tingkat wujud (bayi dan dewasa sama); prajurit memakai poin kekuatannya. Populasi dari dekorasi dibatasi per level Balai: decorationCapByTownHall[level Balai - 1] (keputusan pemilik 2026-10-26, Tugas 1C.4).",
+    "workerSlots": 1,
+    "decorationCategory": "dekorasi",
+    "decorationCapByTownHall": [10, 20, 35, 50, 75, 100, 130, 160]
   },
   "workers": {
-    "_note": "Pekerja dilatih di Balai Utama. Pekerja juga membangun: waktu = waktu dasar / jumlah pekerja, maksimal constructionMaxBySize sesuai ukuran bangunan.",
+    "_note": "Pekerja dilatih di Balai Utama; lama latih satu pekerja = trainSecondsByTownHall[level Balai - 1]. Pekerja juga membangun: waktu = waktu dasar / jumlah pekerja, maksimal constructionMaxBySize sesuai ukuran bangunan.",
     "trainFood": 50,
-    "trainSeconds": 60,
+    "trainSecondsByTownHall": [60, 55, 50, 45, 40, 35, 30, 25],
     "startingWorkers": 2,
     "trainQueueMax": 3,
     "constructionMaxBySize": { "1": 1, "2": 2, "3": 4, "4": 6 }
@@ -443,6 +447,64 @@
       { "food": 800, "wood": 600 },
       { "soulCrystal": 2 },
       { "gold": 2000, "gems": 5 }
+    ]
+  },
+  "marketDraw": {
+    "_note": "Undian Harian di Pasar (Tugas 1C.5): gratis 1x sehari per akun (hari sama dengan rules.daily), butuh Pasar yang sudah jadi. Tabel dipilih dari level Pasar tertinggi: tabel terakhir dengan minLevel <= level itu. Satu hadiah diundi menurut weight (peluang = weight / jumlah weight tabel) dengan RNG berbenih di server. Dekorasi masuk Gudang. Telur Jiwa hadiah langka (keputusan pemilik 2026-10-27). Tidak ada undian tambahan dengan permata dan undian tidak memberi monster langsung (aturan 7).",
+    "building": "pasar",
+    "tables": [
+      {
+        "minLevel": 1,
+        "prizes": [
+          { "weight": 300, "prize": { "gold": 400 } },
+          { "weight": 250, "prize": { "food": 300 } },
+          { "weight": 180, "prize": { "wood": 300 } },
+          { "weight": 150, "prize": { "stone": 150 } },
+          { "weight": 80, "prize": { "soulCrystal": 1 } },
+          { "weight": 20, "prize": { "decorations": ["bunga"] } },
+          { "weight": 15, "prize": { "decorations": ["pohon-hias"] } },
+          { "weight": 5, "prize": { "soulEggs": 1 } }
+        ]
+      },
+      {
+        "minLevel": 3,
+        "prizes": [
+          { "weight": 280, "prize": { "gold": 1000 } },
+          { "weight": 230, "prize": { "food": 800 } },
+          { "weight": 180, "prize": { "wood": 700 } },
+          { "weight": 160, "prize": { "stone": 400 } },
+          { "weight": 90, "prize": { "soulCrystal": 2 } },
+          { "weight": 30, "prize": { "decorations": ["lampu"] } },
+          { "weight": 20, "prize": { "decorations": ["air-mancur"] } },
+          { "weight": 10, "prize": { "soulEggs": 1 } }
+        ]
+      },
+      {
+        "minLevel": 5,
+        "prizes": [
+          { "weight": 260, "prize": { "gold": 2500 } },
+          { "weight": 220, "prize": { "food": 2000 } },
+          { "weight": 180, "prize": { "wood": 1600 } },
+          { "weight": 170, "prize": { "stone": 1000 } },
+          { "weight": 100, "prize": { "soulCrystal": 3 } },
+          { "weight": 30, "prize": { "decorations": ["patung"] } },
+          { "weight": 25, "prize": { "decorations": ["air-mancur"] } },
+          { "weight": 15, "prize": { "soulEggs": 1 } }
+        ]
+      },
+      {
+        "minLevel": 6,
+        "prizes": [
+          { "weight": 250, "prize": { "gold": 4000 } },
+          { "weight": 210, "prize": { "food": 3000 } },
+          { "weight": 180, "prize": { "wood": 2500 } },
+          { "weight": 180, "prize": { "stone": 1600 } },
+          { "weight": 110, "prize": { "soulCrystal": 5 } },
+          { "weight": 35, "prize": { "decorations": ["patung"] } },
+          { "weight": 15, "prize": { "decorations": ["monumen-keajaiban"] } },
+          { "weight": 20, "prize": { "soulEggs": 1 } }
+        ]
+      }
     ]
   },
   "social": {

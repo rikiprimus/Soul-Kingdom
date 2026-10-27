@@ -17,7 +17,7 @@
     {
       "id": "telur-pertama",
       "title": "Monster pertamamu",
-      "hint": "Ketuk telur di Kandang saat sudah siap menetas.",
+      "hint": "Ketuk telur di Sarang Telur Jiwa saat sudah siap menetas.",
       "goals": [{ "kind": "monsters", "count": 1 }],
       "reward": { "food": 200 }
     },
@@ -78,7 +78,7 @@
     {
       "id": "barak-petarung",
       "title": "Latih prajurit",
-      "goals": [{ "kind": "building", "building": "petarung", "level": 1, "count": 1 }],
+      "goals": [{ "kind": "building", "building": "barak", "level": 1, "count": 1 }],
       "reward": { "gold": 600, "decorations": ["lampu"] }
     },
     {
@@ -122,10 +122,10 @@
       }
     },
     {
-      "id": "soul-mixer",
-      "title": "Soul Mixer",
-      "hint": "Soul Mixer mencampur dua monster dewasa menjadi bayi monster baru.",
-      "goals": [{ "kind": "building", "building": "soul-mixer", "level": 1, "count": 1 }],
+      "id": "altar",
+      "title": "Altar",
+      "hint": "Altar mencampur dua monster dewasa menjadi bayi monster baru.",
+      "goals": [{ "kind": "building", "building": "altar", "level": 1, "count": 1 }],
       "reward": { "soulCrystal": 5 }
     },
     {

@@ -1009,9 +1009,9 @@ Ide pemilik (2026-10-21), angka disetujui pemilik.
 
 ## Fase 1C — Rombak objek (dari docs/OBJEK.md)
 
-Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) (2026-10-23). Angka di sana (baris bertanda \*) masih kira-kira: pindahkan ke `data/*.json`, uji dengan `pnpm sim:economy`, lalu sesuaikan. Gambar objek baru dibuat dengan SpriteCook di tugas objek itu sendiri (skill `soul-monster-art-style`); yang belum ada memakai gambar buatan kode. Setiap tugas yang mengubah `packages/shared` atau `data/` perlu `pnpm build:server` + deploy ulang (lihat `docs/SERVER.md`). Kerjakan 1C.1 lebih dulu; sisanya boleh berurutan sesuai nomor.
+Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) (2026-10-23). Angka di sana (baris bertanda \*) masih kira-kira: pindahkan ke `data/*.json`, uji dengan `pnpm sim:economy`, lalu sesuaikan. Gambar objek baru memakai gambar buatan kode (`art/buildingArt.ts`); **keputusan pemilik 2026-10-27:** gambar SpriteCook ditunda sampai pemilik meminta (gambar yang sudah terpasang tetap dipakai). Setiap tugas yang mengubah `packages/shared` atau `data/` perlu `pnpm build:server` + deploy ulang (lihat `docs/SERVER.md`). Kerjakan 1C.1 lebih dulu; sisanya boleh berurutan sesuai nomor.
 
-### - [ ] Tugas 1C.1 — Ganti nama, id & migrasi simpanan
+### - [x] Tugas 1C.1 — Ganti nama, id & migrasi simpanan
 
 - Soul Mixer → **Altar** (`altar`): hasil campuran langsung menjadi monster **bayi** saat waktu campur selesai (tidak lewat telur / Sarang Telur), butuh slot populasi kosong.
 - Kandang Monster dihapus; gambarnya dipakai **Gudang** (`gudang`, 3×3, 1 level, ada di desa awal) yang membuka panel Gudang.
@@ -1021,31 +1021,70 @@ Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) 
 
 **Kriteria selesai:** simpanan lama termuat tanpa kehilangan bangunan/monster; Altar memberi bayi langsung; Sarang Telur bisa dibangun di Balai 1 dan memegang koleksi monster; Gudang menggantikan Kandang.
 
-### - [ ] Tugas 1C.2 — Level baru bangunan lama
+> **Ringkasan (selesai 2026-10-23):**
+>
+> - **Aset & Atlas:** Folder `apps/game/art/buildings/` dimutakhirkan (`kandang` → `gudang`, `soul-mixer` → `altar`, `petarung` → `barak`, `barak` → `guild`); `pnpm atlas` mengemas frame baru `gudang/lv1`, `altar/lv1`, `barak/lv1`, `guild/lv1`; daftar aset `PROVENANCE.md` dan `spritecook-assets.json` disesuaikan. Fallback prosedural di `buildingArt.ts` diperbarui beserta alias kompatibilitas.
+> - **Data & Teks:** `buildings.json` menghapus `kandang`, menambah `gudang` (feature `storage`, 3×3, 1 level, desa awal), mengubah `soul-mixer` ke `altar` (feature `altar`), `petarung` ke `barak` (nama "Barak", melatih `prajurit`), `barak-berkuda` ke `kandang-kuda` (nama "Kandang Kuda"), nama `lapangan-panah` menjadi "Lapangan Pemanah", dan `sarang-telur` bisa dibangun di Balai 1 (`requiresTownHall: 1`, maks 1). Misi di `quests.json` disesuaikan. Teks UI di `text.json` diperbarui ke istilah Altar, Gudang, dan Sarang Telur Jiwa.
+> - **Logika & Simpanan:** `packages/shared/src/state.ts` dan `barracks.ts` mendukung fitur `altar` dan `storage`; `hatchEgg` mewajibkan Sarang Telur Jiwa (`noNest`); simpanan dinaikkan ke **skema v26** dengan migrasi v25 yang memetakan `barak` → `guild`, `petarung` → `barak`, `barak-berkuda` → `kandang-kuda`, `soul-mixer` → `altar`, serta `kandang` pertama menjadi `gudang` (kelebihan kandang dibongkar dan dikembalikan 300 emas & 200 kayu).
+> - **UI & Scene:** `infoCard.ts` menangani fitur `storage` (membuka Gudang & status item), `altar` (buka Altar), dan `nest` (membuka panel Koleksi Monster serta penetasan telur siap); `VillageScene.ts` mengarahkan penetasan telur cepat di Sarang Telur dan membuka panel di Altar.
+> - **Pengujian & Validasi:** 356 tes di vitest lolos 100% (`pnpm test`); linting ESLint dan Prettier lolos 0 error (`pnpm lint`); bundel server `pnpm build:server` berhasil diperbarui.
+
+### - [x] Tugas 1C.2 — Level baru bangunan lama
 
 - Balai Utama sampai Lv 8 (biaya, waktu, populasi, waktu latih pekerja makin cepat per level).
 - Rumah, Pasar, Ladang sampai Lv 6; Tambang Emas & Penggilingan sampai Lv 8 dengan slot pekerja 1/1/2/2/3/4/5/6; Peternakan Lv 5; Barak, Lapangan Pemanah, Kandang Kuda Lv 6; Menara Jaga Lv 5; Tembok Lv 8 (gambar ruas baru lewat `pnpm art:wall`).
 - Batas jumlah per Balai sampai Lv 8 untuk semua bangunan. Kandang Kuda terbuka di Balai 3.
-- **Keputusan pemilik dibutuhkan:** tombol "tambah slot populasi" di Balai (harga, batas); batas harga percepat untuk Balai Lv 7–8 (sekarang 1 permata/menit = sampai 21.600 permata).
+- **Keputusan pemilik (2026-10-26):** tidak ada tombol "tambah slot populasi"; populasi hanya bertambah dari level bangunan. Harga percepat Balai Lv 7–8 tidak dibatasi (tetap 1 permata/menit).
 
 **Kriteria selesai:** semua level baru ada di `data/` dan lolos validasi; `pnpm sim:economy` menunjukkan kemajuan Balai yang masuk akal.
 
-### - [ ] Tugas 1C.3 — Bangunan produksi baru
+> **Ringkasan (selesai 2026-10-26):**
+>
+> - **Data:** semua angka tabel `docs/OBJEK.md` masuk `buildings.json`: Balai Utama Lv 1–8 (biaya, waktu sampai 15 hari, populasi 8/10/13/17/22/28/35/43); Rumah, Pasar, Ladang Lv 6; Tambang Emas & Penggilingan Lv 8 dengan slot pekerja 1/1/2/2/3/4/5/6; Peternakan Lv 5 (9 & 12 hewan); Barak, Lapangan Pemanah, Kandang Kuda Lv 6 (Lv 6 `queueBonus` +1 antrean); Menara Jaga Lv 5; Tembok Lv 8. Semua `maxCount` berisi 8 angka (bangunan lain memakai batas terakhirnya). Kandang Kuda kini terbuka di Balai 3. `rules.json`: `workers.trainSecondsByTownHall` 60 → 25 dtk (menggantikan `trainSeconds`), menara Lv 4–5 (jangkauan 7), HP tembok Lv 4–8, tabel batas kekuatan Serbu sampai gabungan level 18. `wilds.json`: jumlah kelompok musuh untuk Balai 7–8 (Balai 6+ masih memakai daftar musuh Balai 5; tambahan musuh di 1C.9).
+> - **Shared:** `workerTrainSeconds` (lama latih pekerja per level Balai), `barracksQueueMax` (antrean + `queueBonus`), `towerStats` / `towerReach` (menara ikut bertahan sejauh jangkauan levelnya). Validasi: panjang `trainSecondsByTownHall` = jumlah level Balai, `queueBonus` hanya di barak. **Simpanan v27:** pekerja yang melebihi slot baru Tambang/Penggilingan Lv 1–2 dikeluarkan (jadi menganggur).
+> - **Client:** tombol Latih pekerja menampilkan lama latih; panel barak memakai batas antrean per level; kartu menara memakai jangkauan per level.
+> - **Gambar:** tembok Lv 4–8 dari SpriteCook (asset `f2bf7add-…`, 14 kredit), dipotong dengan `pnpm art:wall` + `art/tembok-pieces-lv4-8.json`, atlas dikemas ulang; dicatat di `spritecook-assets.json` dan `PROVENANCE.md` (menunggu persetujuan pemilik).
+> - **Simulasi:** Balai Lv 4 di hari 3, 18:00 (sebelumnya 21:30), lalu tertahan di Lv 4 sampai hari 14 — **sama seperti sebelum tugas ini**. Penyebabnya kayu & batu (alam liar habis; saldo akhir 17.694 kayu / 9.195 batu, Balai 5 butuh 20.000 / 12.000), sedangkan emas menumpuk. Diselesaikan oleh Tambang Batu & Tukang Kayu di **Tugas 1C.3**.
+> - **Pengujian:** 362 tes lolos, `pnpm lint` dan typecheck lolos, `pnpm build:server` diperbarui (perlu deploy ulang edge function).
+
+### - [x] Tugas 1C.3 — Bangunan produksi baru
 
 - **Tambang Batu** (`tambang-batu`) dan **Tukang Kayu** (`tukang-kayu`): pekerja di dalam, jalan saat game ditutup, 8 level (seperti Tambang Emas).
 - **Mansion** (`mansion`, nama tampilan bahasa Indonesia mis. Rumah Bangsawan): populasi lebih banyak, terbuka Balai 4, 6 level.
 
 **Kriteria selesai:** kayu & batu bisa dihasilkan tanpa alam liar; simulasi ekonomi diuji ulang.
 
-### - [ ] Tugas 1C.4 — Dekorasi berpopulasi & Monumen Keajaiban
+> **Ringkasan (selesai 2026-10-26):**
+>
+> - **Data (`buildings.json`, angka dari `docs/OBJEK.md`):** **Tambang Batu** (`tambang-batu`, staffed → batu, Balai 2, maks 0/1/1/2/2/3/3/4, 60 → 260 batu/pekerja/jam) dan **Tukang Kayu** (`tukang-kayu`, staffed → kayu, Balai 1, maks 1/1/2/2/3/3/3/4, 80 → 320 kayu/pekerja/jam), keduanya 8 level dengan slot pekerja 1/1/2/2/3/4/5/6. **Rumah Bangsawan** (`mansion`, feature `house`, Balai 4, maks 0/0/0/1/2/3/4/5, 6 level, populasi +30 → +100).
+> - **Client:** gelembung pungut kini juga untuk kayu & batu (ikon kayu/batu); gambar buatan kode untuk ketiga bangunan sebagai cadangan.
+> - **Gambar:** satu baris SpriteCook (asset `33a1cb0d-…`, 14 kredit) dipotong per sel lalu `pnpm art:iso` ukuran 2 → `tambang-batu/lv1`, `tukang-kayu/lv1`, `mansion/lv1`; atlas dikemas ulang; dicatat di `spritecook-assets.json` dan `PROVENANCE.md` (menunggu persetujuan pemilik).
+> - **Simulasi:** bot membangun Tukang Kayu, Tambang Batu, dan Rumah Bangsawan. **Balai Lv 5 di hari 7, 18:00** (sebelumnya tertahan di Lv 4 sampai hari 14); pendapatan batu naik dari ±7.000 menjadi ±25.000/hari dan kayu ±47.000/hari di hari 14, tidak lagi habis bersama alam liar. Balai Lv 6 (3 hari bangun) belum tercapai dalam 14 hari.
+> - **Tes:** `newBuildings.test.ts` (hasil kayu/batu saat game ditutup sampai tampungan, syarat Balai, slot pekerja 1/1/2/2/3/4/5/6 untuk keempat bangunan staffed, Rumah Bangsawan terbuka di Balai 4 dan menambah populasi).
+
+### - [x] Tugas 1C.4 — Dekorasi berpopulasi & Monumen Keajaiban
 
 - Pohon Hias / Taman Bunga / Lampu +2, Air Mancur +5, Patung Naga +10, **Monumen Keajaiban** (2×2, Balai 5, maks 2) +15 populasi.
-- **Keputusan pemilik dibutuhkan:** batas total populasi dari dekorasi (tanpa batas ±275).
+- **Keputusan pemilik (2026-10-26):** populasi dari dekorasi dibatasi total per level Balai Utama (bukan tanpa batas).
 
-### - [ ] Tugas 1C.5 — Undian Harian di Pasar
+> **Ringkasan (selesai 2026-10-26):**
+>
+> - **Data:** `population` di level Pohon Hias, Taman Bunga, Lampu Jalan (+2), Air Mancur (+5), Patung Naga (+10); bangunan baru **Monumen Keajaiban** (`monumen-keajaiban`, Dekorasi 2×2, Balai 5, maks 2, 10.000 emas + 1.500 batu, langsung jadi, bisa dijual/disimpan, +15). `rules.population.decorationCapByTownHall` = 10/20/35/50/75/100/130/160 untuk Balai 1–8 dan `decorationCategory` = `dekorasi` (divalidasi: panjang = level Balai, kategori ada).
+> - **Shared:** `decorationPopulation` (dibuat / batas / dihitung, semua pulau); `populationCap` menjumlahkan bangunan biasa ditambah populasi dekorasi yang dibatasi. Dekorasi di Gudang tidak dihitung. Desa awal (1 Pohon Hias + 1 Taman Bunga) kini mulai dengan +4 populasi.
+> - **Client:** kartu dekorasi menampilkan "Populasi +N" dan total dekorasi terhadap batasnya; gambar Monumen buatan kode (obelisk putih berpita warna enam unsur, kristal di puncak). Gambar SpriteCook belum dibuat (kredit tersisa 12, kurang dari 14 per gambar).
+> - **Tes:** `newBuildings.test.ts` (semua dekorasi berpopulasi, data Monumen, batas per level Balai, di bawah batas dihitung penuh) dan tes populasi awal di `workers.test.ts`.
+
+### - [x] Tugas 1C.5 — Undian Harian di Pasar
 
 - Gratis 1× sehari per akun, hasil acak dihitung server; level Pasar tertinggi memperbagus tabel hadiah. Tidak ada undian tambahan dengan permata; tidak memberi monster (aturan 7).
-- **Keputusan pemilik dibutuhkan:** Telur Jiwa sebagai hadiah langka atau tidak.
+- **Keputusan pemilik (2026-10-27):** Telur Jiwa boleh menjadi hadiah langka.
+
+> **Ringkasan (selesai 2026-10-27):**
+>
+> - **Data (`rules.marketDraw`):** empat tabel hadiah menurut level Pasar tertinggi (Lv 1, 3, 5, 6), bobot per tabel berjumlah 1.000: emas, makanan, kayu, batu, Kristal Jiwa, dekorasi ke Gudang (Taman Bunga/Pohon Hias → Lampu/Air Mancur → Patung/Air Mancur → Patung/Monumen Keajaiban), dan **Telur Jiwa** 0,5 % / 1 % / 1,5 % / 2 %. Tiap tabel lebih tinggi memberi lebih banyak sumber daya dan peluang telur lebih besar. Validasi: tabel mulai minLevel 1 dan naik, level ada di Pasar, dekorasi benar-benar dekorasi, tanpa Keajaiban. `prizeSchema` dipindah ke atas agar dipakai `rules.json`.
+> - **Shared (`market.ts`, baru):** `bestMarketLevel` (semua pulau), `marketTableIndex`, `marketDrawStatus` (tersedia, tabel, detik sampai undian berikutnya; hari sama dengan bonus harian, WIB), `rollMarketPrize`, `drawMarket` (1× sehari per akun, RNG berbenih dari `rngState`, hadiah lewat `payPrize`). Galat baru `noMarket`. Aksi server `drawMarket` (hasil diundi di server). **Simpanan v28** (`marketDraw.lastDay`; simpanan lama mulai dengan undian hari ini masih gratis).
+> - **Client:** kartu Pasar menampilkan "Undian Harian gratis hari ini!" atau hitung mundur, dan tombol **Undian Harian**; toast menyebut hadiahnya (dekorasi kini ikut tertulis di `prizeLabel`).
+> - **Tes:** `market.test.ts` (sekali sehari & buka lagi besok, butuh Pasar jadi, tabel dari Pasar tertinggi, tabel lebih tinggi lebih baik, Monte Carlo 100.000 undian per tabel dalam 4 simpangan baku, hadiah sumber daya/dekorasi/telur tanpa monster langsung, deterministik, aksi server, simpan & migrasi v27) dan tes validasi di `data.test.ts`.
 
 ### - [ ] Tugas 1C.6 — Pertahanan: Menara Sihir & Gerbang
 

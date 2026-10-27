@@ -19,6 +19,7 @@ import {
   teamPower,
   teamUnits,
   previewWinChance,
+  hasFeature,
   eggInNest,
   soulEggStatus,
   rarityOf,
@@ -44,8 +45,13 @@ import {
   maxConstructionWorkers,
   populationCap,
   populationUsed,
+  decorationPopulation,
+  marketDrawStatus,
   trainingRemaining,
   townHallLevel,
+  towerReach,
+  towerStats,
+  workerTrainSeconds,
   scaleAmount,
   nextPlotPrice,
   plotsPerSide,
@@ -56,7 +62,7 @@ import {
 import type { Selection } from '../events';
 import { encounterMembers, encounterTitle } from '../views/enemyText';
 import { rewardLabel } from '../views/TeamView';
-import { costLabel } from '../ui/cost';
+import { costLabel, prizeLabel } from '../ui/cost';
 import { formatDuration, formatNumber, t } from '../text';
 import { COLORS } from '../ui/theme';
 import type { PanelKind } from './UIScene';
@@ -480,7 +486,10 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
           return lines.join('\n');
         });
         buttons.push({
-          label: t('info.trainWorker', { food: formatNumber(gameData.rules.workers.trainFood) }),
+          label: t('info.trainWorker', {
+            food: formatNumber(gameData.rules.workers.trainFood),
+            time: formatDuration(workerTrainSeconds(state)),
+          }),
           color: 0x3c9a5f,
           onClick: () => {
             if (a.run('trainWorker', {})) a.toast(t('info.trainingStarted'), COLORS.good);
@@ -492,10 +501,8 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
         const { tower, wall } = gameData.rules.raids;
         const at = Math.max(1, b.level);
         if (b.type === tower.building) {
-          const stats = tower.levels[Math.min(at, tower.levels.length) - 1]!;
-          content.lines.push(
-            t('tower.info', { n: tower.reachTiles, hp: stats.hp, atk: stats.atk }),
-          );
+          const stats = towerStats(b);
+          content.lines.push(t('tower.info', { n: towerReach(b), hp: stats.hp, atk: stats.atk }));
         } else if (b.type === wall.building) {
           const hp = wall.hpByLevel[Math.min(at, wall.hpByLevel.length) - 1]!;
           content.lines.push(t('wall.info', { hp }));
@@ -505,6 +512,13 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
       case 'house':
         content.lines.push(t('info.housePopulation', { population: level?.population ?? 0 }));
         statuses.push(() => populationLine(state));
+        break;
+      case 'storage':
+        content.lines.push(t('info.gudangItems', { n: state.storage.length }));
+        if (state.eggs.length > 0 && !hasFeature(state, 'nest', gameData)) {
+          content.lines.push(t('info.eggWaitingInGudang'));
+        }
+        buttons.push({ label: t('info.openGudang'), onClick: () => a.openPanel('storage') });
         break;
       case 'stable':
         statuses.push(() => populationLine(state));
@@ -529,9 +543,29 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
         buttons.push({ label: t('info.openCollection'), onClick: () => a.openPanel('collection') });
         break;
       case 'mixer':
+      case 'altar':
         buttons.push({ label: t('info.openMixer'), onClick: () => a.openPanel('mixer') });
         break;
       case 'nest': {
+        buttons.push({ label: t('info.openCollection'), onClick: () => a.openPanel('collection') });
+        // Monster eggs (starting egg or other eggs) ready to hatch
+        for (const egg of state.eggs) {
+          const ready = egg.readyAt <= a.now();
+          statuses.push(() =>
+            egg.readyAt <= a.now()
+              ? t('egg.ready')
+              : t('egg.waiting', { time: formatDuration(egg.readyAt - a.now()) }),
+          );
+          buttons.push({
+            label: t('egg.hatch'),
+            color: 0x3c9a5f,
+            disabled: !ready,
+            onClick: () => {
+              const r = a.run('hatchEgg', { id: egg.id });
+              if (r) a.toast(t('egg.hatched', { name: monsterName(r.monster) }), COLORS.good);
+            },
+          });
+        }
         if (b.level < 1) break;
         const { steps } = gameData.rules.nest;
         content.lines.push(t('nest.count', { n: state.soulEggs.length }));
@@ -688,6 +722,32 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
       }
       default:
         break;
+    }
+    if (b.type === gameData.rules.marketDraw.building) {
+      // Undian Harian: one free draw a day per account, rolled on the server.
+      statuses.push(() => {
+        const draw = marketDrawStatus(state, a.now());
+        return draw.available
+          ? t('market.drawReady')
+          : t('market.drawNext', { time: formatDuration(draw.nextIn) });
+      });
+      if (marketDrawStatus(state, a.now()).available) {
+        buttons.push({
+          label: t('market.draw'),
+          color: 0xc98a1a,
+          onClick: () => {
+            const r = a.run('drawMarket', {});
+            if (r) {
+              const key = r.prize.soulEggs > 0 ? 'market.drawnEgg' : 'market.drawn';
+              a.toast(t(key, { prize: prizeLabel(r.prize) }), COLORS.good, 'win');
+            }
+          },
+        });
+      }
+    }
+    if (def.category === gameData.rules.population.decorationCategory && level?.population) {
+      content.lines.push(t('info.decorationPopulation', { population: level.population }));
+      statuses.push(() => t('info.decorationTotal', decorationPopulation(state)));
     }
   }
 

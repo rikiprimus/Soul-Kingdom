@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import {
   barracksQueue,
+  barracksQueueMax,
   barracksRemaining,
   gameData,
   populationCap,
@@ -41,7 +42,7 @@ export class BarracksView extends View {
     const queue = barracksQueue(this.state, b.id);
     const left = barracksRemaining(this.state, b.id, this.ctx.store.now());
     const parts = [
-      t('barracks.queue', { n: queue.length, max: gameData.rules.barracks.queueMax }),
+      t('barracks.queue', { n: queue.length, max: barracksQueueMax(b.type, b.level) }),
       t('info.population', { used: populationUsed(this.state), cap: populationCap(this.state) }),
     ];
     if (left !== null) parts.push(t('barracks.next', { time: formatDuration(left) }));

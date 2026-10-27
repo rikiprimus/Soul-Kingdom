@@ -17,7 +17,7 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 25;
+export const SAVE_SCHEMA_VERSION = 28;
 
 const int = z.number().int();
 const villageAmountSchema = z.object({
@@ -185,6 +185,7 @@ const playerStateSchema = z.object({
   actions: actionCountsSchema,
   quest: z.object({ index: int.min(0), start: actionCountsSchema }),
   daily: z.object({ next: int.min(0), lastDay: int.nullable() }),
+  marketDraw: z.object({ lastDay: int.nullable() }),
   social: z.object({
     helped: z.record(z.string(), int),
     borrowDay: int.nullable(),
@@ -257,8 +258,10 @@ const migrations: Record<number, (state: unknown) => unknown> = {
     const hall = state.village.buildings.find((b) => b.type === gameData.townHallId);
     const level = Math.min(old.townHallLevel ?? 1, gameData.maxTownHallLevel);
     if (hall) hall.level = level;
-    // Keep the Soul Mixer for players who had already unlocked it.
-    const mixerDef = gameData.village.buildings.find((b) => b.feature === 'mixer');
+    // Keep the Soul Mixer / Altar for players who had already unlocked it.
+    const mixerDef = gameData.village.buildings.find(
+      (b) => b.feature === 'altar' || b.feature === 'mixer',
+    );
     if (mixerDef && level >= gameData.rules.mixer.unlockTownHallLevel) {
       const spot = findFreeSpot(state.village, mixerDef.size);
       if (spot) {
@@ -523,6 +526,80 @@ const migrations: Record<number, (state: unknown) => unknown> = {
     state.social = { helped: {}, borrowDay: null };
     state.actions.help = 0;
     state.quest.start.help = 0;
+    return state;
+  },
+  // v25 (Tugas 1C.1): remap building types: soul-mixer -> altar, kandang -> gudang,
+  // barak (old Guild) -> guild, petarung (Barak Prajurit) -> barak, barak-berkuda -> kandang-kuda.
+  25: (raw) => {
+    const state = raw as PlayerState;
+    const remap = (b: { type: string; level: number }) => {
+      if (b.type === 'barak') {
+        b.type = 'guild';
+      } else if (b.type === 'petarung') {
+        b.type = 'barak';
+      } else if (b.type === 'barak-berkuda') {
+        b.type = 'kandang-kuda';
+      } else if (b.type === 'soul-mixer') {
+        b.type = 'altar';
+      }
+    };
+    const processBuildings = (buildings: typeof state.village.buildings) => {
+      let hasGudang = buildings.some((b) => b.type === 'gudang');
+      const keep: typeof buildings = [];
+      for (const b of buildings) {
+        if (b.type === 'kandang') {
+          if (!hasGudang) {
+            b.type = 'gudang';
+            b.level = 1;
+            hasGudang = true;
+            keep.push(b);
+          } else {
+            state.resources.gold += 300;
+            state.resources.wood += 200;
+          }
+        } else {
+          remap(b);
+          keep.push(b);
+        }
+      }
+      return keep;
+    };
+    state.village.buildings = processBuildings(state.village.buildings);
+    for (const island of Object.values(state.islands ?? {})) {
+      island.buildings = processBuildings(island.buildings);
+    }
+    if (state.storage) {
+      for (const item of state.storage) {
+        if (item.type === 'barak') item.type = 'guild';
+        else if (item.type === 'petarung') item.type = 'barak';
+        else if (item.type === 'barak-berkuda') item.type = 'kandang-kuda';
+        else if (item.type === 'soul-mixer') item.type = 'altar';
+        else if (item.type === 'kandang') item.type = 'gudang';
+      }
+    }
+    return state;
+  },
+  // v26 (Tugas 1C.2): Tambang Emas / Penggilingan Lv 1-2 now hold fewer workers; the extra
+  // ones step out and become idle.
+  26: (raw) => {
+    const state = raw as PlayerState;
+    const buildings = [state.village, ...Object.values(state.islands ?? {})].flatMap(
+      (v) => v.buildings,
+    );
+    for (const b of buildings) {
+      const slots = levelDef(b.type, Math.max(1, b.level))?.workerSlots;
+      if (slots === undefined) continue;
+      state.workers
+        .filter((w) => w.task.kind === 'staffed' && w.task.buildingId === b.id)
+        .slice(slots)
+        .forEach((w) => (w.task = { kind: 'idle' }));
+    }
+    return state;
+  },
+  // v27 had no Undian Harian (Tugas 1C.5): today's draw is still free.
+  27: (raw) => {
+    const state = raw as PlayerState;
+    state.marketDraw = { lastDay: null };
     return state;
   },
 };

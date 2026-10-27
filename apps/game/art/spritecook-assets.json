@@ -26,13 +26,13 @@
           "source_sha12": "acfa9db86354"
         },
         {
-          "path": "art/buildings/kandang/lv1.png",
+          "path": "art/buildings/gudang/lv1.png",
           "crop": [0, 512, 512, 512],
           "sha12": "d7cb3c6627df",
           "source_sha12": "d4b1955abf1b"
         },
         {
-          "path": "art/buildings/barak/lv1.png",
+          "path": "art/buildings/guild/lv1.png",
           "crop": [512, 512, 512, 512],
           "sha12": "28d8c65ecc1b",
           "source_sha12": "13061267d9b5"
@@ -72,11 +72,11 @@
     },
     {
       "asset_id": "841a07cc-c35a-47cd-930f-19f67f9d5f4c",
-      "label": "grid lv1 soul-mixer ladang (kosong, tumbuh, siap)",
+      "label": "grid lv1 altar ladang (kosong, tumbuh, siap)",
       "source_sha12": "799e86155c8d",
       "crops": [
         {
-          "path": "art/buildings/soul-mixer/lv1.png",
+          "path": "art/buildings/altar/lv1.png",
           "crop": [0, 0, 520, 512],
           "sha12": "f63ed6cecfef",
           "source_sha12": "f22e52baa0de"
@@ -106,11 +106,11 @@
     },
     {
       "asset_id": "48f2f437-dcfa-4f88-8587-cf68b89ea7c0",
-      "label": "grid lv1 petarung lapangan-panah gerbang-petualangan menara",
+      "label": "grid lv1 barak lapangan-panah gerbang-petualangan menara",
       "source_sha12": "29f2feb9296a",
       "crops": [
         {
-          "path": "art/buildings/petarung/lv1.png",
+          "path": "art/buildings/barak/lv1.png",
           "crop": [0, 0, 512, 500],
           "sha12": "57d5c73510de",
           "source_sha12": "d1833a071ce0"
@@ -141,66 +141,21 @@
       "source_sha12": "d6fcf24b7984",
       "pieces_config": "art/tembok-pieces.json",
       "pieces": [
-        {
-          "path": "art/buildings/tembok/lv1-post.png",
-          "sha12": "2384176b29a8"
-        },
-        {
-          "path": "art/buildings/tembok/lv1-seg-xn.png",
-          "sha12": "40b313911337"
-        },
-        {
-          "path": "art/buildings/tembok/lv1-seg-xp.png",
-          "sha12": "975155052371"
-        },
-        {
-          "path": "art/buildings/tembok/lv1-seg-yn.png",
-          "sha12": "9f5debb08f90"
-        },
-        {
-          "path": "art/buildings/tembok/lv1-seg-yp.png",
-          "sha12": "d7b88e143aa8"
-        },
-        {
-          "path": "art/buildings/tembok/lv2-post.png",
-          "sha12": "1c63d2049db4"
-        },
-        {
-          "path": "art/buildings/tembok/lv2-seg-xn.png",
-          "sha12": "0f4cdc06bf67"
-        },
-        {
-          "path": "art/buildings/tembok/lv2-seg-xp.png",
-          "sha12": "758b54b7f612"
-        },
-        {
-          "path": "art/buildings/tembok/lv2-seg-yn.png",
-          "sha12": "a28f9af07913"
-        },
-        {
-          "path": "art/buildings/tembok/lv2-seg-yp.png",
-          "sha12": "a2420765d3ab"
-        },
-        {
-          "path": "art/buildings/tembok/lv3-post.png",
-          "sha12": "b5e8eb985159"
-        },
-        {
-          "path": "art/buildings/tembok/lv3-seg-xn.png",
-          "sha12": "da8322985c0a"
-        },
-        {
-          "path": "art/buildings/tembok/lv3-seg-xp.png",
-          "sha12": "51dfe9934f76"
-        },
-        {
-          "path": "art/buildings/tembok/lv3-seg-yn.png",
-          "sha12": "81aa343246fa"
-        },
-        {
-          "path": "art/buildings/tembok/lv3-seg-yp.png",
-          "sha12": "16053d9989aa"
-        }
+        { "path": "art/buildings/tembok/lv1-post.png", "sha12": "2384176b29a8" },
+        { "path": "art/buildings/tembok/lv1-seg-xn.png", "sha12": "40b313911337" },
+        { "path": "art/buildings/tembok/lv1-seg-xp.png", "sha12": "975155052371" },
+        { "path": "art/buildings/tembok/lv1-seg-yn.png", "sha12": "9f5debb08f90" },
+        { "path": "art/buildings/tembok/lv1-seg-yp.png", "sha12": "d7b88e143aa8" },
+        { "path": "art/buildings/tembok/lv2-post.png", "sha12": "1c63d2049db4" },
+        { "path": "art/buildings/tembok/lv2-seg-xn.png", "sha12": "0f4cdc06bf67" },
+        { "path": "art/buildings/tembok/lv2-seg-xp.png", "sha12": "758b54b7f612" },
+        { "path": "art/buildings/tembok/lv2-seg-yn.png", "sha12": "a28f9af07913" },
+        { "path": "art/buildings/tembok/lv2-seg-yp.png", "sha12": "a2420765d3ab" },
+        { "path": "art/buildings/tembok/lv3-post.png", "sha12": "b5e8eb985159" },
+        { "path": "art/buildings/tembok/lv3-seg-xn.png", "sha12": "da8322985c0a" },
+        { "path": "art/buildings/tembok/lv3-seg-xp.png", "sha12": "51dfe9934f76" },
+        { "path": "art/buildings/tembok/lv3-seg-yn.png", "sha12": "81aa343246fa" },
+        { "path": "art/buildings/tembok/lv3-seg-yp.png", "sha12": "16053d9989aa" }
       ]
     },
     {
@@ -235,36 +190,16 @@
       "label": "grid ikon sumber daya UI",
       "source_sha12": "e082ffb6dcb7",
       "crops": [
-        {
-          "path": "art/ui/icon-gold.png",
-          "crop": [0, 0, 682, 576],
-          "sha12": "eac6ce2e0de9"
-        },
-        {
-          "path": "art/ui/icon-food.png",
-          "crop": [682, 0, 682, 576],
-          "sha12": "5c8af2d12449"
-        },
-        {
-          "path": "art/ui/icon-wood.png",
-          "crop": [1364, 0, 682, 576],
-          "sha12": "df9f7fb4a7be"
-        },
-        {
-          "path": "art/ui/icon-stone.png",
-          "crop": [0, 576, 682, 576],
-          "sha12": "097e58e9e4e0"
-        },
+        { "path": "art/ui/icon-gold.png", "crop": [0, 0, 682, 576], "sha12": "eac6ce2e0de9" },
+        { "path": "art/ui/icon-food.png", "crop": [682, 0, 682, 576], "sha12": "5c8af2d12449" },
+        { "path": "art/ui/icon-wood.png", "crop": [1364, 0, 682, 576], "sha12": "df9f7fb4a7be" },
+        { "path": "art/ui/icon-stone.png", "crop": [0, 576, 682, 576], "sha12": "097e58e9e4e0" },
         {
           "path": "art/ui/icon-crystal.png",
           "crop": [682, 576, 682, 576],
           "sha12": "15302787827c"
         },
-        {
-          "path": "art/ui/icon-gem.png",
-          "crop": [1364, 576, 682, 576],
-          "sha12": "0e5a9a03f8af"
-        }
+        { "path": "art/ui/icon-gem.png", "crop": [1364, 576, 682, 576], "sha12": "0e5a9a03f8af" }
       ]
     },
     {
@@ -461,6 +396,64 @@
           "path": "art/monsters/penjaga-abadi/bayi.png",
           "crop": [385, 520, 320, 504],
           "sha12": "74c61faf57ef"
+        }
+      ]
+    },
+    {
+      "asset_id": "f2bf7add-a1f7-4816-bead-444f59a1922e",
+      "label": "tembok lv4-8 tiang dan ruas",
+      "source_sha12": "adadfb7abdab",
+      "pieces_config": "art/tembok-pieces-lv4-8.json",
+      "pieces": [
+        { "path": "art/buildings/tembok/lv4-post.png", "sha12": "b56b1da0ca03" },
+        { "path": "art/buildings/tembok/lv4-seg-xn.png", "sha12": "01fb7fcb056a" },
+        { "path": "art/buildings/tembok/lv4-seg-xp.png", "sha12": "9c99c69e333a" },
+        { "path": "art/buildings/tembok/lv4-seg-yn.png", "sha12": "b6436677fe89" },
+        { "path": "art/buildings/tembok/lv4-seg-yp.png", "sha12": "27309ff12bd6" },
+        { "path": "art/buildings/tembok/lv5-post.png", "sha12": "5786888e8e50" },
+        { "path": "art/buildings/tembok/lv5-seg-xn.png", "sha12": "778ddbee854e" },
+        { "path": "art/buildings/tembok/lv5-seg-xp.png", "sha12": "946fe3130f82" },
+        { "path": "art/buildings/tembok/lv5-seg-yn.png", "sha12": "f31170f939a7" },
+        { "path": "art/buildings/tembok/lv5-seg-yp.png", "sha12": "10e138abb10f" },
+        { "path": "art/buildings/tembok/lv6-post.png", "sha12": "fa9ec97fcfa5" },
+        { "path": "art/buildings/tembok/lv6-seg-xn.png", "sha12": "141fceb34cad" },
+        { "path": "art/buildings/tembok/lv6-seg-xp.png", "sha12": "01cf88ca4174" },
+        { "path": "art/buildings/tembok/lv6-seg-yn.png", "sha12": "654ae9676ad3" },
+        { "path": "art/buildings/tembok/lv6-seg-yp.png", "sha12": "bcb852b8c54e" },
+        { "path": "art/buildings/tembok/lv7-post.png", "sha12": "666955ea15b9" },
+        { "path": "art/buildings/tembok/lv7-seg-xn.png", "sha12": "0edf856a1b55" },
+        { "path": "art/buildings/tembok/lv7-seg-xp.png", "sha12": "81dc3c8fc0d9" },
+        { "path": "art/buildings/tembok/lv7-seg-yn.png", "sha12": "cfdd2c1b355c" },
+        { "path": "art/buildings/tembok/lv7-seg-yp.png", "sha12": "0fde7d5b4a64" },
+        { "path": "art/buildings/tembok/lv8-post.png", "sha12": "88f7be268138" },
+        { "path": "art/buildings/tembok/lv8-seg-xn.png", "sha12": "48c0482daccc" },
+        { "path": "art/buildings/tembok/lv8-seg-xp.png", "sha12": "c5d7b805c7f0" },
+        { "path": "art/buildings/tembok/lv8-seg-yn.png", "sha12": "eb00f749d782" },
+        { "path": "art/buildings/tembok/lv8-seg-yp.png", "sha12": "aa7b2f22a27c" }
+      ]
+    },
+    {
+      "asset_id": "33a1cb0d-6463-4700-8117-8988b345ddac",
+      "label": "grid Tambang Batu, Tukang Kayu, Rumah Bangsawan lv1",
+      "source_sha12": "39d293e122b3",
+      "pieces": [
+        {
+          "path": "art/buildings/tambang-batu/lv1.png",
+          "crop": [0, 0, 680, 1152],
+          "sha12": "24e1ef62d6ce",
+          "source_sha12": "04337750a6a0"
+        },
+        {
+          "path": "art/buildings/tukang-kayu/lv1.png",
+          "crop": [683, 0, 680, 1152],
+          "sha12": "4ec6a53104b6",
+          "source_sha12": "0262a9020b00"
+        },
+        {
+          "path": "art/buildings/mansion/lv1.png",
+          "crop": [1366, 0, 682, 1152],
+          "sha12": "303c15fa6d81",
+          "source_sha12": "e5e12631feb2"
         }
       ]
     }

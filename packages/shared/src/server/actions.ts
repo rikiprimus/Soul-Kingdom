@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { careSoulEgg, hatchSoulEgg } from '../nest';
 import { claimSet } from '../collections';
+import { drawMarket } from '../market';
 import { claimDaily, claimQuest } from '../quests';
 import { sendToAnimal } from '../animals';
 import { hatchEgg, trainSoldier } from '../barracks';
@@ -149,6 +150,7 @@ export const ACTIONS = {
   ),
   claimQuest: action(z.object({}), (s) => claimQuest(s)),
   claimDaily: action(z.object({}), (s, _p, now) => claimDaily(s, now)),
+  drawMarket: action(z.object({}), (s, _p, now) => drawMarket(s, now)),
   claimSet: action(byId, (s, p) => claimSet(s, p.id)),
   unlockIsland: action(byId, (s, p, now) => unlockIsland(s, p.id, now)),
   travelTo: action(byId, (s, p) => travelTo(s, p.id)),

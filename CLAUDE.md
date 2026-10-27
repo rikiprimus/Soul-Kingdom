@@ -1,6 +1,6 @@
 # Soul Monster — panduan proyek untuk Claude Code
 
-Game strategi koleksi monster terinspirasi Social Empires. Fitur inti: **Soul Mixer**, mencampur dua monster dewasa menjadi monster baru (bayi) lewat resep rahasia atau hasil acak terarah. Dibuat di **browser dulu**, lalu dibungkus menjadi aplikasi **Android** dengan Capacitor.
+Game strategi koleksi monster terinspirasi Social Empires. Fitur inti: **Altar** (dahulu Soul Mixer), mencampur dua monster dewasa menjadi monster baru (langsung menetas menjadi bayi monster saat selesai) lewat resep rahasia atau hasil acak terarah. Dibuat di **browser dulu**, lalu dibungkus menjadi aplikasi **Android** dengan Capacitor.
 
 Rencana kerja ada di `docs/PLAN.md`. Kerjakan **satu tugas per sesi**, sesuai nomor tugas yang diminta pengguna.
 

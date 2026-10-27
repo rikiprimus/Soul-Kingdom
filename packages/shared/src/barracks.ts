@@ -5,7 +5,7 @@ import type { Rng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { recordAction } from './player';
 import { populationFree } from './workers';
-import { allBuildings } from './village';
+import { allBuildings, hasFeature } from './village';
 
 /** A human soldier from one of the three barracks (Tugas 1A.13). `rank` is 0-based. */
 export interface Soldier {
@@ -92,6 +92,14 @@ export function soldierName(s: SoldierKind, data: GameData = gameData): string {
   return `${soldierDef(s.kind, data).name} ${rankDef(s.rank, data).name}`;
 }
 
+/** Soldiers a barracks can queue at once: the base limit plus its levels' queue bonuses. */
+export function barracksQueueMax(type: string, level: number, data: GameData = gameData): number {
+  const levels = data.buildingById.get(type)?.levels ?? [];
+  return levels
+    .slice(0, level)
+    .reduce((max, l) => max + (l.queueBonus ?? 0), data.rules.barracks.queueMax);
+}
+
 export function barracksQueue(state: PlayerState, buildingId: string): BarracksTraining[] {
   return state.barracksQueue.filter((e) => e.buildingId === buildingId);
 }
@@ -143,7 +151,7 @@ export function trainSoldier(
   }
   const kind = { kind: def.id, rank: params.rank };
   const queue = barracksQueue(s, b.id);
-  if (queue.length >= data.rules.barracks.queueMax) return fail('trainingQueueFull');
+  if (queue.length >= barracksQueueMax(b.type, b.level, data)) return fail('trainingQueueFull');
   if (populationFree(s, data) < soldierPower(kind, data)) return fail('populationFull');
   const cost = soldierTrainCost(kind, data);
   if (s.resources.gold < cost.gold) return fail('notEnoughGold');
@@ -191,6 +199,7 @@ export function hatchEgg(
 ): ActionResult<{ monster: Monster }> {
   const egg = state.eggs.find((e) => e.id === eggId);
   if (!egg) return fail('entryNotFound');
+  if (!hasFeature(state, 'nest', data)) return fail('noNest');
   if (egg.readyAt > now) return fail('notReady');
   const slots = data.rules.battle.powerPoints[String(data.formTiers[0]!)] ?? 1;
   if (populationFree(state, data) < slots) return fail('populationFull');

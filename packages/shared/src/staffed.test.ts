@@ -17,7 +17,9 @@ import { createWorkers, idleWorkers } from './workers';
 
 const T0 = 1_000_000;
 const HOUR = 3600;
-const mill = levelDef('penggilingan', 1)!;
+/** A level with room for two workers (Lv 1-2 hold only one). */
+const MILL_LEVEL = 3;
+const mill = levelDef('penggilingan', MILL_LEVEL)!;
 const rate = mill.staffedProduction!;
 
 function ok<T extends object>(result: ActionResult<T>) {
@@ -33,15 +35,16 @@ function freeSpot(s: PlayerState, size: number) {
   throw new Error('peta penuh');
 }
 
-/** A village with a finished Penggilingan (returned as `id`) and 6 workers; time = `at`. */
+/** A village with a finished Penggilingan at MILL_LEVEL (returned as `id`) and 6 workers; time = `at`. */
 function withMill() {
   let s = createInitialState(T0, 31);
   s.village.obstacles = [];
   for (const r of ['gold', 'food', 'wood', 'stone'] as const) s.resources[r] = 1_000_000;
   createWorkers(s, 6 - s.workers.length);
   const r = ok(buildBuilding(s, { type: 'penggilingan', ...freeSpot(s, 2) }, T0));
-  const at = T0 + mill.seconds;
+  const at = T0 + levelDef('penggilingan', 1)!.seconds;
   s = settleVillage(r.state, at);
+  s.village.buildings.find((b) => b.id === r.buildingId)!.level = MILL_LEVEL;
   return { s, id: r.buildingId, at };
 }
 

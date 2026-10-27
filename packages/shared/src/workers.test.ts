@@ -14,11 +14,13 @@ import {
   levelDef,
   settleVillage,
   speedUpBuilding,
+  townHallLevel,
   upgradeBuilding,
 } from './village';
 import {
   assignWorkers,
   createWorkers,
+  decorationPopulation,
   idleWorkers,
   monsterSlots,
   populationCap,
@@ -28,6 +30,7 @@ import {
   releaseWorkers,
   trainWorker,
   trainingRemaining,
+  workerTrainSeconds,
 } from './workers';
 
 const T0 = 1_000_000;
@@ -79,7 +82,9 @@ describe('population', () => {
   it('counts workers and monsters by form tier against Balai and Rumah', () => {
     const s = createInitialState(T0, 3);
     const hall = gameData.buildingById.get(gameData.townHallId)!;
-    expect(populationCap(s)).toBe(hall.levels[0]!.population);
+    // The starting decorations (Pohon Hias, Taman Bunga) add theirs on top of the Balai.
+    expect(populationCap(s)).toBe(hall.levels[0]!.population! + decorationPopulation(s).counted);
+    expect(decorationPopulation(s).counted).toBeGreaterThan(0);
     expect(s.workers).toHaveLength(workerRules.startingWorkers);
     const monsters = s.monsters.reduce((sum, m) => sum + monsterSlots(m), 0);
     expect(populationUsed(s)).toBe(s.workers.length * population.workerSlots + monsters);
@@ -180,25 +185,39 @@ describe('population', () => {
 });
 
 describe('workers', () => {
+  it('train faster at a higher Balai Utama', () => {
+    const s = rich();
+    const hall = s.village.buildings.find((b) => b.type === gameData.townHallId)!;
+    const table = workerRules.trainSecondsByTownHall;
+    table.forEach((seconds, i) => {
+      hall.level = i + 1;
+      expect(workerTrainSeconds(s)).toBe(seconds);
+      expect(ok(trainWorker(s, T0)).endsAt).toBe(T0 + seconds);
+    });
+    for (let i = 1; i < table.length; i++) expect(table[i]).toBeLessThan(table[i - 1]!);
+  });
+
   it('trains workers one after another for food', () => {
     let s = rich();
     s.resources.food = workerRules.trainFood * 2;
     const before = s.workers.length;
+    const trainSeconds = workerTrainSeconds(s);
+    expect(trainSeconds).toBe(workerRules.trainSecondsByTownHall[townHallLevel(s) - 1]);
     const a = ok(trainWorker(s, T0));
-    expect(a.endsAt).toBe(T0 + workerRules.trainSeconds);
+    expect(a.endsAt).toBe(T0 + trainSeconds);
     s = a.state;
     const b = ok(trainWorker(s, T0));
-    expect(b.endsAt).toBe(T0 + workerRules.trainSeconds * 2);
+    expect(b.endsAt).toBe(T0 + trainSeconds * 2);
     s = b.state;
     expect(s.resources.food).toBe(0);
-    expect(trainingRemaining(s, T0)).toBe(workerRules.trainSeconds);
+    expect(trainingRemaining(s, T0)).toBe(trainSeconds);
     // Workers in training already take their population slot.
     expect(populationUsed(s)).toBe(populationUsed(rich()) + 2 * population.workerSlots);
 
-    s = settleVillage(s, T0 + workerRules.trainSeconds);
+    s = settleVillage(s, T0 + trainSeconds);
     expect(s.workers).toHaveLength(before + 1);
     expect(s.workerTraining).toHaveLength(1);
-    s = settleVillage(s, T0 + workerRules.trainSeconds * 2);
+    s = settleVillage(s, T0 + trainSeconds * 2);
     expect(s.workers).toHaveLength(before + 2);
     expect(idleWorkers(s)).toHaveLength(before + 2);
     expect(trainingRemaining(s, T0)).toBeNull();

@@ -147,6 +147,16 @@ describe('XP per action', () => {
 
   it('hatching an egg gives hatch XP', () => {
     const s = base();
+    s.village.buildings.push({
+      id: 'nest',
+      type: 'sarang-telur',
+      x: 0,
+      y: 0,
+      level: 1,
+      construction: null,
+      lastCollectAt: T0,
+      crop: null,
+    });
     const egg = s.eggs[0]!;
     expect(ok(hatchEgg(s, egg.id, egg.readyAt)).state.xp).toBe(xp.hatch);
   });

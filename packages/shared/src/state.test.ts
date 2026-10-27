@@ -40,7 +40,7 @@ export function withMixer(s: PlayerState): PlayerState {
   hall.level = rules.mixer.unlockTownHallLevel;
   s.village.buildings.push({
     id: 'mixer',
-    type: 'soul-mixer',
+    type: 'altar',
     x: 0,
     y: 0,
     level: 1,
@@ -351,6 +351,117 @@ describe('save and load', () => {
     expect(() =>
       deserializeState(JSON.stringify({ schemaVersion: SAVE_SCHEMA_VERSION + 1, state: {} })),
     ).toThrow(/lebih baru/);
+  });
+
+  it('migrates v25 building ids to v26 (Tugas 1C.1)', () => {
+    const s = createInitialState(T0, 10);
+    s.village.buildings = s.village.buildings.filter((b) => b.type !== 'gudang');
+    s.village.buildings.push(
+      {
+        id: 'mig1',
+        type: 'barak',
+        x: 0,
+        y: 0,
+        level: 1,
+        construction: null,
+        lastCollectAt: T0,
+        crop: null,
+      },
+      {
+        id: 'mig2',
+        type: 'petarung',
+        x: 2,
+        y: 0,
+        level: 1,
+        construction: null,
+        lastCollectAt: T0,
+        crop: null,
+      },
+      {
+        id: 'mig3',
+        type: 'barak-berkuda',
+        x: 4,
+        y: 0,
+        level: 1,
+        construction: null,
+        lastCollectAt: T0,
+        crop: null,
+      },
+      {
+        id: 'mig4',
+        type: 'soul-mixer',
+        x: 6,
+        y: 0,
+        level: 1,
+        construction: null,
+        lastCollectAt: T0,
+        crop: null,
+      },
+      {
+        id: 'mig5',
+        type: 'kandang',
+        x: 8,
+        y: 0,
+        level: 2,
+        construction: null,
+        lastCollectAt: T0,
+        crop: null,
+      },
+      {
+        id: 'mig6',
+        type: 'kandang',
+        x: 10,
+        y: 0,
+        level: 1,
+        construction: null,
+        lastCollectAt: T0,
+        crop: null,
+      },
+    );
+    s.storage.push(
+      { id: 's1', type: 'barak', level: 1, flipped: false },
+      { id: 's2', type: 'petarung', level: 1, flipped: false },
+      { id: 's3', type: 'barak-berkuda', level: 1, flipped: false },
+      { id: 's4', type: 'soul-mixer', level: 1, flipped: false },
+      { id: 's5', type: 'kandang', level: 1, flipped: false },
+    );
+    const json = JSON.stringify({ schemaVersion: 25, state: s });
+    const loaded = deserializeState(json);
+    const byId = new Map(loaded.village.buildings.map((b) => [b.id, b]));
+    expect(byId.get('mig1')?.type).toBe('guild');
+    expect(byId.get('mig2')?.type).toBe('barak');
+    expect(byId.get('mig3')?.type).toBe('kandang-kuda');
+    expect(byId.get('mig4')?.type).toBe('altar');
+    expect(byId.get('mig5')?.type).toBe('gudang');
+    expect(byId.get('mig5')?.level).toBe(1);
+    expect(byId.has('mig6')).toBe(false);
+    const storageTypes = loaded.storage.map((x) => x.type);
+    expect(storageTypes).toEqual(['guild', 'barak', 'kandang-kuda', 'altar', 'gudang']);
+  });
+
+  it('migrates v26: workers beyond the new staffed slots step out (Tugas 1C.2)', () => {
+    const s = createInitialState(T0, 10);
+    const mill = (id: string, x: number, level: number) => ({
+      id,
+      type: 'penggilingan',
+      x,
+      y: 0,
+      level,
+      construction: null,
+      lastCollectAt: T0,
+      crop: null,
+    });
+    s.village.buildings.push(mill('mill1', 0, 1), mill('mill3', 2, 3));
+    s.workers = ['mill1', 'mill1', 'mill3', 'mill3'].map((buildingId, i) => ({
+      id: `w${i}`,
+      task: { kind: 'staffed', buildingId },
+    }));
+    const loaded = deserializeState(JSON.stringify({ schemaVersion: 26, state: s }));
+    const staffedIn = (id: string) =>
+      loaded.workers.filter((w) => w.task.kind === 'staffed' && w.task.buildingId === id).length;
+    expect(staffedIn('mill1')).toBe(1);
+    expect(staffedIn('mill3')).toBe(2);
+    expect(loaded.workers.filter((w) => w.task.kind === 'idle')).toHaveLength(1);
   });
 });
 

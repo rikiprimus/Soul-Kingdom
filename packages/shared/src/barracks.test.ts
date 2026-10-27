@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   barracksQueue,
+  barracksQueueMax,
   barracksRemaining,
   combinedBarracksLevel,
   hatchEgg,
@@ -25,9 +26,9 @@ import { populationFree, populationUsed } from './workers';
 const T0 = 1_000_000;
 const { barracks, battle, economy, growth } = gameData.rules;
 const BARRACKS = {
-  petarung: 'prajurit',
+  barak: 'prajurit',
   'lapangan-panah': 'pemanah',
-  'barak-berkuda': 'penombak-berkuda',
+  'kandang-kuda': 'penombak-berkuda',
 } as const;
 
 function ok<T extends object>(result: ActionResult<T>) {
@@ -60,7 +61,7 @@ describe('soldier kinds and ranks', () => {
     for (const [type, kind] of Object.entries(BARRACKS)) {
       expect(soldierKindOf(type)?.id).toBe(kind);
     }
-    expect(soldierKindOf('barak')).toBeUndefined();
+    expect(soldierKindOf('guild')).toBeUndefined();
     expect(soldierKindOf('pasar')).toBeUndefined();
   });
 
@@ -95,7 +96,7 @@ describe('soldier kinds and ranks', () => {
 
 describe('training soldiers', () => {
   it('pays, queues one after another, holds the slots and delivers soldiers', () => {
-    const { s, id, at } = withBarracks('barak-berkuda', 2);
+    const { s, id, at } = withBarracks('kandang-kuda', 2);
     const kind = { buildingId: id, rank: 1 };
     const cost = soldierTrainCost({ kind: 'penombak-berkuda', rank: 1 });
     const power = soldierPower({ kind: 'penombak-berkuda', rank: 1 });
@@ -122,7 +123,7 @@ describe('training soldiers', () => {
   });
 
   it('refuses locked ranks, a full queue, no room and too little gold or food', () => {
-    const { s, id, at } = withBarracks('petarung', 1);
+    const { s, id, at } = withBarracks('barak', 1);
     expect(trainSoldier(s, { buildingId: id, rank: 1 }, at)).toEqual({
       ok: false,
       error: 'notUnlocked',
@@ -147,16 +148,37 @@ describe('training soldiers', () => {
     expect(trainSoldier(poor, kind, at)).toEqual({ ok: false, error: 'notEnoughFood' });
   });
 
+  it('top-level barracks queue one more soldier', () => {
+    for (const type of Object.keys(BARRACKS)) {
+      const levels = gameData.buildingById.get(type)!.levels;
+      for (let level = 1; level < levels.length; level++) {
+        expect(barracksQueueMax(type, level)).toBe(barracks.queueMax);
+      }
+      expect(barracksQueueMax(type, levels.length)).toBe(barracks.queueMax + 1);
+    }
+    const { s, id, at } = withBarracks('barak', 6);
+    let q = s;
+    const kind = { buildingId: id, rank: 0 };
+    for (let i = 0; i < barracks.queueMax + 1; i++) q = ok(trainSoldier(q, kind, at)).state;
+    expect(trainSoldier(q, kind, at)).toEqual({ ok: false, error: 'trainingQueueFull' });
+  });
+
+  it('Kandang Kuda opens at Balai 3', () => {
+    const def = gameData.buildingById.get('kandang-kuda')!;
+    expect(def.levels[0]!.requiresTownHall).toBe(3);
+    expect(def.maxCount.slice(0, 3)).toEqual([0, 0, 1]);
+  });
+
   it('cannot train in an unfinished barracks or in the Guild', () => {
     const s = createInitialState(T0, 52);
     s.village.obstacles = [];
     for (const r of ['gold', 'food', 'wood', 'stone'] as const) s.resources[r] = 1_000_000;
-    const r = ok(buildBuilding(s, { type: 'petarung', ...freeSpot(s, 3) }, T0));
+    const r = ok(buildBuilding(s, { type: 'barak', ...freeSpot(s, 3) }, T0));
     expect(trainSoldier(r.state, { buildingId: r.buildingId, rank: 0 }, T0)).toEqual({
       ok: false,
       error: 'underConstruction',
     });
-    const guild = withBarracks('barak', 3);
+    const guild = withBarracks('guild', 3);
     expect(trainSoldier(guild.s, { buildingId: guild.id, rank: 0 }, guild.at)).toEqual({
       ok: false,
       error: 'notBarracks',
@@ -166,10 +188,10 @@ describe('training soldiers', () => {
 
 describe('Serbu power cap', () => {
   it('follows the combined level of the three soldier barracks (not the Guild)', () => {
-    let { s } = withBarracks('petarung', 2);
+    let { s } = withBarracks('barak', 2);
     expect(combinedBarracksLevel(s)).toBe(2);
     expect(serbuPowerCap(s)).toBe(battle.powerCapByCombinedBarracksLevel[2]);
-    for (const type of ['lapangan-panah', 'barak-berkuda', 'barak']) {
+    for (const type of ['lapangan-panah', 'kandang-kuda', 'guild']) {
       const r = ok(buildBuilding(s, { type, ...freeSpot(s, 3) }, T0));
       s = settleVillage(r.state, T0 + 10_000);
       s.village.buildings.find((b) => b.id === r.buildingId)!.level = 3;
@@ -177,6 +199,11 @@ describe('Serbu power cap', () => {
     expect(combinedBarracksLevel(s)).toBe(8);
     expect(serbuPowerCap(s)).toBe(battle.powerCapByCombinedBarracksLevel[8]);
     const table = battle.powerCapByCombinedBarracksLevel;
+    const top = Object.keys(BARRACKS).reduce(
+      (sum, type) => sum + gameData.buildingById.get(type)!.levels.length,
+      0,
+    );
+    expect(table).toHaveLength(top + 1);
     for (let i = 1; i < table.length; i++) expect(table[i]!).toBeGreaterThan(table[i - 1]!);
   });
 });
@@ -193,6 +220,17 @@ describe('a new game and its egg', () => {
   it('hatches the egg into a tier-1 baby with a base element once it is ready', () => {
     const s = createInitialState(T0, 2);
     const egg = s.eggs[0]!;
+    expect(hatchEgg(s, egg.id, egg.readyAt)).toEqual({ ok: false, error: 'noNest' });
+    s.village.buildings.push({
+      id: 'nest',
+      type: 'sarang-telur',
+      x: 0,
+      y: 0,
+      level: 1,
+      construction: null,
+      lastCollectAt: T0,
+      crop: null,
+    });
     expect(hatchEgg(s, egg.id, egg.readyAt - 1)).toEqual({ ok: false, error: 'notReady' });
     const r = ok(hatchEgg(s, egg.id, egg.readyAt));
     expect(r.monster).toMatchObject({ form: egg.form, element: egg.element, food: 0 });
@@ -207,6 +245,16 @@ describe('a new game and its egg', () => {
 
   it('needs room in the village to hatch', () => {
     const s = createInitialState(T0, 3);
+    s.village.buildings.push({
+      id: 'nest',
+      type: 'sarang-telur',
+      x: 0,
+      y: 0,
+      level: 1,
+      construction: null,
+      lastCollectAt: T0,
+      crop: null,
+    });
     while (populationFree(s) > 0)
       s.soldiers.push({ id: `f${s.soldiers.length}`, kind: 'prajurit', rank: 0 });
     const egg = s.eggs[0]!;

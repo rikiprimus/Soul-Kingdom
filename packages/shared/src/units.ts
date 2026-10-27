@@ -104,14 +104,15 @@ function findPath(state: PlayerState, from: Tile, to: Tile, data: GameData): Til
   return null;
 }
 
-/** Next to the Kandang, where new monsters and soldiers first appear. */
+/** Next to the Sarang, Gudang, or Balai, where new monsters and soldiers first appear. */
 function homeTile(state: PlayerState, data: GameData): Tile {
-  const stable = state.village.buildings.find(
-    (b) => data.buildingById.get(b.type)?.feature === 'stable',
-  );
-  if (!stable) return { x: Math.floor(data.village.village.mapSize / 2), y: 0 };
-  const size = sizeOf(stable.type, data);
-  return { x: stable.x + Math.floor(size / 2), y: stable.y + size };
+  const hub =
+    state.village.buildings.find((b) => data.buildingById.get(b.type)?.feature === 'nest') ??
+    state.village.buildings.find((b) => data.buildingById.get(b.type)?.feature === 'storage') ??
+    state.village.buildings.find((b) => data.buildingById.get(b.type)?.feature === 'townHall');
+  if (!hub) return { x: Math.floor(data.village.village.mapSize / 2), y: 0 };
+  const size = sizeOf(hub.type, data);
+  return { x: hub.x + Math.floor(size / 2), y: hub.y + size };
 }
 
 /**

@@ -551,7 +551,48 @@ function validateVillage(
     issues.push(`${where}: harus ada tepat satu bangunan feature "townHall"`);
   const townHall = townHalls[0];
   const maxTownHallLevel = townHall?.levels.length ?? 1;
+  if (rules.population.decorationCapByTownHall.length !== maxTownHallLevel) {
+    issues.push(
+      `rules.json: population.decorationCapByTownHall harus berisi ${maxTownHallLevel} angka (satu per level Balai Utama)`,
+    );
+  }
+  if (!village.categories[rules.population.decorationCategory]) {
+    issues.push(
+      `rules.json: population.decorationCategory "${rules.population.decorationCategory}" bukan kategori di buildings.json`,
+    );
+  }
+  const draw = rules.marketDraw;
+  const drawBuilding = buildingById.get(draw.building);
+  if (!drawBuilding) issues.push(`rules.json: marketDraw.building "${draw.building}" tidak ada`);
+  if (draw.tables[0]?.minLevel !== 1) {
+    issues.push('rules.json: marketDraw.tables harus dimulai dari minLevel 1');
+  }
+  draw.tables.forEach((table, i) => {
+    const at = `rules.json: marketDraw.tables[${i}]`;
+    if (i > 0 && table.minLevel <= draw.tables[i - 1]!.minLevel) {
+      issues.push(`${at}: minLevel harus naik berurutan`);
+    }
+    if (drawBuilding && table.minLevel > drawBuilding.levels.length) {
+      issues.push(`${at}: "${draw.building}" tidak punya level ${table.minLevel}`);
+    }
+    table.prizes.forEach(({ prize }, j) => {
+      if (prize.wonder) issues.push(`${at}.prizes[${j}]: undian tidak boleh memberi Keajaiban`);
+      for (const d of prize.decorations) {
+        if (buildingById.get(d)?.category !== rules.population.decorationCategory) {
+          issues.push(`${at}.prizes[${j}]: "${d}" bukan dekorasi`);
+        }
+      }
+    });
+  });
+  if (rules.workers.trainSecondsByTownHall.length !== maxTownHallLevel) {
+    issues.push(
+      `rules.json: workers.trainSecondsByTownHall harus berisi ${maxTownHallLevel} angka (satu per level Balai Utama)`,
+    );
+  }
   for (const b of village.buildings) {
+    if (b.feature !== 'barracks' && b.levels.some((l) => l.queueBonus !== undefined)) {
+      issues.push(`${where}: "${b.id}" bukan barak, tidak boleh punya queueBonus`);
+    }
     if (b.maxCount.length !== maxTownHallLevel) {
       issues.push(
         `${where}: "${b.id}".maxCount harus berisi ${maxTownHallLevel} angka (satu per level Balai Utama)`,
@@ -589,7 +630,7 @@ function validateVillage(
       issues.push(`${where}: "${b.id}" lineBuild harus berukuran 1 dan semua levelnya seconds 0`);
     }
     if (
-      b.feature === 'mixer' &&
+      (b.feature === 'mixer' || b.feature === 'altar') &&
       b.levels[0]!.requiresTownHall !== rules.mixer.unlockTownHallLevel
     ) {
       issues.push(
