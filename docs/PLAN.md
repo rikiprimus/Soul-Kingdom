@@ -1122,11 +1122,18 @@ Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) 
 > - **Client:** peta Petualangan menampilkan "Butuh Gerbang Petualangan Lv N" untuk wilayah dan titik yang tertahan gerbang; kartu Gerbang Petualangan menunjukkan wilayah yang sudah dibuka gerbang dan wilayah berikutnya.
 > - **Tes:** `adventure.test.ts` (wilayah butuh level gerbang, satu wilayah per level dengan Puncak Badai keempat, titik & serangan tertahan gerbang, bos ke-4 membuka tingkat 5, pasukan kuat bisa mengalahkan semua titik termasuk Titan Badai); `mixer.test.ts` memakai "semua bos dikalahkan".
 
-### - [ ] Tugas 1C.9 — Goblin, berburu & bertahan
+### - [x] Tugas 1C.9 — Goblin, berburu & bertahan
 
 - Musuh liar baru **Goblin** (baris 1–2, lincah dan rapuh; statistik di `rules.json`, gambar orisinal).
 - **Buru** memakai prajurit, **Tangkap** memakai pekerja.
 - Saat serangan desa, unit yang ≤ 4 petak dari desa ikut bertahan (angka di `rules.json`); pekerja di luar lari ke Balai Utama dan tidak bisa diserang.
+
+> **Ringkasan (selesai 2026-10-27):**
+>
+> - **Goblin:** jenis kelompok musuh liar baru `goblin` di baris Balai 1 (3–4 ekor, kekuatan 0,3) dan Balai 2 (4–6 ekor, 0,45), hadiah emas + kayu + peluang kecil Kristal Jiwa. Statistik di `rules.battle.goblin` (HP 80, serangan 9, pertahanan 4, kecepatan 13, jangkauan 1, `powerScale` 1,2), dihitung seperti bandit (kekuatan per kepala). Jarak deteksi = bandit. Gambar buatan kode (goblin hijau kebiruan bertelinga runcing dengan belati tulang & perisai kayu; ikon gubuk ranting).
+> - **Buru memakai prajurit:** aksi baru `huntAnimal` (aksi server): prajurit bebas berjalan ke hewan dan berjaga di sana (`guard` = id hewan), kerja buru = detik × jumlah pemburu (maks `maxWorkers` hewan), selesai = makanan lalu pemburu berhenti berjaga. Pekerja tidak bisa berburu lagi (galat `huntNeedsSoldiers`), hanya **Tangkap**. Panggil pulang melepas pekerja maupun pemburu. Kartu hewan: tombol **Buru dengan N prajurit** (prajurit bebas terdekat), Tangkap dengan pemilih pekerja. **Simpanan v30:** pekerja yang sedang berburu dikembalikan menganggur, perburuan mulai ulang.
+> - **Bertahan:** pemburu adalah unit di peta, jadi ikut bertahan bila ≤ `raids.defendTiles` (4) petak dari penyerang, seperti unit lain. Selama serangan desa, pekerja yang mengumpulkan berlindung di Balai Utama (digambar masuk ke Balai), pengumpulan & perburuan berhenti sementara, dan musuh liar tidak bisa menyerang mereka.
+> - **Tes:** `animals.test.ts` (pekerja tidak bisa berburu, prajurit berburu lebih cepat bila lebih banyak lalu berhenti berjaga, galat & hewan sibuk, panggil pulang, aksi server, berhenti saat serangan desa, migrasi v29), `missions.test.ts` (goblin di baris Balai 1–2, statistik berskala seperti bandit, kekuatan).
 
 ### - [ ] Tugas 1C.10 — Pohon Jiwa (penyembuhan)
 

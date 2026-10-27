@@ -47,6 +47,9 @@ import {
   populationUsed,
   decorationPopulation,
   marketDrawStatus,
+  huntersOf,
+  isOnMission,
+  unitTile,
   machineName,
   workshopLevel,
   workshopQueue,
@@ -178,13 +181,17 @@ function encounterInfo(state: PlayerState, id: string, a: InfoActions): InfoCont
   const percent = members.length ? Math.round(previewWinChance(state, ids, e) * 100) : 0;
   const mission = missionFor(state, e.id);
   const lines = [
-    group.kind === 'bandit' ? t('enemy.banditInfo') : encounterMembers(e),
+    group.kind === 'bandit'
+      ? t('enemy.banditInfo')
+      : group.kind === 'goblin'
+        ? t('enemy.goblinInfo')
+        : encounterMembers(e),
     t('team.reward', { reward: rewardLabel(group.reward) }),
   ];
   if (e.raid) lines.unshift(t('raid.info', { n: gameData.rules.raids.defendTiles }));
   const content: InfoContent = {
     title: encounterTitle(e),
-    iconType: group.kind === 'bandit' ? 'enemy-bandit' : 'enemy-monster',
+    iconType: group.kind === 'monster' ? 'enemy-monster' : `enemy-${group.kind}`,
     iconLevel: 1,
     lines,
     status: () => {
@@ -234,10 +241,13 @@ function animalInfo(state: PlayerState, id: string, a: InfoActions): InfoContent
   const animal = state.village.animals.find((x) => x.id === id);
   if (!animal) return null;
   const def = animalType(animal.type);
-  const crew = animalWorkers(state, animal.id);
+  // Tugas 1C.9: soldiers hunt, workers capture.
+  const hunters = huntersOf(state, animal.id);
+  const workers = animalWorkers(state, animal.id);
   const job = animal.job;
+  const crew = job === 'hunt' ? hunters.length : workers;
   const left = (j: AnimalJob, n: number) =>
-    Math.ceil((jobSeconds(animal.type, j) - (job === j ? animal.work : 0)) / n);
+    Math.ceil((jobSeconds(animal.type, j) - (job === j ? animal.work : 0)) / Math.max(1, n));
   const content: InfoContent = {
     title: def.name,
     iconType: animal.type,
@@ -251,6 +261,7 @@ function animalInfo(state: PlayerState, id: string, a: InfoActions): InfoContent
         const percent = Math.floor((animal.work / jobSeconds(animal.type, job)) * 100);
         return t('animal.working', {
           job: t(`animal.job.${job}`),
+          who: t(`animal.who.${job}`),
           n: crew,
           max: def.maxWorkers,
           percent,
@@ -261,42 +272,57 @@ function animalInfo(state: PlayerState, id: string, a: InfoActions): InfoContent
     },
     buttons: [],
   };
-  const canSend = Math.min(idleWorkers(state).length, def.maxWorkers - crew);
+  if (workers === 0) {
+    // Free soldiers (not fighting, not guarding or hunting elsewhere), nearest first.
+    const free = state.soldiers
+      .map((sd) => sd.id)
+      .filter((sid) => state.units[sid] && !state.units[sid]!.guard && !isOnMission(state, sid))
+      .map((sid) => {
+        const p = unitTile(state.units[sid]!, a.now());
+        return { sid, d: Math.hypot(p.x - animal.x, p.y - animal.y) };
+      })
+      .sort((x, y) => x.d - y.d)
+      .slice(0, def.maxWorkers - hunters.length)
+      .map((u) => u.sid);
+    if (free.length > 0) {
+      content.buttons.push({
+        label: t('animal.huntSoldiers', {
+          n: free.length,
+          time: formatDuration(left('hunt', hunters.length + free.length)),
+        }),
+        color: 0x3c9a5f,
+        onClick: () => a.run('huntAnimal', { ids: free, animalId: animal.id }),
+      });
+    } else if (hunters.length < def.maxWorkers) {
+      content.lines.push(t('animal.noSoldiers'));
+    }
+  }
+  const canSend =
+    hunters.length > 0 ? 0 : Math.min(idleWorkers(state).length, def.maxWorkers - workers);
   if (canSend > 0) {
     const { value, set } = pick(a, `animal:${animal.id}`, canSend);
     content.workers = {
       label: t('info.workersTime', {
         n: value,
-        time: formatDuration(left(crew > 0 && job ? job : 'hunt', crew + value)),
+        time: formatDuration(left('capture', workers + value)),
       }),
       value,
       min: 1,
       max: canSend,
       set,
     };
-    const send = (j: AnimalJob) => () =>
-      a.run('sendToAnimal', { id: animal.id, job: j, count: value });
-    if (crew === 0 || job === 'hunt') {
-      content.buttons.push({
-        label: t('animal.hunt', { time: formatDuration(left('hunt', crew + value)) }),
-        color: 0x3c9a5f,
-        onClick: send('hunt'),
-      });
-    }
-    if (crew === 0 || job === 'capture') {
-      content.buttons.push({
-        label: t('animal.capture', { time: formatDuration(left('capture', crew + value)) }),
-        color: COLORS.goldDark,
-        disabled: crew === 0 && freeRanchSlots(state) < 1,
-        onClick: send('capture'),
-      });
-    }
-  } else if (crew < def.maxWorkers) {
+    content.buttons.push({
+      label: t('animal.capture', { time: formatDuration(left('capture', workers + value)) }),
+      color: COLORS.goldDark,
+      disabled: workers === 0 && freeRanchSlots(state) < 1,
+      onClick: () => a.run('sendToAnimal', { id: animal.id, job: 'capture', count: value }),
+    });
+  } else if (hunters.length === 0 && workers < def.maxWorkers) {
     content.lines.push(t('place.noWorkers'));
   }
   if (crew > 0) {
     content.buttons.push({
-      label: t('info.recallWorkers'),
+      label: t(job === 'hunt' ? 'animal.recallHunters' : 'info.recallWorkers'),
       color: COLORS.panelLight,
       onClick: () => a.run('recallWorkers', { id: animal.id }),
     });

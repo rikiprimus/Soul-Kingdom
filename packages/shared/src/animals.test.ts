@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   animalRespawnSeconds,
   animalType,
-  animalWorkers,
   freeRanchSlots,
+  huntersOf,
   ranchAnimalsIn,
   sendToAnimal,
   spawnAnimals,
@@ -11,6 +11,8 @@ import {
 import { deepClone } from './clone';
 import { gameData } from './data';
 import { deserializeState, serializeState } from './save';
+import { runAction } from './server/actions';
+import { huntAnimal } from './units';
 import { createInitialState, type ActionResult, type PlayerState } from './state';
 import {
   buildBuilding,
@@ -20,7 +22,7 @@ import {
   settleVillage,
 } from './village';
 import { advanceWilds, recallWorkers } from './wilds';
-import { createWorkers, idleWorkers } from './workers';
+import { createWorkers } from './workers';
 
 const T0 = 1_000_000;
 const HOUR = 3600;
@@ -58,13 +60,29 @@ function setup(type: string, ranch = false) {
   return { s, ranchId, at };
 }
 
-describe('hunting', () => {
-  it('turns an animal into food, faster with more workers', () => {
+describe('hunting (soldiers, Tugas 1C.9)', () => {
+  /** `n` soldiers standing next to the animal at (1, 1). */
+  function withHunters(s: PlayerState, n: number) {
+    for (let i = 0; i < n; i++) {
+      s.soldiers.push({ id: `h${i}`, kind: 'prajurit', rank: 0 });
+      s.units[`h${i}`] = { x: 2 + i, y: 3, path: [], departAt: T0, guard: null };
+    }
+    return Array.from({ length: n }, (_, i) => `h${i}`);
+  }
+
+  it('workers cannot hunt any more, only capture', () => {
+    const { s } = setup('rusa', true);
+    expect(sendToAnimal(s, 'a1', 'hunt', 1)).toEqual({ ok: false, error: 'huntNeedsSoldiers' });
+  });
+
+  it('turns an animal into food, faster with more hunters, then they stop guarding it', () => {
     for (const def of animals.types) {
       for (let n = 1; n <= def.maxWorkers; n++) {
         const { s, at } = setup(def.id);
-        const sent = ok(sendToAnimal(s, 'a1', 'hunt', n)).state;
-        expect(animalWorkers(sent, 'a1')).toBe(n);
+        const ids = withHunters(s, n);
+        const sent = ok(huntAnimal(s, { ids, animalId: 'a1' }, at)).state;
+        expect(huntersOf(sent, 'a1')).toEqual(ids);
+        expect(sent.village.animals[0]!.job).toBe('hunt');
         const almost = advanceWilds(sent, def.hunt.workSeconds / n - 1, at);
         expect(almost.animals).toHaveLength(0);
         const done = advanceWilds(almost.state, 1, at);
@@ -73,29 +91,75 @@ describe('hunting', () => {
         ]);
         expect(done.state.resources.food).toBe(s.resources.food + def.hunt.food);
         expect(done.state.village.animals).toHaveLength(0);
-        expect(idleWorkers(done.state)).toHaveLength(done.state.workers.length);
+        expect(ids.every((id) => done.state.units[id]!.guard === null)).toBe(true);
       }
     }
   });
 
-  it('refuses too many workers, a busy animal or a missing one', () => {
+  it('refuses too many hunters, workers as hunters, a busy animal or a missing one', () => {
     const def = animalType('ayam-hutan');
     const { s } = setup(def.id, true);
-    expect(sendToAnimal(s, 'a1', 'hunt', def.maxWorkers + 1)).toEqual({
+    const ids = withHunters(s, def.maxWorkers + 1);
+    expect(huntAnimal(s, { ids, animalId: 'a1' }, T0)).toEqual({
       ok: false,
       error: 'tooManyWorkers',
     });
-    expect(sendToAnimal(s, 'nope', 'hunt', 1)).toEqual({ ok: false, error: 'animalNotFound' });
-    const hunting = ok(sendToAnimal(s, 'a1', 'hunt', 1)).state;
-    expect(sendToAnimal(hunting, 'a1', 'capture', 1)).toEqual({
+    expect(huntAnimal(s, { ids: [s.workers[0]!.id], animalId: 'a1' }, T0)).toEqual({
+      ok: false,
+      error: 'huntNeedsSoldiers',
+    });
+    expect(huntAnimal(s, { ids: [ids[0]!], animalId: 'nope' }, T0)).toEqual({
+      ok: false,
+      error: 'animalNotFound',
+    });
+    const hunting = ok(huntAnimal(s, { ids: [ids[0]!], animalId: 'a1' }, T0)).state;
+    expect(sendToAnimal(hunting, 'a1', 'capture', 1)).toEqual({ ok: false, error: 'animalBusy' });
+    const capturing = ok(sendToAnimal(s, 'a1', 'capture', 1)).state;
+    expect(huntAnimal(capturing, { ids: [ids[0]!], animalId: 'a1' }, T0)).toEqual({
       ok: false,
       error: 'animalBusy',
     });
     // Called back, the animal can be captured instead; the work starts over.
     const back = ok(recallWorkers(advanceWilds(hunting, 10, T0).state, 'a1')).state;
+    expect(huntersOf(back, 'a1')).toEqual([]);
     expect(back.village.animals[0]!.work).toBe(10);
     const capture = ok(sendToAnimal(back, 'a1', 'capture', 1)).state;
     expect(capture.village.animals[0]).toMatchObject({ job: 'capture', work: 0 });
+  });
+
+  it('is a server action', () => {
+    const { s } = setup('rusa');
+    const ids = withHunters(s, 1);
+    expect(runAction(s, 'huntAnimal', { ids, animalId: 'a1' }, T0).ok).toBe(true);
+  });
+
+  it('pauses during a raid on the village, like gathering', () => {
+    const { s, at } = setup('rusa');
+    const ids = withHunters(s, 1);
+    const sent = ok(huntAnimal(s, { ids, animalId: 'a1' }, at)).state;
+    sent.village.encounters.push({
+      id: 'r',
+      level: 0,
+      group: 0,
+      x: 40,
+      y: 40,
+      count: 1,
+      enemies: [],
+      raid: { warnLeft: 0, next: null, stepLeft: 0, stepSeconds: 0, breaking: null },
+    });
+    const r = advanceWilds(sent, 1000, at);
+    expect(r.animals).toEqual([]);
+    expect(r.state.village.animals[0]!.work).toBe(0);
+  });
+
+  it('migrates v29 saves: workers out hunting come back idle', () => {
+    const { s } = setup('rusa');
+    s.village.animals[0]!.job = 'hunt';
+    s.village.animals[0]!.work = 20;
+    s.workers[0]!.task = { kind: 'gathering', targetId: 'a1' };
+    const loaded = deserializeState(JSON.stringify({ schemaVersion: 29, state: s }));
+    expect(loaded.workers[0]!.task).toEqual({ kind: 'idle' });
+    expect(loaded.village.animals[0]).toMatchObject({ job: null, work: 0 });
   });
 });
 

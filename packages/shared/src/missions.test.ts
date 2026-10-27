@@ -11,6 +11,7 @@ import {
 } from './encounters';
 import {
   encounterGroup,
+  encounterFighters,
   encounterPower,
   monsterPower,
   reviveCost,
@@ -72,7 +73,8 @@ describe('encounter spawns', () => {
   it('start with the groups for the Balai level and come back a day after the last spawn', () => {
     const s = createInitialState(T0, 7);
     expect(s.village.encounters).toHaveLength(encounterTarget(1));
-    for (const e of s.village.encounters) expect(encounterGroup(e).kind).toBe('bandit');
+    // Balai 1: packs only (bandits or goblins, Tugas 1C.9).
+    for (const e of s.village.encounters) expect(encounterGroup(e).kind).not.toBe('monster');
     const day = encounterRespawnSeconds();
     const fewer = deepClone(s);
     fewer.village.encounters = fewer.village.encounters.slice(1);
@@ -99,7 +101,7 @@ describe('encounter spawns', () => {
         seen.add(e.group);
         expect(e.count).toBeGreaterThanOrEqual(def.count[0]);
         expect(e.count).toBeLessThanOrEqual(def.count[1]);
-        if (def.kind === 'bandit') {
+        if (def.kind !== 'monster') {
           expect(e.enemies).toEqual([]);
         } else {
           expect(e.enemies).toHaveLength(e.count);
@@ -111,7 +113,9 @@ describe('encounter spawns', () => {
       }
       expect(seen.size).toBe(row.groups.length);
     });
-    expect(encounters.levels[0]!.groups.every((g) => g.kind === 'bandit')).toBe(true);
+    // Balai 1: bandits and goblins only (Tugas 1C.9).
+    expect(encounters.levels[0]!.groups.every((g) => g.kind !== 'monster')).toBe(true);
+    expect(encounters.levels[0]!.groups.some((g) => g.kind === 'goblin')).toBe(true);
   });
 });
 
@@ -339,5 +343,28 @@ describe('save migration v9', () => {
       encounterTarget(1),
     );
     expect(deserializeState(serializeState(loaded))).toEqual(loaded);
+  });
+});
+
+describe('goblins (Tugas 1C.9)', () => {
+  it('are a quick, frail pack on the Balai 1–2 rows, scaled like bandits', () => {
+    const { goblin, bandit } = gameData.rules.battle;
+    expect(goblin.stats.spd).toBeGreaterThan(bandit.stats.spd);
+    expect(goblin.stats.hp).toBeLessThan(bandit.stats.hp);
+    const rows = encounters.levels.filter((l) => l.groups.some((g) => g.kind === 'goblin'));
+    expect(rows.map((l) => l.townHall)).toEqual([1, 2]);
+    const group = rows[0]!.groups.findIndex((g) => g.kind === 'goblin');
+    const def = rows[0]!.groups[group]!;
+    const e = { id: 'g', level: 0, group, x: 0, y: 0, count: 3, enemies: [] };
+    const fighters = encounterFighters(e);
+    expect(fighters).toHaveLength(3);
+    const k = def.banditPower! * goblin.powerScale;
+    expect(fighters[0]!.stats).toEqual({
+      ...goblin.stats,
+      hp: goblin.stats.hp * k,
+      atk: goblin.stats.atk * k,
+      def: goblin.stats.def * k,
+    });
+    expect(encounterPower(e, [])).toBeCloseTo(3 * def.banditPower!);
   });
 });

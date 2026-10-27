@@ -319,6 +319,18 @@ const DESIGNS: Record<string, Design> = {
       p.ellipse({ x: fire.x, y: fire.y - 8 }, 2.5, 4, 0xffe066);
     },
   },
+  'enemy-goblin': {
+    top: 60,
+    draw(p) {
+      // A goblin hut of twigs with a small fire.
+      p.flat(0.08, 0.08, 0.92, 0.92, 0x6f8a4a);
+      p.pyramid(0.15, 0.15, 0.62, 0.62, 0, 30, 0x7a6a3a);
+      p.pyramid(0.25, 0.25, 0.52, 0.52, 22, 10, 0x5a4a2a);
+      const fire = p.fp(0.74, 0.74);
+      p.ellipse({ x: fire.x, y: fire.y - 2 }, 8, 4, 0x4a3520);
+      p.ellipse({ x: fire.x, y: fire.y - 8 }, 4, 7, 0x7fe0b0);
+    },
+  },
   'enemy-monster': {
     top: 60,
     draw(p) {

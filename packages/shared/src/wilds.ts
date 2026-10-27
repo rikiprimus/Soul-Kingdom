@@ -1,7 +1,7 @@
 import { deepClone } from './clone';
 import { gameData, VILLAGE_RESOURCES, type GameData, type VillageAmount } from './data';
 import { ambushAt, type AmbushResult } from './aggro';
-import { advanceAnimals, type AnimalDone } from './animals';
+import { advanceAnimals, huntersOf, releaseHunters, type AnimalDone } from './animals';
 import { recordAction } from './player';
 import { createRng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
@@ -71,9 +71,11 @@ export function sendWorkers(
 
 /** Calls every worker on a node or animal back; the work done so far stays. */
 export function recallWorkers(state: PlayerState, obstacleId: string): ActionResult {
-  if (gatherWorkers(state, obstacleId) === 0) return fail('notGathering');
+  const hunters = huntersOf(state, obstacleId).length;
+  if (gatherWorkers(state, obstacleId) === 0 && hunters === 0) return fail('notGathering');
   const next = deepClone(state);
   releaseWorkers(next, gathering(obstacleId));
+  releaseHunters(next, obstacleId);
   return { ok: true, state: next };
 }
 
@@ -88,8 +90,13 @@ export function advanceWilds(
   now: number,
   data: GameData = gameData,
 ): { state: PlayerState; gathered: Gathered[]; animals: AnimalDone[] } {
-  const busy = state.workers.some((w) => w.task.kind === 'gathering');
-  if (seconds <= 0 || !busy) return { state, gathered: [], animals: [] };
+  const busy =
+    state.workers.some((w) => w.task.kind === 'gathering') ||
+    state.village.animals.some((a) => huntersOf(state, a.id).length > 0);
+  // Tugas 1C.9: during a raid on the village, workers out gathering shelter in the
+  // Balai Utama (safe, no work done) and hunters stop too.
+  const raided = state.village.encounters.some((e) => e.raid);
+  if (seconds <= 0 || !busy || raided) return { state, gathered: [], animals: [] };
   const next = deepClone(state);
   let rng = createRng(next.rngState);
   const gathered: Gathered[] = [];

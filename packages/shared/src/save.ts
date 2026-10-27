@@ -17,7 +17,7 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 29;
+export const SAVE_SCHEMA_VERSION = 30;
 
 const int = z.number().int();
 const villageAmountSchema = z.object({
@@ -612,6 +612,22 @@ const migrations: Record<number, (state: unknown) => unknown> = {
     const state = raw as PlayerState;
     state.machines = [];
     state.workshopQueue = [];
+    return state;
+  },
+  // v29 (Tugas 1C.9): hunting now takes soldiers. Workers out hunting come back idle and
+  // the hunt starts over.
+  29: (raw) => {
+    const state = raw as PlayerState;
+    for (const island of [state.village, ...Object.values(state.islands ?? {})]) {
+      for (const a of island.animals) {
+        if (a.job !== 'hunt') continue;
+        for (const w of state.workers) {
+          if (w.task.kind === 'gathering' && w.task.targetId === a.id) w.task = { kind: 'idle' };
+        }
+        a.job = null;
+        a.work = 0;
+      }
+    }
     return state;
   },
 };

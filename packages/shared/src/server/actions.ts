@@ -24,7 +24,7 @@ import {
   type PlayerState,
 } from '../state';
 import { placeStored, rotateBuilding, storeBuilding } from '../storage';
-import { guardNode, moveUnits, retreatUnits, sendTeam, toggleGate } from '../units';
+import { guardNode, huntAnimal, moveUnits, retreatUnits, sendTeam, toggleGate } from '../units';
 import {
   addConstructionWorkers,
   buildBuilding,
@@ -152,6 +152,7 @@ export const ACTIONS = {
   claimQuest: action(z.object({}), (s) => claimQuest(s)),
   claimDaily: action(z.object({}), (s, _p, now) => claimDaily(s, now)),
   toggleGate: action(byId, (s, p) => toggleGate(s, p.id)),
+  huntAnimal: action(z.object({ ids, animalId: id }), (s, p, now) => huntAnimal(s, p, now)),
   drawMarket: action(z.object({}), (s, _p, now) => drawMarket(s, now)),
   buildMachine: action(z.object({ buildingId: id, kind: id }), (s, p, now) =>
     buildMachine(s, p, now),

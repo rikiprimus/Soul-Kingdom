@@ -263,6 +263,8 @@ export const rulesFileSchema = z.object({
       }),
       powerScale: z.number().positive(),
     }),
+    /** Goblins (Tugas 1C.9): a quick, frail pack counted like bandits. */
+    goblin: z.object({ stats: statBlockSchema, powerScale: z.number().positive() }),
   }),
   /** Monsters and soldiers standing on village tiles (units.ts). */
   units: z.object({ walkTilesPerSecond: z.number().positive() }),
@@ -555,7 +557,7 @@ export const obstacleDefSchema = z.object({
 });
 
 const encounterGroupSchema = z.object({
-  kind: z.enum(['bandit', 'monster']),
+  kind: z.enum(['bandit', 'goblin', 'monster']),
   weight: z.number().positive(),
   count: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
   banditPower: z.number().positive().optional(),

@@ -1,5 +1,5 @@
 import { soldierTexture } from '../art/soldierArt';
-import { banditTexture } from '../art/enemyArt';
+import { banditTexture, goblinTexture } from '../art/enemyArt';
 import Phaser from 'phaser';
 import {
   canPlace,
@@ -2136,9 +2136,14 @@ export class VillageScene extends Phaser.Scene {
         this.people.push(person);
       }
       const task = w.task;
-      // Workers living in a mine or mill are inside: hidden until they come out.
+      // Workers living in a mine or mill are inside: hidden until they come out. During a
+      // raid, workers out gathering shelter in the Balai Utama (Tugas 1C.9).
       const home =
-        task.kind === 'staffed' ? village.buildings.find((x) => x.id === task.buildingId) : null;
+        task.kind === 'staffed'
+          ? village.buildings.find((x) => x.id === task.buildingId)
+          : task.kind === 'gathering' && currentRaid(this.store.state)
+            ? village.buildings.find((x) => x.type === gameData.townHallId)
+            : null;
       if (home) {
         if (person.image.visible) {
           person.tween?.stop();
@@ -2369,20 +2374,21 @@ export class VillageScene extends Phaser.Scene {
         [0, 10],
         [-2, -10],
       ];
-      const shown = Math.min(e.count, encounterGroup(e).kind === 'bandit' ? 4 : 3);
+      const kind = encounterGroup(e).kind;
+      const shown = Math.min(e.count, kind === 'monster' ? 3 : 4);
       for (let i = 0; i < shown; i++) {
         const [dx, dy] = spots[i]!;
-        if (encounterGroup(e).kind === 'bandit') {
+        if (kind !== 'monster') {
           view.add(
             this.add
-              .image(dx!, dy! + 4, banditTexture(this))
+              .image(dx!, dy! + 4, kind === 'goblin' ? goblinTexture(this) : banditTexture(this))
               .setOrigin(0.5, 1)
               .setScale(0.55)
               .setFlipX(i % 2 === 1),
           );
         } else {
-          const kind = e.enemies[i]!;
-          view.add(new MonsterView(this, dx!, dy! - 12, { ...kind }, 30));
+          const foe = e.enemies[i]!;
+          view.add(new MonsterView(this, dx!, dy! - 12, { ...foe }, 30));
         }
       }
       const label = this.add

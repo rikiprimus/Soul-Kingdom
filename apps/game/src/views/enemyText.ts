@@ -3,7 +3,9 @@ import { t } from '../text';
 
 /** "Bandit ×3" or "Monster liar ×2 (Kucing Api, …)". */
 export function encounterTitle(e: WildEncounter): string {
-  if (encounterGroup(e).kind === 'bandit') return t('enemy.bandits', { n: e.count });
+  const { kind } = encounterGroup(e);
+  if (kind === 'bandit') return t('enemy.bandits', { n: e.count });
+  if (kind === 'goblin') return t('enemy.goblins', { n: e.count });
   return t('enemy.monsters', { n: e.count });
 }
 

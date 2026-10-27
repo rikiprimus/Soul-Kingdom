@@ -136,7 +136,7 @@ export function encounterPower(
   data: GameData = gameData,
 ): number {
   const group = encounterGroup(e, data);
-  if (group.kind === 'bandit') return e.count * (group.banditPower ?? 0);
+  if (group.kind !== 'monster') return e.count * (group.banditPower ?? 0);
   return e.enemies.reduce((sum, x) => {
     const edge = average(
       team.map((u) => (u.element === null ? 1 : elementAdvantage(x.element, u.element, data))),
@@ -166,8 +166,9 @@ export function teamFighters(
 /** The enemies of an encounter as fighters: bandits by head count, or its monsters. */
 export function encounterFighters(e: WildEncounter, data: GameData = gameData): Fighter[] {
   const group = encounterGroup(e, data);
-  if (group.kind === 'bandit') {
-    const { stats, powerScale } = data.rules.battle.bandit;
+  if (group.kind !== 'monster') {
+    // Bandits and goblins: a pack counted by head, each scaled by the group's power.
+    const { stats, powerScale } = data.rules.battle[group.kind];
     const k = (group.banditPower ?? 0) * powerScale;
     const scaled = { ...stats, hp: stats.hp * k, atk: stats.atk * k, def: stats.def * k };
     return Array.from({ length: e.count }, (_, i) => ({

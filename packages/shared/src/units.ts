@@ -1,5 +1,6 @@
 import { deepClone } from './clone';
 import { gameData, type GameData } from './data';
+import { animalType, huntersOf } from './animals';
 import { isOnMission, missionFor } from './missions';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { canPlace, sizeOf, type Building, type Tile } from './village';
@@ -290,6 +291,39 @@ export function guardNode(
   const node = state.village.obstacles.find((o) => o.id === params.obstacleId);
   if (!node) return fail('obstacleNotFound');
   return sendUnits(state, params.ids, { x: node.x, y: node.y }, node.id, now, data);
+}
+
+/**
+ * "Buru" (Tugas 1C.9): soldiers walk to an animal and hunt it there, up to its
+ * `maxWorkers`. They count as its guard; the hunt runs on active play like gathering.
+ */
+export function huntAnimal(
+  state: PlayerState,
+  params: { ids: string[]; animalId: string },
+  now: number,
+  data: GameData = gameData,
+): ActionResult<{ moved: string[] }> {
+  const animal = state.village.animals.find((a) => a.id === params.animalId);
+  if (!animal) return fail('animalNotFound');
+  for (const id of params.ids) {
+    if (!state.soldiers.some((s) => s.id === id)) return fail('huntNeedsSoldiers');
+  }
+  if (state.workers.some((w) => w.task.kind === 'gathering' && w.task.targetId === animal.id)) {
+    return fail('animalBusy');
+  }
+  const hunting = huntersOf(state, animal.id).filter((id) => !params.ids.includes(id));
+  if (hunting.length + params.ids.length > animalType(animal.type, data).maxWorkers) {
+    return fail('tooManyWorkers');
+  }
+  const r = sendUnits(state, params.ids, { x: animal.x, y: animal.y }, animal.id, now, data);
+  if (!r.ok) return r;
+  const a = r.state.village.animals.find((x) => x.id === animal.id)!;
+  // Switching from capturing to hunting starts the work over.
+  if (a.job !== 'hunt') {
+    a.job = 'hunt';
+    a.work = 0;
+  }
+  return r;
 }
 
 /** Units guarding a wild node (for the coming ambushes while gathering). */

@@ -789,8 +789,8 @@ function validateWilds(
     level.groups.forEach((g, j) => {
       const gat = `${at}.groups[${j}]`;
       if (g.count[0] > g.count[1]) issues.push(`${gat}: count [min, max] terbalik`);
-      if (g.kind === 'bandit' && g.banditPower === undefined)
-        issues.push(`${gat}: bandit butuh banditPower`);
+      if ((g.kind === 'bandit' || g.kind === 'goblin') && g.banditPower === undefined)
+        issues.push(`${gat}: ${g.kind} butuh banditPower`);
       if (g.kind === 'monster') {
         if (g.formTier === undefined || !formsByTier.get(g.formTier)?.length) {
           issues.push(`${gat}: formTier ${g.formTier} tidak punya wujud`);

@@ -97,6 +97,11 @@
       "stats": { "hp": 120, "atk": 10, "def": 8, "spd": 9, "range": 1 },
       "powerScale": 1.2
     },
+    "_goblinNote": "Goblin (Tugas 1C.9): musuh liar lincah dan rapuh, dihitung seperti bandit (banditPower kelompoknya x powerScale; spd dan range tidak dikali).",
+    "goblin": {
+      "stats": { "hp": 80, "atk": 9, "def": 4, "spd": 13, "range": 1 },
+      "powerScale": 1.2
+    },
     "_capNote": "powerCapByCombinedBarracksLevel[n] = batas poin kekuatan Serbu saat jumlah level Barak, Lapangan Pemanah, Kandang Kuda, dan Bengkel = n (Tugas 1C.7)."
   },
   "skirmish": {

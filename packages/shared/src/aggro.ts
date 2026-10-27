@@ -23,10 +23,10 @@ export interface AmbushResult {
   workersLost: number;
 }
 
-/** Wakes this close (tiles): bandits and wild monsters differ. */
+/** Wakes this close (tiles): packs (bandits, goblins) and wild monsters differ. */
 export function aggroRadius(e: WildEncounter, data: GameData = gameData): number {
   const { aggro } = data.wilds.encounters;
-  return encounterGroup(e, data).kind === 'bandit' ? aggro.banditTiles : aggro.monsterTiles;
+  return encounterGroup(e, data).kind === 'monster' ? aggro.monsterTiles : aggro.banditTiles;
 }
 
 /**
@@ -162,7 +162,9 @@ export function aggroEncounters(
       );
       continue;
     }
-    // Workers gathering in reach (their node's tile is where they work).
+    // Workers gathering in reach (their node's tile is where they work); during a raid on
+    // the village they shelter in the Balai Utama and cannot be struck (Tugas 1C.9).
+    if (s.village.encounters.some((x) => x.raid)) continue;
     for (const o of s.village.obstacles) {
       if (reach(e, o.x + 0.5, o.y + 0.5) > radius) continue;
       const crew = s.workers.filter((w) => w.task.kind === 'gathering' && w.task.targetId === o.id);

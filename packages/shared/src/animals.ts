@@ -48,6 +48,24 @@ export function animalWorkers(state: PlayerState, animalId: string): number {
   return state.workers.filter((w) => onAnimal(animalId)(w.task)).length;
 }
 
+/** Soldiers hunting an animal (Tugas 1C.9): they stand by it as its guard. */
+export function huntersOf(state: PlayerState, animalId: string): string[] {
+  const soldiers = new Set(state.soldiers.map((s) => s.id));
+  return Object.entries(state.units)
+    .filter(([id, p]) => p.guard === animalId && soldiers.has(id))
+    .map(([id]) => id);
+}
+
+/** Hunters or capturing workers on an animal, by its job. */
+function animalCrew(state: PlayerState, a: WildAnimal): number {
+  return a.job === 'hunt' ? huntersOf(state, a.id).length : animalWorkers(state, a.id);
+}
+
+/** Hunters stop guarding the animal and stay where they are. */
+export function releaseHunters(state: PlayerState, animalId: string): void {
+  for (const id of huntersOf(state, animalId)) state.units[id]!.guard = null;
+}
+
 // ---------- Peternakan ----------
 
 const isRanch = (b: Building, data: GameData) =>
@@ -87,7 +105,7 @@ export function ranchFoodPerHour(state: PlayerState, b: Building, data: GameData
 
 // ---------- Hunting and capturing ----------
 
-/** Sends idle workers to hunt or capture an animal (up to its `maxWorkers`). */
+/** Sends idle workers to capture an animal (up to its `maxWorkers`); hunting takes soldiers. */
 export function sendToAnimal(
   state: PlayerState,
   animalId: string,
@@ -97,7 +115,9 @@ export function sendToAnimal(
 ): ActionResult {
   const animal = state.village.animals.find((a) => a.id === animalId);
   if (!animal) return fail('animalNotFound');
+  if (job === 'hunt') return fail('huntNeedsSoldiers');
   if (!Number.isInteger(count) || count < 1) return fail('invalidAmount');
+  if (huntersOf(state, animal.id).length > 0) return fail('animalBusy');
   const crew = animalWorkers(state, animal.id);
   if (crew > 0 && animal.job !== job) return fail('animalBusy');
   if (crew + count > animalType(animal.type, data).maxWorkers) return fail('tooManyWorkers');
@@ -143,7 +163,7 @@ export function advanceAnimals(
 ): AnimalDone[] {
   const done: AnimalDone[] = [];
   for (const a of state.village.animals) {
-    const crew = animalWorkers(state, a.id);
+    const crew = animalCrew(state, a);
     if (crew === 0 || !a.job) continue;
     const need = jobSeconds(a.type, a.job, data);
     a.work = Math.min(need, a.work + seconds * crew);
@@ -164,6 +184,7 @@ export function advanceAnimals(
       ranchId = ranch.id;
     }
     releaseWorkers(state, onAnimal(a.id));
+    releaseHunters(state, a.id);
     done.push({ animalId: a.id, type: a.type, x: a.x, y: a.y, job: a.job, food, ranchId });
   }
   const gone = new Set(done.map((d) => d.animalId));

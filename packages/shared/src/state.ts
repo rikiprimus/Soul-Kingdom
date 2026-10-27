@@ -182,6 +182,7 @@ export type ActionError =
   | 'notSellable'
   | 'notLineBuilding'
   | 'notGate'
+  | 'huntNeedsSoldiers'
   | 'notWorkshop'
   | 'powerCapExceeded'
   | 'notEnoughWood'
