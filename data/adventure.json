@@ -1,7 +1,7 @@
 {
   "_notes": [
     "Petualangan (Tugas 1.5). Semua angka masih awal dan akan diseimbangkan.",
-    "Wilayah terbuka berurutan: bos wilayah sebelumnya harus sudah dikalahkan, dan Balai Utama minimal requiresTownHall.",
+    "Wilayah terbuka berurutan: bos wilayah sebelumnya harus sudah dikalahkan, Balai Utama minimal requiresTownHall, dan Gerbang Petualangan minimal requiresGateLevel (Tugas 1C.8: tiap level gerbang membuka satu wilayah).",
     "Titik di peta (x, y = 0..1) terbuka bila semua titik di 'after' sudah dikalahkan. Pertarungan memakai medan Serbu (rules.serbu), batas poin gabungan barak, dan unit yang gugur mati.",
     "resource: dijaga musuh; menang = reward setiap kali, lalu titik (dan penjaganya) kembali setelah refillHours. gemChance = peluang 1 permata tiap diambil.",
     "camp: kemah musuh, reward sekali. boss: reward sekali (termasuk permata) dan menaikkan jumlah bos dikalahkan, yang membuka tingkat Soul Mixer berikutnya (rules.mixer.maxFormTierByBossesDefeated).",
@@ -104,7 +104,8 @@
           ],
           "reward": { "gold": 2500, "food": 500, "soulCrystal": 2, "gems": 20 }
         }
-      ]
+      ],
+      "requiresGateLevel": 1
     },
     {
       "id": "rawa-kabut",
@@ -189,7 +190,8 @@
           ],
           "reward": { "gold": 5000, "food": 1000, "soulCrystal": 3, "gems": 30 }
         }
-      ]
+      ],
+      "requiresGateLevel": 2
     },
     {
       "id": "gunung-api",
@@ -286,6 +288,137 @@
             { "kind": "monster", "form": "golem", "element": "api", "stage": "dewasa", "count": 2 }
           ],
           "reward": { "gold": 12000, "stone": 3000, "soulCrystal": 5, "gems": 50 }
+        }
+      ],
+      "requiresGateLevel": 3
+    },
+    {
+      "id": "puncak-badai",
+      "name": "Puncak Badai",
+      "description": "Puncak di atas awan, dihantam petir tanpa henti. Titan Badai menjaga gerbang langit.",
+      "requiresTownHall": 5,
+      "requiresGateLevel": 4,
+      "nodes": [
+        {
+          "id": "pb-kristal",
+          "kind": "resource",
+          "name": "Tebing Kristal Petir",
+          "x": 0.1,
+          "y": 0.7,
+          "after": [],
+          "defenders": [
+            {
+              "kind": "monster",
+              "form": "burung-agung",
+              "element": "listrik",
+              "stage": "dewasa",
+              "count": 2
+            },
+            {
+              "kind": "monster",
+              "form": "elang",
+              "element": "angin",
+              "stage": "dewasa",
+              "count": 2
+            }
+          ],
+          "reward": { "stone": 3000, "gold": 2500 },
+          "refillHours": 12,
+          "gemChance": 0.25
+        },
+        {
+          "id": "pb-kemah",
+          "kind": "camp",
+          "name": "Benteng Awan",
+          "x": 0.32,
+          "y": 0.4,
+          "after": ["pb-kristal"],
+          "defenders": [
+            {
+              "kind": "monster",
+              "form": "siluman",
+              "element": "angin",
+              "stage": "dewasa",
+              "count": 2
+            },
+            {
+              "kind": "monster",
+              "form": "burung-agung",
+              "element": "cahaya",
+              "stage": "dewasa",
+              "count": 1
+            },
+            {
+              "kind": "monster",
+              "form": "hantu",
+              "element": "listrik",
+              "stage": "dewasa",
+              "count": 2
+            },
+            { "kind": "tower", "level": 3, "count": 2 }
+          ],
+          "reward": { "gold": 15000, "wood": 3000, "stone": 3000, "soulCrystal": 4 }
+        },
+        {
+          "id": "pb-hutan",
+          "kind": "resource",
+          "name": "Hutan Angin Puyuh",
+          "x": 0.58,
+          "y": 0.22,
+          "after": ["pb-kemah"],
+          "defenders": [
+            {
+              "kind": "monster",
+              "form": "raksasa",
+              "element": "angin",
+              "stage": "dewasa",
+              "count": 2
+            },
+            {
+              "kind": "monster",
+              "form": "elang",
+              "element": "listrik",
+              "stage": "dewasa",
+              "count": 2
+            }
+          ],
+          "reward": { "wood": 4500, "food": 2500 },
+          "refillHours": 12,
+          "gemChance": 0.25
+        },
+        {
+          "id": "pb-bos",
+          "kind": "boss",
+          "name": "Singgasana Titan Badai",
+          "x": 0.88,
+          "y": 0.5,
+          "after": ["pb-hutan"],
+          "defenders": [
+            {
+              "kind": "boss",
+              "name": "Titan Badai",
+              "form": "titan",
+              "element": "listrik",
+              "stage": "dewasa",
+              "statMultiplier": 1.6,
+              "count": 1
+            },
+            {
+              "kind": "monster",
+              "form": "burung-agung",
+              "element": "angin",
+              "stage": "dewasa",
+              "count": 2
+            },
+            {
+              "kind": "monster",
+              "form": "siluman",
+              "element": "cahaya",
+              "stage": "dewasa",
+              "count": 2
+            }
+          ],
+          "reward": { "gold": 30000, "stone": 6000, "soulCrystal": 10, "gems": 100 }
         }
       ]
     }

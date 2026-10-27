@@ -14,6 +14,9 @@ import {
 import { formTierOf, type Monster, type MonsterKind } from './monster';
 import { createRng } from './rng';
 
+/** Every Petualangan boss beaten: the highest form tier is open. */
+const ALL_BOSSES = gameData.rules.mixer.maxFormTierByBossesDefeated.length - 1;
+
 const N = 100_000;
 const TOLERANCE = 0.01;
 const { mixer } = gameData.rules;
@@ -35,7 +38,7 @@ function countOutcomes(
 }
 
 describe('rollMix (Monte Carlo)', () => {
-  const open: MixContext = { bossesDefeated: 3, pityStreak: 0 };
+  const open: MixContext = { bossesDefeated: ALL_BOSSES, pityStreak: 0 };
   const wolf = { form: 'serigala', element: 'api' };
   const snake = { form: 'ular', element: 'air' };
 
@@ -178,7 +181,7 @@ describe('pity', () => {
     const freq = countOutcomes(
       { form: 'serigala', element: 'api' },
       { form: 'ular', element: 'air' },
-      { bossesDefeated: 3, pityStreak: streak },
+      { bossesDefeated: ALL_BOSSES, pityStreak: streak },
       (r) => r.tierOutcome,
     );
     expect(Math.abs(freq('mutation') - formTierOddsWithPity(streak).mutation)).toBeLessThan(
@@ -199,7 +202,7 @@ describe('pity', () => {
     const r = rollMix(
       { form: 'harimau', element: 'api' },
       { form: 'buaya', element: 'air' },
-      { bossesDefeated: 3, pityStreak: 12 },
+      { bossesDefeated: ALL_BOSSES, pityStreak: 12 },
       rng,
     );
     expect(r.rarity).toBe('langka');
@@ -207,7 +210,7 @@ describe('pity', () => {
     const legend = rollMix(
       { form: 'naga', element: 'badai' },
       { form: 'burung-agung', element: 'petir' },
-      { bossesDefeated: 3, pityStreak: 12 },
+      { bossesDefeated: ALL_BOSSES, pityStreak: 12 },
       rng,
     );
     expect(legend.rarity).toBe('legenda');
@@ -227,7 +230,7 @@ describe('mixCost and validateParents', () => {
   it('charges for the highest reachable tier, capped by the Adventure tier', () => {
     const a = adult('1', 'kucing', 'api');
     const b = adult('2', 'serigala', 'air');
-    expect(mixCost(a, b, { bossesDefeated: 3 })).toMatchObject({
+    expect(mixCost(a, b, { bossesDefeated: ALL_BOSSES })).toMatchObject({
       resultTier: 3,
       ...mixer.costByResultTier['3'],
     });

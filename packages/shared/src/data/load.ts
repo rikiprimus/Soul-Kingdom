@@ -362,6 +362,22 @@ export function loadGameData(raw: RawGameData): GameData {
   // per region, refill hours on resource nodes only, defenders that fit the field.
   const nodeIds = new Set<string>();
   const regionIds = new Set<string>();
+  const gateLevels =
+    [...buildingInfo.buildingById.values()].find((b) => b.feature === 'adventure')?.levels.length ??
+    0;
+  if (rules.mixer.maxFormTierByBossesDefeated.length !== adventure.regions.length + 1) {
+    issues.push(
+      `rules.json: mixer.maxFormTierByBossesDefeated harus berisi ${adventure.regions.length + 1} angka (0 sampai ${adventure.regions.length} bos)`,
+    );
+  }
+  adventure.regions.forEach((region, i) => {
+    const prev = adventure.regions[i - 1]?.requiresGateLevel ?? 0;
+    if (region.requiresGateLevel < prev || region.requiresGateLevel > gateLevels) {
+      issues.push(
+        `adventure.json: wilayah "${region.id}" requiresGateLevel ${region.requiresGateLevel} harus naik dan ada di Gerbang Petualangan (${gateLevels} level)`,
+      );
+    }
+  });
   for (const region of adventure.regions) {
     const where = `adventure.json: wilayah "${region.id}"`;
     if (regionIds.has(region.id)) issues.push(`${where} ganda`);
@@ -391,16 +407,25 @@ export function loadGameData(raw: RawGameData): GameData {
     issues.push('rules.json: battle.maxUnits tidak muat di petak penempatan Serbu');
   }
   // Raids: the tower and wall buildings exist and have stats for every level they can reach.
-  const { tower, wall } = rules.raids;
-  const towerDef = buildingInfo.buildingById.get(tower.building);
-  if (!towerDef) issues.push(`rules.json: raids.tower.building "${tower.building}" tidak ada`);
-  else if (tower.levels.length < towerDef.levels.length) {
-    issues.push(`rules.json: raids.tower.levels kurang untuk ${towerDef.levels.length} level`);
+  for (const key of ['tower', 'magicTower'] as const) {
+    const cfg = rules.raids[key];
+    const def = buildingInfo.buildingById.get(cfg.building);
+    if (!def) issues.push(`rules.json: raids.${key}.building "${cfg.building}" tidak ada`);
+    else if (cfg.levels.length < def.levels.length) {
+      issues.push(`rules.json: raids.${key}.levels kurang untuk ${def.levels.length} level`);
+    }
   }
-  const wallDef = buildingInfo.buildingById.get(wall.building);
-  if (!wallDef) issues.push(`rules.json: raids.wall.building "${wall.building}" tidak ada`);
-  else if (wall.hpByLevel.length < wallDef.levels.length) {
-    issues.push(`rules.json: raids.wall.hpByLevel kurang untuk ${wallDef.levels.length} level`);
+  for (const key of ['wall', 'gate'] as const) {
+    const cfg = rules.raids[key];
+    const def = buildingInfo.buildingById.get(cfg.building);
+    if (!def) issues.push(`rules.json: raids.${key}.building "${cfg.building}" tidak ada`);
+    else if (cfg.hpByLevel.length < def.levels.length) {
+      issues.push(`rules.json: raids.${key}.hpByLevel kurang untuk ${def.levels.length} level`);
+    }
+  }
+  const gateDef = buildingInfo.buildingById.get(rules.raids.gate.building);
+  if (gateDef && (gateDef.size !== 1 || gateDef.levels.some((l) => l.seconds !== 0))) {
+    issues.push(`buildings.json: "${gateDef.id}" (gerbang) harus berukuran 1 dan langsung jadi`);
   }
   for (const b of buildingInfo.buildingById.values()) {
     if (b.feature === 'barracks' && !(b.trainsSoldier && soldierIds.has(b.trainsSoldier))) {
@@ -561,6 +586,26 @@ function validateVillage(
       `rules.json: population.decorationCategory "${rules.population.decorationCategory}" bukan kategori di buildings.json`,
     );
   }
+  const { workshop } = rules;
+  const shop = buildingById.get(workshop.building);
+  if (!shop || shop.feature !== 'workshop') {
+    issues.push(
+      `rules.json: workshop.building "${workshop.building}" harus bangunan feature "workshop"`,
+    );
+  } else {
+    if (workshop.versionMultiplier.length !== shop.levels.length) {
+      issues.push(
+        `rules.json: workshop.versionMultiplier harus berisi ${shop.levels.length} angka (satu per level Bengkel)`,
+      );
+    }
+    for (const m of workshop.machines) {
+      if (m.names.length !== shop.levels.length) {
+        issues.push(
+          `rules.json: workshop mesin "${m.id}" butuh ${shop.levels.length} nama (satu per level Bengkel)`,
+        );
+      }
+    }
+  }
   const draw = rules.marketDraw;
   const drawBuilding = buildingById.get(draw.building);
   if (!drawBuilding) issues.push(`rules.json: marketDraw.building "${draw.building}" tidak ada`);
@@ -590,8 +635,12 @@ function validateVillage(
     );
   }
   for (const b of village.buildings) {
-    if (b.feature !== 'barracks' && b.levels.some((l) => l.queueBonus !== undefined)) {
-      issues.push(`${where}: "${b.id}" bukan barak, tidak boleh punya queueBonus`);
+    if (
+      b.feature !== 'barracks' &&
+      b.feature !== 'workshop' &&
+      b.levels.some((l) => l.queueBonus !== undefined)
+    ) {
+      issues.push(`${where}: "${b.id}" bukan barak/bengkel, tidak boleh punya queueBonus`);
     }
     if (b.maxCount.length !== maxTownHallLevel) {
       issues.push(

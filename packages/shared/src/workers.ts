@@ -1,4 +1,5 @@
 import { soldierPower } from './barracks';
+import { machinePower } from './workshop';
 import { deepClone } from './clone';
 import { allBuildings, townHallLevel } from './village';
 import { gameData, type GameData } from './data';
@@ -68,7 +69,16 @@ export function populationUsed(state: PlayerState, data: GameData = gameData): n
     (sum, s) => sum + soldierPower(s, data),
     0,
   );
-  return workers + soldiers + state.monsters.reduce((sum, m) => sum + monsterSlots(m, data), 0);
+  const machines = [...state.machines, ...state.workshopQueue].reduce(
+    (sum, m) => sum + machinePower(m.kind, data),
+    0,
+  );
+  return (
+    workers +
+    soldiers +
+    machines +
+    state.monsters.reduce((sum, m) => sum + monsterSlots(m, data), 0)
+  );
 }
 
 export function populationFree(state: PlayerState, data: GameData = gameData): number {

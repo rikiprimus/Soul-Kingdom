@@ -32,6 +32,7 @@ import type { AdventureProgress } from './adventure';
 import type { SerbuProgress } from './serbu';
 import type { DailyBonus, QuestProgress } from './quests';
 import type { MarketDraw } from './market';
+import type { Machine, WorkshopBuild } from './workshop';
 import type { SoulEgg } from './nest';
 import type { StoredItem } from './storage';
 import { settleUnits, type UnitPlace } from './units';
@@ -86,6 +87,9 @@ export interface PlayerState {
   barracksQueue: BarracksTraining[];
   /** Human soldiers from the barracks; they fight beside monsters but never breed. */
   soldiers: Soldier[];
+  /** War machines from the Bengkel (Tugas 1C.7); they stay out of the village. */
+  machines: Machine[];
+  workshopQueue: WorkshopBuild[];
   /** Unhatched monster eggs (the first monster comes from one). */
   eggs: Egg[];
   /** Telur Jiwa from quest rewards, cared for in the Sarang Telur Jiwa. */
@@ -165,6 +169,7 @@ export type ActionError =
   | 'unknownBuilding'
   | 'buildingNotFound'
   | 'townHallTooLow'
+  | 'gateTooLow'
   | 'maxCountReached'
   | 'buildersBusy'
   | 'blocked'
@@ -176,6 +181,8 @@ export type ActionError =
   | 'obstacleNotFound'
   | 'notSellable'
   | 'notLineBuilding'
+  | 'notGate'
+  | 'notWorkshop'
   | 'powerCapExceeded'
   | 'notEnoughWood'
   | 'notEnoughStone'
@@ -247,6 +254,8 @@ export function createInitialState(
     workerTraining: [],
     barracksQueue: [],
     soldiers: [],
+    machines: [],
+    workshopQueue: [],
     eggs: [],
     soulEggs: [],
     collections: [],

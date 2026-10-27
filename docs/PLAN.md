@@ -1086,19 +1086,41 @@ Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) 
 > - **Client:** kartu Pasar menampilkan "Undian Harian gratis hari ini!" atau hitung mundur, dan tombol **Undian Harian**; toast menyebut hadiahnya (dekorasi kini ikut tertulis di `prizeLabel`).
 > - **Tes:** `market.test.ts` (sekali sehari & buka lagi besok, butuh Pasar jadi, tabel dari Pasar tertinggi, tabel lebih tinggi lebih baik, Monte Carlo 100.000 undian per tabel dalam 4 simpangan baku, hadiah sumber daya/dekorasi/telur tanpa monster langsung, deterministik, aksi server, simpan & migrasi v27) dan tes validasi di `data.test.ts`.
 
-### - [ ] Tugas 1C.6 — Pertahanan: Menara Sihir & Gerbang
+### - [x] Tugas 1C.6 — Pertahanan: Menara Sihir & Gerbang
 
 - **Menara Sihir** (`menara-sihir`, 5 level, Balai 3): jangkauan 4 petak, serangan kuat dengan kerusakan area kecil, tembakan lambat (simulator pertarungan perlu kerusakan area).
 - **Gerbang** (`gerbang`, 8 level): dipasang di barisan tembok; terbuka = unit sendiri lewat, tertutup otomatis saat serangan desa, musuh harus menjebol. Butuh potongan gerbang di `tembok-pieces.json` dan jalur yang membedakan unit sendiri dan musuh.
 
-### - [ ] Tugas 1C.7 — Bengkel & mesin perang
+> **Ringkasan (selesai 2026-10-27):**
+>
+> - **Data:** **Menara Sihir** (`menara-sihir`, Militer 2×2, Balai 3, maks 0/0/1/2/2/3/3/4, 5 level, biaya & waktu dari `docs/OBJEK.md`); `rules.raids.magicTower`: HP 500 → 2.200, serangan 45 → 160, spd 5 (Menara Jaga 8), jangkauan 4 petak, ledakan 50 % ke musuh dalam 1,5 petak dari sasaran. **Gerbang** (`gerbang`, feature baru `gate`, 1×1, Balai 2, maks 4, 8 level langsung jadi, biaya 3× ruas tembok); `rules.raids.gate.hpByLevel` 600 → 15.000 (1,5× tembok). Skema menara dijadikan satu (`towerRulesSchema`) untuk Menara Jaga dan Menara Sihir; validasi menara/penghalang per level dan gerbang 1×1 langsung jadi.
+> - **Shared:** simulator pertarungan punya kerusakan area (`Fighter.splash`: tiap pukulan juga mengenai musuh lain dalam radius sebesar rasio kerusakannya). `towerRules` / `towerStats` / `towerReach` / `towerFighter` untuk kedua menara (Menara Sihir ikut bertahan bila penyerang dalam jangkauannya). Penyerang menjebol gerbang seperti ruas tembok dengan HP gerbang dan memilih penghalang tercepat. `isGateOpen` (jadi, tidak ditutup pemain, tidak ada serangan desa) dan jalur unit sendiri boleh lewat gerbang terbuka. Aksi `toggleGate` (aksi server), galat `notGate`; gerbang tidak bisa diputar. `Building.closed` tersimpan (opsional, tanpa naik versi simpanan).
+> - **Client:** kartu Menara Sihir menampilkan ledakan dan tembakan lambat; kartu Gerbang: HP, keadaan (terbuka / tertutup / tertutup otomatis saat serangan), tombol **Buka / Tutup gerbang**. Tembok tersambung ke gerbang; gambar buatan kode untuk Gerbang (mengikuti arah tembok, terbuka/tertutup, rupa naik per level) dan Menara Sihir (menara bundar berkubah kristal ungu dengan rune melayang). Potongan gerbang di `tembok-pieces.json` ditunda bersama gambar SpriteCook (keputusan pemilik).
+> - **Tes:** `defences.test.ts` (ledakan mengenai musuh dekat sasaran sebesar rasionya, tanpa ledakan hanya sasaran, data & statistik Menara Sihir, Menara Sihir ikut bertahan, penyerang menjebol gerbang dengan HP gerbang, gerbang lebih kuat dari tembok setingkat, unit lewat gerbang terbuka tetapi tidak saat ditutup atau saat serangan, hanya gerbang bisa dibuka/tutup dan tidak bisa diputar, aksi server, simpan/muat).
+
+### - [x] Tugas 1C.7 — Bengkel & mesin perang
 
 - **Bengkel** (`bengkel`, 6 level, Balai 4): dua mesin, **Ketapel** (jarak jauh, kuat melawan bangunan) dan **Pendobrak** (hanya menyerang tembok/gerbang/bangunan). Tiap level Bengkel menaikkan kedua mesin ke versi berikutnya (nama & rupa berubah, statistik ×1 … ×2,8); mesin yang sudah dibuat ikut naik.
 - Rumus batas kekuatan Serbu menjadi gabungan level empat bangunan (Barak, Lapangan Pemanah, Kandang Kuda, Bengkel).
 
-### - [ ] Tugas 1C.8 — Gerbang Petualangan 4 level
+> **Ringkasan (selesai 2026-10-27):**
+>
+> - **Data:** **Bengkel** (`bengkel`, feature baru `workshop`, Militer 3×3, Balai 4, maks 1, 6 level dari `docs/OBJEK.md`, Lv 6 antrean +1). `rules.workshop`: antrean 3, pengali versi ×1 / 1,3 / 1,6 / 2,0 / 2,4 / 2,8, dua mesin dengan nama per level — **Ketapel** (HP 120, serangan 45, jangkauan 7, 3 poin, ×2 ke bangunan, 400 emas + 200 kayu + 150 batu, 4 mnt) dan **Pendobrak** (HP 300, serangan 60, jangkauan 1, 3 poin, hanya menyerang bangunan, ×2, 350 emas + 300 kayu + 100 batu, 4 mnt). Tabel `powerCapByCombinedBarracksLevel` diperpanjang sampai gabungan 24 (268 → 390). Validasi: pengali & nama sebanyak level Bengkel, `queueBonus` boleh di barak & bengkel.
+> - **Shared (`workshop.ts`, baru):** `workshopLevel` (Bengkel tertinggi = versi semua mesin, yang sudah dibuat ikut naik), `machineName`, `machineStats`, `machinePower`, `machineFighter`, `workshopQueueMax`, `settleWorkshop`, `buildMachine` (biaya emas/makanan/kayu/batu, slot populasi langsung terpakai; galat baru `notWorkshop`). Aksi server `buildMachine`. Simulator: `Fighter.siege` (pengali ke bangunan = petarung yang tidak bergerak; Pendobrak hanya membidik bangunan dan menunggu bila tak ada). Mesin masuk pasukan Serbu & Petualangan (`serbuArmy`, poin kekuatan, gugur = hilang) tetapi tidak tinggal di desa, tidak bertahan dari serangan desa, dan tidak melawan musuh liar. Batas kekuatan Serbu = gabungan level Barak, Lapangan Pemanah, Kandang Kuda, dan Bengkel. Populasi menghitung mesin & antreannya. **Simpanan v29** (`machines`, `workshopQueue`).
+> - **Client:** kartu Bengkel: batas kekuatan, jumlah mesin, antrean, tombol **Buat Ketapel / Buat Pendobrak** dengan nama versi & biaya. Layar Serbu menampilkan mesin (nama versi, gambar, Ketapel di barisan belakang, Pendobrak di depan). Gambar buatan kode untuk Bengkel (gudang bertungku, cerobong berasap, roda, kerangka ketapel) dan kedua mesin (rupa berubah di versi 3 dan 4+).
+> - **Tes:** `workshop.test.ts` (data, biaya & populasi & selesai jadi mesin, batas antrean + Lv 6, galat, aksi server, versi & statistik, ×2 ke bangunan, Pendobrak hanya menyerang bangunan, pasukan Serbu & poin, Bengkel menaikkan batas, mesin gugur hilang, simpan & migrasi v28).
+
+### - [x] Tugas 1C.8 — Gerbang Petualangan 4 level
 
 - Tiap level membuka satu wilayah: Hutan Berbisik, Rawa Kabut, Gunung Api, lalu **wilayah ke-4 baru** (bos & titik sumber daya dirancang di `data/adventure.json`).
+
+> **Ringkasan (selesai 2026-10-27):**
+>
+> - **Keputusan pemilik (2026-10-27):** wilayah ke-4 bertema **Puncak Badai**; monster tingkat 5 baru terbuka setelah bos ke-4 (`maxFormTierByBossesDefeated` 2/3/4/**4**/5; pemain yang sudah mengalahkan 3 bos tetap di tingkat 4 sampai bos ke-4 kalah).
+> - **Data:** Gerbang Petualangan 4 level (biaya dari `docs/OBJEK.md`, Balai 2–5); tiap wilayah punya `requiresGateLevel` 1–4. **Puncak Badai** (Balai 5, gerbang Lv 4): Tebing Kristal Petir (batu + emas), Benteng Awan (kemah dengan 2 Menara), Hutan Angin Puyuh (kayu + makanan), dan bos **Titan Badai** (titan listrik ×1,6, dikawal Burung Agung & Siluman; hadiah 30.000 emas, 6.000 batu, 10 Kristal Jiwa, 100 permata). Validasi: `requiresGateLevel` naik dan ada di gerbang, tabel tingkat Altar sepanjang jumlah wilayah + 1.
+> - **Shared:** `adventureGateLevel`; status wilayah/titik baru `gate` (setelah `townHall`), galat `gateTooLow` di `attackNode`.
+> - **Client:** peta Petualangan menampilkan "Butuh Gerbang Petualangan Lv N" untuk wilayah dan titik yang tertahan gerbang; kartu Gerbang Petualangan menunjukkan wilayah yang sudah dibuka gerbang dan wilayah berikutnya.
+> - **Tes:** `adventure.test.ts` (wilayah butuh level gerbang, satu wilayah per level dengan Puncak Badai keempat, titik & serangan tertahan gerbang, bos ke-4 membuka tingkat 5, pasukan kuat bisa mengalahkan semua titik termasuk Titan Badai); `mixer.test.ts` memakai "semua bos dikalahkan".
 
 ### - [ ] Tugas 1C.9 — Goblin, berburu & bertahan
 

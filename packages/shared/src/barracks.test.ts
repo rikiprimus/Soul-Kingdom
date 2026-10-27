@@ -199,7 +199,8 @@ describe('Serbu power cap', () => {
     expect(combinedBarracksLevel(s)).toBe(8);
     expect(serbuPowerCap(s)).toBe(battle.powerCapByCombinedBarracksLevel[8]);
     const table = battle.powerCapByCombinedBarracksLevel;
-    const top = Object.keys(BARRACKS).reduce(
+    // The three barracks and the Bengkel (Tugas 1C.7) at their top levels.
+    const top = [...Object.keys(BARRACKS), gameData.rules.workshop.building].reduce(
       (sum, type) => sum + gameData.buildingById.get(type)!.levels.length,
       0,
     );

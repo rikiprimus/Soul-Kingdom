@@ -17,6 +17,7 @@ import { aggroEncounters } from './aggro';
 import { settleUnits } from './units';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { settleBarracks } from './barracks';
+import { settleWorkshop } from './workshop';
 import { recordAction } from './player';
 import { assignWorkers, idleWorkers, releaseWorkers, settleTraining } from './workers';
 
@@ -40,6 +41,8 @@ export interface Building {
   crop: { endsAt: number; food: number } | null;
   /** Drawn mirrored (the second facing); left out when not. */
   flipped?: boolean;
+  /** Gerbang shut by the player (own units cannot pass); left out when open. */
+  closed?: boolean;
 }
 
 export interface Obstacle {
@@ -342,7 +345,10 @@ export function buyPlot(
 export function settleVillage(state: PlayerState, now: number): PlayerState {
   // Enemies wake after units have moved (they chase whoever came close).
   const trained = aggroEncounters(
-    settleUnits(settleMissions(settleBarracks(settleTraining(state, now), now), now), now),
+    settleUnits(
+      settleMissions(settleWorkshop(settleBarracks(settleTraining(state, now), now), now), now),
+      now,
+    ),
     now,
   );
   // Constructions on the other islands keep going while the player is away.

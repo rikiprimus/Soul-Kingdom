@@ -14,6 +14,7 @@ import { recordAction } from './player';
 import { createRng, type Rng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { townHallLevel } from './village';
+import { machineFighter, machinePower, workshopLevel } from './workshop';
 
 /** An NPC base to attack in Serbu (`rules.serbu.bases`). */
 export type SerbuBase = GameData['rules']['serbu']['bases'][number];
@@ -85,15 +86,19 @@ export function serbuUnitPower(state: PlayerState, id: string, data: GameData = 
   const m = state.monsters.find((x) => x.id === id);
   if (m) return powerPointsOf(m, data);
   const s = state.soldiers.find((x) => x.id === id);
-  return s ? soldierPower(s, data) : 0;
+  if (s) return soldierPower(s, data);
+  const w = state.machines.find((x) => x.id === id);
+  return w ? machinePower(w.kind, data) : 0;
 }
 
-/** Monsters and soldiers free to attack: not out on a mission, not in the Soul Mixer. */
+/** Monsters, soldiers and war machines free to attack: not out on a mission, not in the Soul Mixer. */
 export function serbuArmy(state: PlayerState): string[] {
   const inMixer = new Set(state.mixQueue.flatMap((q) => q.parents.map((p) => p.id)));
-  return [...state.monsters.map((m) => m.id), ...state.soldiers.map((s) => s.id)].filter(
-    (id) => !inMixer.has(id) && !isOnMission(state, id),
-  );
+  return [
+    ...state.monsters.map((m) => m.id),
+    ...state.soldiers.map((s) => s.id),
+    ...state.machines.map((w) => w.id),
+  ].filter((id) => !inMixer.has(id) && !isOnMission(state, id));
 }
 
 /** NPC defenders as fighters (ids "x0", "x1", … in list order; towers never move). */
@@ -198,7 +203,9 @@ export function fightPlaced(
   const army = new Set(serbuArmy(state));
   for (const c of cells) {
     const known =
-      state.monsters.some((m) => m.id === c.id) || state.soldiers.some((s) => s.id === c.id);
+      state.monsters.some((m) => m.id === c.id) ||
+      state.soldiers.some((s) => s.id === c.id) ||
+      state.machines.some((w) => w.id === c.id);
     if (!known) return fail('monsterNotFound');
     if (!army.has(c.id)) return fail('monsterBusy');
   }
@@ -210,8 +217,10 @@ export function fightPlaced(
   const attackers = cells.map((c): Fighter => {
     const m = next.monsters.find((x) => x.id === c.id);
     if (m) return { id: c.id, stats: monsterStats(m, data), element: m.element, skill: true };
-    const s = next.soldiers.find((x) => x.id === c.id)!;
-    return { id: c.id, stats: soldierStats(s, data), element: null, skill: false };
+    const s = next.soldiers.find((x) => x.id === c.id);
+    if (s) return { id: c.id, stats: soldierStats(s, data), element: null, skill: false };
+    const w = next.machines.find((x) => x.id === c.id)!;
+    return machineFighter(w, workshopLevel(next, data), data);
   });
   const enemies = defenderFighters(defenders, data);
   const battle = simulateBattle(attackers, enemies, rng.int(0, 0x7fffffff), data, {
@@ -227,6 +236,7 @@ export function fightPlaced(
   const dead = cells.map((c) => c.id).filter((id) => (battle.hp[id] ?? 0) <= 0);
   for (const id of dead) {
     next.soldiers = next.soldiers.filter((x) => x.id !== id);
+    next.machines = next.machines.filter((x) => x.id !== id);
     const fallen = next.monsters.find((x) => x.id === id);
     if (!fallen) continue;
     next.monsters = next.monsters.filter((x) => x.id !== id);

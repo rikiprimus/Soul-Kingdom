@@ -17,7 +17,7 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 28;
+export const SAVE_SCHEMA_VERSION = 29;
 
 const int = z.number().int();
 const villageAmountSchema = z.object({
@@ -55,6 +55,7 @@ const villageSchema = z.object({
       lastCollectAt: z.number(),
       crop: z.object({ endsAt: z.number(), food: int.min(0) }).nullable(),
       flipped: z.boolean().optional(),
+      closed: z.boolean().optional(),
     }),
   ),
   obstacles: z.array(
@@ -140,6 +141,10 @@ const playerStateSchema = z.object({
     }),
   ),
   soldiers: z.array(z.object({ id: z.string(), kind: z.string(), rank: int.min(0) })),
+  machines: z.array(z.object({ id: z.string(), kind: z.string() })),
+  workshopQueue: z.array(
+    z.object({ kind: z.string(), buildingId: z.string(), endsAt: z.number() }),
+  ),
   units: z.record(
     z.string(),
     z.object({
@@ -600,6 +605,13 @@ const migrations: Record<number, (state: unknown) => unknown> = {
   27: (raw) => {
     const state = raw as PlayerState;
     state.marketDraw = { lastDay: null };
+    return state;
+  },
+  // v28 had no Bengkel (Tugas 1C.7): no war machines yet.
+  28: (raw) => {
+    const state = raw as PlayerState;
+    state.machines = [];
+    state.workshopQueue = [];
     return state;
   },
 };

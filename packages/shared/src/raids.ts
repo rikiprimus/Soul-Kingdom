@@ -55,10 +55,26 @@ export function currentRaid(state: PlayerState): WildEncounter | undefined {
   return state.village.encounters.find((e) => e.raid);
 }
 
-export const isTower = (b: Building, data: GameData = gameData) =>
-  b.type === data.rules.raids.tower.building && b.level >= 1;
+/** Raid rules of a tower building (Menara Jaga or Menara Sihir), or undefined. */
+export function towerRules(type: string, data: GameData = gameData) {
+  const { tower, magicTower } = data.rules.raids;
+  if (type === tower.building) return tower;
+  if (type === magicTower.building) return magicTower;
+  return undefined;
+}
 
-const isWall = (b: Building, data: GameData) => b.type === data.rules.raids.wall.building;
+export const isTower = (b: Building, data: GameData = gameData) =>
+  towerRules(b.type, data) !== undefined && b.level >= 1;
+
+/** Rules of a barrier raiders must break (a wall segment or a gate), or undefined. */
+function barrierRules(type: string, data: GameData) {
+  const { wall, gate } = data.rules.raids;
+  if (type === wall.building) return wall;
+  if (type === gate.building) return gate;
+  return undefined;
+}
+
+const isWall = (b: Building, data: GameData) => barrierRules(b.type, data) !== undefined;
 
 /** Fractional tile the raiders are at (between tiles while stepping, still while breaking). */
 export function raidPoint(e: WildEncounter): { x: number; y: number } {
@@ -77,28 +93,41 @@ export function raidDps(e: WildEncounter, data: GameData = gameData): number {
   );
 }
 
-/** Seconds a group with `dps` needs to break one wall segment. */
+/** Seconds a group with `dps` needs to break one wall segment or gate. */
 export function wallBreakSeconds(wall: Building, dps: number, data: GameData = gameData): number {
-  const { hpByLevel } = data.rules.raids.wall;
+  const { hpByLevel } = barrierRules(wall.type, data) ?? data.rules.raids.wall;
   const hp = hpByLevel[Math.min(Math.max(1, wall.level), hpByLevel.length) - 1]!;
   return hp / dps;
 }
 
-/** A watchtower's stats at its level. */
+/** A tower's stats at its level. */
 export function towerStats(b: Building, data: GameData = gameData) {
-  const { levels } = data.rules.raids.tower;
+  const { levels } = towerRules(b.type, data) ?? data.rules.raids.tower;
   return levels[Math.min(Math.max(1, b.level), levels.length) - 1]!;
 }
 
-/** Tiles a watchtower reaches to join a defence: the base reach, or its range if longer. */
+/** Tiles a tower reaches to join a defence: its base reach, or its range if longer. */
 export function towerReach(b: Building, data: GameData = gameData): number {
-  return Math.max(data.rules.raids.tower.reachTiles, towerStats(b, data).range);
+  const cfg = towerRules(b.type, data) ?? data.rules.raids.tower;
+  return Math.max(cfg.reachTiles, towerStats(b, data).range);
 }
 
-/** A watchtower as a fighter that never moves, with the stats of its level. */
+/** A tower as a fighter that never moves, with the stats of its level (Menara Sihir splashes). */
 export function towerFighter(b: Building, data: GameData = gameData): Fighter {
   const stats = towerStats(b, data);
-  return { id: `tower:${b.id}`, stats: { ...stats }, element: null, skill: false, fixed: true };
+  const { magicTower } = data.rules.raids;
+  const splash =
+    b.type === magicTower.building
+      ? { radius: magicTower.splash.radiusTiles, ratio: magicTower.splash.ratio }
+      : undefined;
+  return {
+    id: `tower:${b.id}`,
+    stats: { ...stats },
+    element: null,
+    skill: false,
+    fixed: true,
+    ...(splash ? { splash } : {}),
+  };
 }
 
 const STEPS = [

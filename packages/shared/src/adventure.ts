@@ -1,7 +1,7 @@
 import { gameData, type GameData } from './data';
 import { fightPlaced, fightResult, payReward, type SerbuCell, type SerbuResult } from './serbu';
 import type { ActionError, ActionResult, PlayerState } from './state';
-import { townHallLevel } from './village';
+import { allBuildings, townHallLevel } from './village';
 
 /** A Petualangan region (`data/adventure.json`): a small map of nodes ending in a boss. */
 export type AdventureRegion = GameData['adventure']['regions'][number];
@@ -35,9 +35,17 @@ const bossOf = (region: AdventureRegion) => region.nodes.find((n) => n.kind === 
 
 /**
  * A region is `locked` until the boss of the one before it is beaten, needs its Balai
- * level (`townHall`), is `open`, and `done` once its own boss has fallen.
+ * level (`townHall`) and its Gerbang Petualangan level (`gate`), is `open`, and `done`
+ * once its own boss has fallen.
  */
-export type RegionStatus = 'locked' | 'townHall' | 'open' | 'done';
+export type RegionStatus = 'locked' | 'townHall' | 'gate' | 'open' | 'done';
+
+/** Highest finished Gerbang Petualangan level on any island (0 when there is none). */
+export function adventureGateLevel(state: PlayerState, data: GameData = gameData): number {
+  return allBuildings(state)
+    .filter((b) => data.buildingById.get(b.type)?.feature === 'adventure')
+    .reduce((best, b) => Math.max(best, b.level), 0);
+}
 
 export function regionStatus(
   state: PlayerState,
@@ -51,6 +59,7 @@ export function regionStatus(
   if (cleared.includes(bossOf(regions[i]!).id)) return 'done';
   if (i > 0 && !cleared.includes(bossOf(regions[i - 1]!).id)) return 'locked';
   if (townHallLevel(state, data) < regions[i]!.requiresTownHall) return 'townHall';
+  if (adventureGateLevel(state, data) < regions[i]!.requiresGateLevel) return 'gate';
   return 'open';
 }
 
@@ -59,7 +68,7 @@ export function regionStatus(
  * `townHall` while the region needs a higher Balai, `open` to attack, `cleared` for a
  * beaten camp or boss, and `refilling` for a taken resource node not yet back.
  */
-export type NodeStatus = 'locked' | 'townHall' | 'open' | 'cleared' | 'refilling';
+export type NodeStatus = 'locked' | 'townHall' | 'gate' | 'open' | 'cleared' | 'refilling';
 
 export function nodeStatus(
   state: PlayerState,
@@ -71,7 +80,7 @@ export function nodeStatus(
   if (!found) return 'locked';
   const { region, node } = found;
   const inRegion = regionStatus(state, region.id, data);
-  if (inRegion === 'locked' || inRegion === 'townHall') return inRegion;
+  if (inRegion === 'locked' || inRegion === 'townHall' || inRegion === 'gate') return inRegion;
   const { cleared, refillAt } = state.adventure;
   if (!node.after.every((id) => cleared.includes(id))) return 'locked';
   if (node.kind !== 'resource') return cleared.includes(node.id) ? 'cleared' : 'open';
@@ -95,6 +104,7 @@ export function attackNode(
   const { node } = found;
   const status = nodeStatus(state, node.id, now, data);
   if (status === 'townHall') return fail('townHallTooLow');
+  if (status === 'gate') return fail('gateTooLow');
   if (status === 'refilling') return fail('notReady');
   if (status !== 'open') return fail('notUnlocked');
   const first = !state.adventure.cleared.includes(node.id);

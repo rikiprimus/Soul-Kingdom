@@ -41,7 +41,8 @@ export function rotateBuilding(
 ): ActionResult {
   const b = state.village.buildings.find((x) => x.id === buildingId);
   if (!b) return fail('buildingNotFound');
-  if (buildingDef(b.type, data).lineBuild) return fail('cannotRotate');
+  const def = buildingDef(b.type, data);
+  if (def.lineBuild || def.feature === 'gate') return fail('cannotRotate');
   const next = deepClone(state);
   const nb = next.village.buildings.find((x) => x.id === buildingId)!;
   nb.flipped = !b.flipped;

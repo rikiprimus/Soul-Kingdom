@@ -49,6 +49,7 @@ import {
   missionFor,
   raidPoint,
   raidRoute,
+  isGateOpen,
   type Building,
   type VillageResource,
   type Monster,
@@ -614,6 +615,10 @@ export class VillageScene extends Phaser.Scene {
     if (gameData.buildingById.get(b.type)?.lineBuild) {
       return `wall-${wallMask(b.x, b.y, this.wallTiles)}`;
     }
+    if (gameData.buildingById.get(b.type)?.feature === 'gate') {
+      const open = isGateOpen(this.store.state, b) ? 'open' : 'closed';
+      return `gate-${wallMask(b.x, b.y, this.wallTiles)}-${open}`;
+    }
     if (gameData.buildingById.get(b.type)?.feature === 'ranch') {
       return `ranch-${ranchAnimalsIn(this.store.state, b.id).length}`;
     }
@@ -661,7 +666,11 @@ export class VillageScene extends Phaser.Scene {
     const { buildings, obstacles } = this.store.state.village;
     this.wallTiles = new Set(
       buildings
-        .filter((b) => gameData.buildingById.get(b.type)?.lineBuild)
+        .filter((b) => {
+          const def = gameData.buildingById.get(b.type);
+          // Walls also join up to gates set in their line.
+          return def?.lineBuild || def?.feature === 'gate';
+        })
         .map((b) => `${b.x},${b.y}`),
     );
     const seen = new Set<string>();

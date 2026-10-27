@@ -2,7 +2,7 @@ import { deepClone } from './clone';
 import { gameData, type GameData } from './data';
 import { isOnMission, missionFor } from './missions';
 import type { ActionError, ActionResult, PlayerState } from './state';
-import { canPlace, sizeOf, type Tile } from './village';
+import { canPlace, sizeOf, type Building, type Tile } from './village';
 
 /**
  * Where a monster or soldier stands in the village and where it is walking (Tugas 1A.15).
@@ -43,10 +43,40 @@ export function unitTile(place: UnitPlace, now: number, data: GameData = gameDat
   return route[Math.min(Math.floor(walked), route.length - 1)]!;
 }
 
+/**
+ * Whether our units may pass a Gerbang (Tugas 1C.6): finished, not shut by the player,
+ * and no raid on the village (gates close by themselves then).
+ */
+export function isGateOpen(state: PlayerState, b: Building, data: GameData = gameData): boolean {
+  return (
+    data.buildingById.get(b.type)?.feature === 'gate' &&
+    b.level >= 1 &&
+    !b.closed &&
+    !state.village.encounters.some((e) => e.raid)
+  );
+}
+
 /** Units may walk anywhere on the map that no building or wild node stands on,
- * locked land included (owner, 2026-10-21). */
+ * locked land included (owner, 2026-10-21), and through open gates. */
 const walkable = (state: PlayerState, t: Tile, data: GameData) =>
-  canPlace(state.village, 1, t.x, t.y, data);
+  canPlace(state.village, 1, t.x, t.y, data) ||
+  state.village.buildings.some((b) => b.x === t.x && b.y === t.y && isGateOpen(state, b, data));
+
+/** Opens or shuts a Gerbang. */
+export function toggleGate(
+  state: PlayerState,
+  buildingId: string,
+  data: GameData = gameData,
+): ActionResult {
+  const b = state.village.buildings.find((x) => x.id === buildingId);
+  if (!b) return fail('buildingNotFound');
+  if (data.buildingById.get(b.type)?.feature !== 'gate') return fail('notGate');
+  const next = deepClone(state);
+  const nb = next.village.buildings.find((x) => x.id === buildingId)!;
+  if (b.closed) delete nb.closed;
+  else nb.closed = true;
+  return { ok: true, state: next };
+}
 
 const tileKey = (t: Tile) => `${t.x},${t.y}`;
 

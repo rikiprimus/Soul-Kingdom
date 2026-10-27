@@ -47,10 +47,16 @@ import {
   populationUsed,
   decorationPopulation,
   marketDrawStatus,
+  machineName,
+  workshopLevel,
+  workshopQueue,
+  workshopQueueMax,
   trainingRemaining,
   townHallLevel,
   towerReach,
+  towerRules,
   towerStats,
+  currentRaid,
   workerTrainSeconds,
   scaleAmount,
   nextPlotPrice,
@@ -498,15 +504,36 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
         break;
       }
       case 'defense': {
-        const { tower, wall } = gameData.rules.raids;
+        const { wall, magicTower } = gameData.rules.raids;
         const at = Math.max(1, b.level);
-        if (b.type === tower.building) {
+        if (towerRules(b.type)) {
           const stats = towerStats(b);
           content.lines.push(t('tower.info', { n: towerReach(b), hp: stats.hp, atk: stats.atk }));
+          if (b.type === magicTower.building) {
+            content.lines.push(
+              t('tower.splash', {
+                percent: Math.round(magicTower.splash.ratio * 100),
+                radius: magicTower.splash.radiusTiles,
+              }),
+            );
+          }
         } else if (b.type === wall.building) {
           const hp = wall.hpByLevel[Math.min(at, wall.hpByLevel.length) - 1]!;
           content.lines.push(t('wall.info', { hp }));
         }
+        break;
+      }
+      case 'gate': {
+        const { gate } = gameData.rules.raids;
+        const hp = gate.hpByLevel[Math.min(Math.max(1, b.level), gate.hpByLevel.length) - 1]!;
+        content.lines.push(t('gate.info', { hp }));
+        statuses.push(() =>
+          currentRaid(state) ? t('gate.raidClosed') : t(b.closed ? 'gate.closed' : 'gate.open'),
+        );
+        buttons.push({
+          label: t(b.closed ? 'gate.doOpen' : 'gate.doClose'),
+          onClick: () => a.run('toggleGate', { id: b.id }),
+        });
         break;
       }
       case 'house':
@@ -630,6 +657,18 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
             tier: maxFormTier(state.bossesDefeated),
           }),
         );
+        {
+          // Tugas 1C.8: each gate level opens one more region.
+          const { regions } = gameData.adventure;
+          const opened = regions.filter((r) => r.requiresGateLevel <= b.level);
+          content.lines.push(
+            t('info.adventureRegions', {
+              n: opened.length,
+              total: regions.length,
+              next: regions.find((r) => r.requiresGateLevel > b.level)?.name ?? '-',
+            }),
+          );
+        }
         if (b.level >= 1) {
           buttons.push({
             label: t('info.openAdventure'),
@@ -718,6 +757,36 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
           color: 0x3c9a5f,
           onClick: () => a.openPanel('barracks', b.id),
         });
+        break;
+      }
+      case 'workshop': {
+        // Bengkel: both machines follow its level; build them straight from the card.
+        content.lines.push(t('info.powerCap', { cap: serbuPowerCap(state) }));
+        content.lines.push(t('workshop.army', { n: state.machines.length }));
+        statuses.push(() => {
+          const queue = workshopQueue(state, b.id);
+          const next = queue[0];
+          return next
+            ? t('workshop.building', {
+                n: queue.length,
+                max: workshopQueueMax(b.level),
+                time: formatDuration(Math.max(0, next.endsAt - a.now())),
+              })
+            : t('workshop.idle');
+        });
+        const version = workshopLevel(state);
+        for (const m of gameData.rules.workshop.machines) {
+          const name = machineName(m.id, version);
+          buttons.push({
+            label: t('workshop.build', { name, cost: costLabel(m.build) }),
+            color: 0x3c9a5f,
+            onClick: () => {
+              if (a.run('buildMachine', { buildingId: b.id, kind: m.id })) {
+                a.toast(t('workshop.started', { name }), COLORS.good);
+              }
+            },
+          });
+        }
         break;
       }
       default:

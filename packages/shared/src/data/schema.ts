@@ -150,6 +150,23 @@ const statBlockSchema = z.object({
   range: z.number().int().min(1),
 });
 
+/** A defence tower in raids: the building, its reach and battle stats per level (it never moves). */
+const towerRulesSchema = z.object({
+  building: z.string().min(1),
+  reachTiles: z.number().positive(),
+  levels: z
+    .array(
+      z.object({
+        hp: z.number().positive(),
+        atk: z.number().positive(),
+        def: z.number().nonnegative(),
+        spd: z.number().positive(),
+        range: z.number().positive(),
+      }),
+    )
+    .min(1),
+});
+
 export const rulesFileSchema = z.object({
   rarity: z.object({
     byElementUnits: tierRecord(raritySchema),
@@ -277,24 +294,18 @@ export const rulesFileSchema = z.object({
     walkTilesPerSecond: z.number().positive(),
     defendTiles: z.number().positive(),
     stealRatio: probability,
-    tower: z.object({
-      building: z.string().min(1),
-      reachTiles: z.number().positive(),
-      /** Battle stats per tower level (index 0 = level 1); it never moves. */
-      levels: z
-        .array(
-          z.object({
-            hp: z.number().positive(),
-            atk: z.number().positive(),
-            def: z.number().nonnegative(),
-            spd: z.number().positive(),
-            range: z.number().positive(),
-          }),
-        )
-        .min(1),
+    tower: towerRulesSchema,
+    /** Menara Sihir (Tugas 1C.6): a short-range tower whose hits also strike enemies nearby. */
+    magicTower: towerRulesSchema.extend({
+      splash: z.object({ radiusTiles: z.number().positive(), ratio: probability }),
     }),
     /** HP of one wall segment per level (index 0 = level 1): how long breaking it takes. */
     wall: z.object({
+      building: z.string().min(1),
+      hpByLevel: z.array(z.number().positive()).min(1),
+    }),
+    /** Gerbang: always shut to raiders, who break it like a wall segment with this HP. */
+    gate: z.object({
       building: z.string().min(1),
       hpByLevel: z.array(z.number().positive()).min(1),
     }),
@@ -342,6 +353,30 @@ export const rulesFileSchema = z.object({
           powerBonus: nonNegInt,
           costMultiplier: z.number().positive(),
           timeMultiplier: z.number().positive(),
+        }),
+      )
+      .min(1),
+  }),
+  /** Bengkel (Tugas 1C.7): war machines whose version follows the Bengkel level. */
+  workshop: z.object({
+    building: z.string().min(1),
+    queueMax: z.number().int().min(1),
+    /** hp/atk/def multiplier per Bengkel level (index 0 = level 1). */
+    versionMultiplier: z.array(z.number().positive()).min(1),
+    machines: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          role: z.string().min(1),
+          /** Player-facing name per Bengkel level. */
+          names: z.array(z.string().min(1)).min(1),
+          stats: statBlockSchema,
+          powerPoints: z.number().int().min(1),
+          /** Damage multiplier against buildings (fighters that never move). */
+          buildingMultiplier: z.number().positive(),
+          /** Only attacks buildings. */
+          buildingsOnly: z.boolean(),
+          build: villageAmountSchema.extend({ seconds: z.number().positive() }),
         }),
       )
       .min(1),
@@ -446,6 +481,8 @@ export const buildingFeatures = [
   'adventure',
   'arena',
   'defense',
+  'gate',
+  'workshop',
   'serbu',
   'nest',
   'wonder',
@@ -629,6 +666,8 @@ export const adventureFileSchema = z.object({
         name: z.string().min(1),
         description: z.string(),
         requiresTownHall: z.number().int().min(1),
+        /** Level of the Gerbang Petualangan that opens this region (Tugas 1C.8). */
+        requiresGateLevel: z.number().int().min(1),
         nodes: z
           .array(
             z.object({

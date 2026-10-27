@@ -15,6 +15,9 @@ import {
   serbuUnitPower,
   soldierDef,
   soldierName,
+  machineDef,
+  machineName,
+  workshopLevel,
   type AdventureNode,
   type BattleEvent,
   type Defender,
@@ -25,6 +28,7 @@ import { MonsterView } from '../art/MonsterView';
 import { buildingTexture } from '../art/buildingArt';
 import { banditTexture } from '../art/enemyArt';
 import { soldierTexture } from '../art/soldierArt';
+import { machineTexture } from '../art/machineArt';
 import { playSfx } from '../audio/sound';
 import type { GameStore } from '../store';
 import { errorText, formatDuration, formatNumber, t } from '../text';
@@ -37,6 +41,7 @@ import { Button, roundedPanel, ScrollArea, toast } from '../ui/widgets';
 type UnitLook =
   | { type: 'monster'; form: string; element: string; stage: string; boss?: boolean }
   | { type: 'soldier'; kind: string; rank: number }
+  | { type: 'machine'; kind: string; level: number }
   | { type: 'bandit' }
   | { type: 'tower'; level: number };
 
@@ -415,7 +420,7 @@ export class SerbuScene extends Phaser.Scene {
       const r = n.kind === 'boss' ? 24 : 18;
       const color =
         n.kind === 'boss' ? COLORS.danger : n.kind === 'camp' ? COLORS.warn : COLORS.good;
-      const dim = s === 'locked' || s === 'townHall';
+      const dim = s === 'locked' || s === 'townHall' || s === 'gate';
       const dot = this.add.container(p.x, p.y);
       const ring = this.add.graphics();
       if (this.selectedNode === n.id) ring.lineStyle(3, COLORS.gold, 1).strokeCircle(0, 0, r + 6);
@@ -453,7 +458,7 @@ export class SerbuScene extends Phaser.Scene {
       });
       layer.add(dot);
     }
-    if (status === 'locked' || status === 'townHall') {
+    if (status === 'locked' || status === 'townHall' || status === 'gate') {
       layer.add(this.add.rectangle(mapX, top, mapW, mapH, 0x07050f, 0.45).setOrigin(0));
       layer.add(
         this.add
@@ -462,7 +467,9 @@ export class SerbuScene extends Phaser.Scene {
             top + mapH / 2,
             status === 'locked'
               ? t('adventure.region.locked')
-              : t('adventure.region.townHall', { level: region.requiresTownHall }),
+              : status === 'gate'
+                ? t('adventure.region.gate', { level: region.requiresGateLevel })
+                : t('adventure.region.townHall', { level: region.requiresTownHall }),
             textStyle(15, COLORS.text, { fontStyle: 'bold', align: 'center' }),
           )
           .setOrigin(0.5),
@@ -507,11 +514,13 @@ export class SerbuScene extends Phaser.Scene {
     const statusText =
       status === 'townHall'
         ? t('adventure.region.townHall', { level: found.region.requiresTownHall })
-        : status === 'refilling'
-          ? t('adventure.status.refilling', {
-              time: formatDuration((this.store.state.adventure.refillAt[node.id] ?? now) - now),
-            })
-          : t(`adventure.status.${status}`);
+        : status === 'gate'
+          ? t('adventure.region.gate', { level: found.region.requiresGateLevel })
+          : status === 'refilling'
+            ? t('adventure.status.refilling', {
+                time: formatDuration((this.store.state.adventure.refillAt[node.id] ?? now) - now),
+              })
+            : t(`adventure.status.${status}`);
     layer.add(
       this.add.text(x + 12, y + 10, node.name, textStyle(15, COLORS.text, { fontStyle: 'bold' })),
     );
@@ -560,21 +569,27 @@ export class SerbuScene extends Phaser.Scene {
     const m = this.store.state.monsters.find((x) => x.id === id);
     if (m) return { type: 'monster', form: m.form, element: m.element, stage: m.stage };
     const s = this.store.state.soldiers.find((x) => x.id === id);
-    return s ? { type: 'soldier', kind: s.kind, rank: s.rank } : null;
+    if (s) return { type: 'soldier', kind: s.kind, rank: s.rank };
+    const w = this.store.state.machines.find((x) => x.id === id);
+    return w ? { type: 'machine', kind: w.kind, level: workshopLevel(this.store.state) } : null;
   }
 
   private unitLabel(id: string): string {
     const m = this.store.state.monsters.find((x) => x.id === id);
     if (m) return monsterName(m);
     const s = this.store.state.soldiers.find((x) => x.id === id);
-    return s ? soldierName(s) : id;
+    if (s) return soldierName(s);
+    const w = this.store.state.machines.find((x) => x.id === id);
+    return w ? machineName(w.kind, workshopLevel(this.store.state)) : id;
   }
 
   private role(id: string): string {
     const m = this.store.state.monsters.find((x) => x.id === id);
     if (m) return getForm(m.form).role;
     const s = this.store.state.soldiers.find((x) => x.id === id);
-    return s ? soldierDef(s.kind).role : '';
+    if (s) return soldierDef(s.kind).role;
+    const w = this.store.state.machines.find((x) => x.id === id);
+    return w ? machineDef(w.kind).role : '';
   }
 
   /** A unit's picture, standing on (0, 0); `size` is about its height. */
@@ -594,7 +609,12 @@ export class SerbuScene extends Phaser.Scene {
       img.setScale((size * 1.5) / Math.max(1, img.height));
       c.add(img);
     } else {
-      const key = look.type === 'soldier' ? soldierTexture(this, look) : banditTexture(this);
+      const key =
+        look.type === 'soldier'
+          ? soldierTexture(this, look)
+          : look.type === 'machine'
+            ? machineTexture(this, look.kind, look.level)
+            : banditTexture(this);
       const img = this.add.image(0, 0, key).setOrigin(0.5, 0.95);
       img.setScale(size / Math.max(1, img.height));
       c.add(img);

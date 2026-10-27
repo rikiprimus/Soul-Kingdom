@@ -17,7 +17,9 @@ export type BuildingVariant =
   /** Wall joined to its neighbours: bit 1 = +x, 2 = +y, 4 = -x, 8 = -y. */
   | `wall-${number}`
   /** Peternakan holding this many animals. */
-  | `ranch-${number}`;
+  | `ranch-${number}`
+  /** Gerbang with its wall neighbours (same bits as walls), open or shut. */
+  | `gate-${number}-${'open' | 'closed'}`;
 
 /** Connection mask for a wall at (x, y) given the set of wall tiles ("x,y"). */
 export function wallMask(x: number, y: number, walls: ReadonlySet<string>): number {
@@ -1117,6 +1119,96 @@ const DESIGNS: Record<string, Design> = {
       wall.right(0.4, 0.6, h * 0.65, h * 0.85, 0x2c2c38);
       p.box(0.2, 0.2, 0.8, 0.8, 8, 0xa89e88, h);
       p.pyramid(0.18, 0.18, 0.82, 0.82, h + 8, 34, C.roofBlue);
+    },
+  },
+  gerbang: {
+    top: 60,
+    draw(p, level, variant) {
+      const [, maskText, state] = variant.split('-');
+      const mask = Number(maskText ?? 0);
+      // The gate runs along the wall it sits in: along y when only y neighbours join.
+      const alongY = (mask & 10) !== 0 && (mask & 5) === 0;
+      const box = (u0: number, v0: number, u1: number, v1: number, h: number, c: number, z = 0) =>
+        alongY ? p.box(v0, u0, v1, u1, h, c, z) : p.box(u0, v0, u1, v1, h, c, z);
+      const color = level >= 7 ? 0x6f6c6a : level >= 5 ? 0x8f8a84 : level >= 3 ? 0xb3aa99 : C.wood;
+      const door = level >= 6 ? 0x5a5e66 : 0x7a4a26;
+      const h = 16 + level * 2;
+      box(0.04, 0.32, 0.24, 0.68, h + 10, color);
+      if (state === 'open') {
+        // Leaves swung inwards, the way through left clear.
+        box(0.24, 0.58, 0.3, 0.92, h, door);
+        box(0.7, 0.58, 0.76, 0.92, h, door);
+      } else {
+        box(0.24, 0.44, 0.76, 0.56, h, door);
+        box(0.24, 0.43, 0.76, 0.57, 3, darken(door, 0.2), h * 0.45);
+      }
+      box(0.76, 0.32, 0.96, 0.68, h + 10, color);
+      box(0.04, 0.38, 0.96, 0.62, 5, lighten(color, 0.08), h + 4);
+      if (level >= 7) box(0.44, 0.44, 0.56, 0.56, 5, C.gold, h + 9);
+    },
+  },
+  bengkel: {
+    top: 110,
+    draw(p, level) {
+      p.flat(0.02, 0.02, 0.98, 0.98, 0xa48b68);
+      // Workshop shed with a glowing forge, a smoking chimney, a wheel and a half-built catapult.
+      const h = 34 + level * 4;
+      const wall = p.box(0.12, 0.12, 0.62, 0.62, h, 0x9a7a52);
+      wall.right(0.25, 0.75, 0, h * 0.7, 0x3a2a1c);
+      wall.right(0.32, 0.5, h * 0.1, h * 0.35, 0xff8a3d);
+      wall.left(0.2, 0.4, h * 0.5, h * 0.75, 0x5a7fb5);
+      p.pyramid(0.08, 0.08, 0.66, 0.66, h, 26, C.roofBrown);
+      p.box(0.14, 0.4, 0.24, 0.5, h + 30, C.stoneDark);
+      const smoke = p.fp(0.19, 0.45, h + 36);
+      p.ellipse(smoke, 6, 5, 0xd8d4cc, null, 0.7);
+      p.ellipse({ x: smoke.x + 5, y: smoke.y - 9 }, 5, 4, 0xe6e2da, null, 0.55);
+      // Big wheel leaning on the wall and a catapult frame in the yard.
+      p.ellipse(p.fp(0.66, 0.3, 10), 9, 9, 0x6b4026, 0x3a2a1c);
+      p.ellipse(p.fp(0.66, 0.3, 10), 3, 3, 0x9a9ea6);
+      const yard = p.fp(0.82, 0.78);
+      p.line({ x: yard.x - 16, y: yard.y }, { x: yard.x + 16, y: yard.y }, 0x8a5a32, 4);
+      p.line({ x: yard.x - 8, y: yard.y }, { x: yard.x, y: yard.y - 16 }, 0x5a3a20, 3);
+      p.line({ x: yard.x + 8, y: yard.y }, { x: yard.x, y: yard.y - 16 }, 0x5a3a20, 3);
+      p.line({ x: yard.x - 12, y: yard.y - 8 }, { x: yard.x + 18, y: yard.y - 26 }, 0x6b4026, 3);
+      if (level >= 4) flag(p, p.fp(0.37, 0.37, h + 26), 18, 0xc94a3b);
+    },
+  },
+  'menara-sihir': {
+    top: 160,
+    draw(p, level) {
+      p.flat(0.06, 0.06, 0.94, 0.94, 0xb8b0c8);
+      // Round stone tower with a glowing purple crystal dome and runes floating around it.
+      const h = 70 + level * 8;
+      p.cylinder(0.5, 0.5, 0.52, h, 0x9a93a8, 0xc4bdd2);
+      p.cylinder(0.5, 0.5, 0.6, 6, 0x7d768c, 0xa79fb8, h);
+      const top = p.fp(0.5, 0.5, h + 6);
+      const r = 14 + level * 2;
+      p.ellipse({ x: top.x, y: top.y - r * 0.5 }, r + 8, r + 8, 0xd9c4ff, null, 0.3);
+      p.ellipse({ x: top.x, y: top.y - r * 0.5 }, r, r * 0.9, 0xb388ff, 0x6a3fb0);
+      p.ellipse(
+        { x: top.x - r * 0.35, y: top.y - r * 0.8 },
+        r * 0.3,
+        r * 0.25,
+        0xffffff,
+        null,
+        0.8,
+      );
+      const door = p.fp(0.5, 0.98);
+      p.ellipse({ x: door.x - 8, y: door.y - 12 }, 6, 9, 0x2c2440);
+      for (let i = 0; i < Math.min(5, 2 + level); i++) {
+        const a = (i / 5) * Math.PI * 2;
+        const pt = { x: top.x + Math.cos(a) * (r + 18), y: top.y - h * 0.35 + Math.sin(a) * 10 };
+        p.poly(
+          [
+            { x: pt.x, y: pt.y - 5 },
+            { x: pt.x + 3, y: pt.y },
+            { x: pt.x, y: pt.y + 5 },
+            { x: pt.x - 3, y: pt.y },
+          ],
+          0xe8dbff,
+          C.purple,
+        );
+      }
     },
   },
   tembok: {

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { careSoulEgg, hatchSoulEgg } from '../nest';
 import { claimSet } from '../collections';
 import { drawMarket } from '../market';
+import { buildMachine } from '../workshop';
 import { claimDaily, claimQuest } from '../quests';
 import { sendToAnimal } from '../animals';
 import { hatchEgg, trainSoldier } from '../barracks';
@@ -23,7 +24,7 @@ import {
   type PlayerState,
 } from '../state';
 import { placeStored, rotateBuilding, storeBuilding } from '../storage';
-import { guardNode, moveUnits, retreatUnits, sendTeam } from '../units';
+import { guardNode, moveUnits, retreatUnits, sendTeam, toggleGate } from '../units';
 import {
   addConstructionWorkers,
   buildBuilding,
@@ -150,7 +151,11 @@ export const ACTIONS = {
   ),
   claimQuest: action(z.object({}), (s) => claimQuest(s)),
   claimDaily: action(z.object({}), (s, _p, now) => claimDaily(s, now)),
+  toggleGate: action(byId, (s, p) => toggleGate(s, p.id)),
   drawMarket: action(z.object({}), (s, _p, now) => drawMarket(s, now)),
+  buildMachine: action(z.object({ buildingId: id, kind: id }), (s, p, now) =>
+    buildMachine(s, p, now),
+  ),
   claimSet: action(byId, (s, p) => claimSet(s, p.id)),
   unlockIsland: action(byId, (s, p, now) => unlockIsland(s, p.id, now)),
   travelTo: action(byId, (s, p) => travelTo(s, p.id)),

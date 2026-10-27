@@ -19,6 +19,12 @@ export interface Fighter {
   skill: boolean;
   /** Stays where it starts (a watchtower): it only shoots what comes into range. */
   fixed?: boolean;
+  /** Area damage (Menara Sihir): each hit also strikes other enemies within `radius`
+   * tiles of the target for `ratio` of that hit's damage. */
+  splash?: { radius: number; ratio: number };
+  /** War machine (Bengkel): `multiplier` × damage against buildings (fighters that never
+   * move); with `buildingsOnly` it attacks nothing else. */
+  siege?: { multiplier: number; buildingsOnly: boolean };
 }
 
 export type Side = 'attackers' | 'defenders';
@@ -153,15 +159,21 @@ export function simulateBattle(
       if (u.hp <= 0) continue;
       let target: Live | undefined;
       let best = Infinity;
+      const buildingsOnly = u.f.siege?.buildingsOnly ?? false;
       for (const o of units) {
         if (o.side === u.side || o.hp <= 0) continue;
+        if (buildingsOnly && !o.f.fixed) continue;
         const d = Math.hypot(o.x - u.x, o.y - u.y);
         if (d < best) {
           best = d;
           target = o;
         }
       }
-      if (!target) break;
+      // A Pendobrak with no building left waits; anyone else has nobody left to fight.
+      if (!target) {
+        if (buildingsOnly) continue;
+        break;
+      }
       u.cooldown = Math.max(0, u.cooldown - dt);
       // EPS: walking stops exactly at range, and rounding must not leave it a hair short.
       if (best > u.f.stats.range + EPS) {
@@ -178,8 +190,9 @@ export function simulateBattle(
       const edge =
         u.f.element && target.f.element ? elementAdvantage(u.f.element, target.f.element, data) : 1;
       const roll = 1 + sim.damageVariance * (rng.next() * 2 - 1);
+      const siege = u.f.siege && target.f.fixed ? u.f.siege.multiplier : 1;
       const raw =
-        u.f.stats.atk * edge * (sim.defenseK / (sim.defenseK + target.f.stats.def)) * roll;
+        u.f.stats.atk * edge * siege * (sim.defenseK / (sim.defenseK + target.f.stats.def)) * roll;
       const damage = Math.max(sim.minDamage, Math.round(raw * (skill ? sim.skillMultiplier : 1)));
       target.hp = Math.max(0, target.hp - damage);
       events.push({
@@ -192,6 +205,25 @@ export function simulateBattle(
         y: u.y,
       });
       if (target.hp === 0) events.push({ tick, kind: 'death', id: target.f.id });
+      if (u.f.splash) {
+        const { radius, ratio } = u.f.splash;
+        for (const o of units) {
+          if (o === target || o.side === u.side || o.hp <= 0) continue;
+          if (Math.hypot(o.x - target.x, o.y - target.y) > radius + EPS) continue;
+          const hit = Math.max(sim.minDamage, Math.round(damage * ratio));
+          o.hp = Math.max(0, o.hp - hit);
+          events.push({
+            tick,
+            kind: 'attack',
+            id: u.f.id,
+            target: o.f.id,
+            damage: hit,
+            x: u.x,
+            y: u.y,
+          });
+          if (o.hp === 0) events.push({ tick, kind: 'death', id: o.f.id });
+        }
+      }
       u.cooldown = interval(u);
     }
     if (frames && tick % opts.trackEvery! === 0) snapshot(tick);

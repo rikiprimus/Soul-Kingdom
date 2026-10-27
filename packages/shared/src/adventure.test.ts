@@ -44,6 +44,18 @@ function army(): PlayerState {
       crop: null,
     });
   }
+  // A top-level Gerbang Petualangan, so every region's gate is open.
+  const gate = [...gameData.buildingById.values()].find((b) => b.feature === 'adventure')!;
+  s.village.buildings.push({
+    id: 'gate',
+    type: gate.id,
+    x: 40,
+    y: 40,
+    level: gate.levels.length,
+    construction: null,
+    lastCollectAt: T0,
+    crop: null,
+  });
   for (const [i, form] of ['titan', 'titan', 'naga', 'naga'].entries()) {
     s.monsters.push({ id: `m${i}`, form, element: 'api', stage: adult, food: 0 });
   }
@@ -64,13 +76,56 @@ describe('petualangan regions and paths', () => {
     const s = createInitialState(T0, 1);
     expect(regionStatus(s, r1!.id)).toBe('townHall');
     setHall(s, r1!.requiresTownHall);
+    // Tugas 1C.8: each region also needs its Gerbang Petualangan level.
+    expect(regionStatus(s, r1!.id)).toBe('gate');
+    const gate = [...gameData.buildingById.values()].find((b) => b.feature === 'adventure')!;
+    s.village.buildings.push({
+      id: 'gate',
+      type: gate.id,
+      x: 40,
+      y: 40,
+      level: r1!.requiresGateLevel,
+      construction: null,
+      lastCollectAt: T0,
+      crop: null,
+    });
     expect(regionStatus(s, r1!.id)).toBe('open');
     expect(regionStatus(s, r2!.id)).toBe('locked');
     s.adventure.cleared.push(boss1.id);
     expect(regionStatus(s, r1!.id)).toBe('done');
     expect(regionStatus(s, r2!.id)).toBe('townHall');
     setHall(s, r2!.requiresTownHall);
+    expect(regionStatus(s, r2!.id)).toBe('gate');
+    s.village.buildings.find((b) => b.id === 'gate')!.level = r2!.requiresGateLevel;
     expect(regionStatus(s, r2!.id)).toBe('open');
+  });
+
+  it('opens one region per Gerbang Petualangan level, the fourth one being Puncak Badai', () => {
+    const { regions } = gameData.adventure;
+    const gate = [...gameData.buildingById.values()].find((b) => b.feature === 'adventure')!;
+    expect(gate.levels).toHaveLength(4);
+    expect(regions.map((r) => r.requiresGateLevel)).toEqual([1, 2, 3, 4]);
+    expect(regions[3]!.id).toBe('puncak-badai');
+    expect(regions[3]!.nodes.filter((n) => n.kind === 'boss')).toHaveLength(1);
+    const s = army();
+    s.adventure.cleared.push(
+      ...regions.slice(0, 3).map((r) => r.nodes.find((n) => n.kind === 'boss')!.id),
+    );
+    setHall(s, regions[3]!.requiresTownHall);
+    expect(regionStatus(s, regions[3]!.id)).toBe('open');
+    s.village.buildings.find((b) => b.id === 'gate')!.level = 3;
+    expect(regionStatus(s, regions[3]!.id)).toBe('gate');
+    const node = regions[3]!.nodes[0]!;
+    expect(nodeStatus(s, node.id, T0)).toBe('gate');
+    expect(attackNode(s, { nodeId: node.id, cells: cells(s) }, T0)).toEqual({
+      ok: false,
+      error: 'gateTooLow',
+    });
+  });
+
+  it('the fourth boss opens tier 5 (owner, 2026-10-27)', () => {
+    expect(maxFormTier(3)).toBe(4);
+    expect(maxFormTier(4)).toBe(5);
   });
 
   it('opens nodes along the path as the ones before them fall', () => {
@@ -144,9 +199,8 @@ describe('petualangan nodes', () => {
   });
 
   it('pays nothing and records nothing on a loss; the fallen go to the Kuburan', () => {
-    const s = createInitialState(T0, 2);
-    setHall(s, r1!.requiresTownHall);
-    s.monsters.push({ id: 'b1', form: 'kucing', element: 'api', stage: baby, food: 0 });
+    const s = army();
+    s.monsters = [{ id: 'b1', form: 'kucing', element: 'api', stage: baby, food: 0 }];
     const r = attackNode(s, { nodeId: first.id, cells: [{ id: 'b1', x: 0, y: 0 }] }, T0);
     if (!r.ok) throw new Error(r.error);
     expect(r.result.won).toBe(false);

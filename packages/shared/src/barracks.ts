@@ -164,10 +164,13 @@ export function trainSoldier(
   return { ok: true, state: next, endsAt };
 }
 
-/** Sum of the levels of every finished soldier barracks. */
+/** Sum of the levels of every finished soldier barracks and the Bengkel (Tugas 1C.7). */
 export function combinedBarracksLevel(state: PlayerState, data: GameData = gameData): number {
   return allBuildings(state)
-    .filter((b) => data.buildingById.get(b.type)?.feature === 'barracks')
+    .filter((b) => {
+      const feature = data.buildingById.get(b.type)?.feature;
+      return feature === 'barracks' || feature === 'workshop';
+    })
     .reduce((sum, b) => sum + b.level, 0);
 }
 

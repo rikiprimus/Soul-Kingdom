@@ -154,7 +154,7 @@ describe('startMix', () => {
     );
     s.resources.gold = 1_000_000;
     s.resources.soulCrystal = 100;
-    s.bossesDefeated = 3;
+    s.bossesDefeated = gameData.rules.mixer.maxFormTierByBossesDefeated.length - 1;
     const r = ok(startMix(s, { parentAId: 'L1', parentBId: 'L2' }, T0));
     const ids = r.state.monsters.map((m) => m.id);
     expect(ids).toContain('L1');
