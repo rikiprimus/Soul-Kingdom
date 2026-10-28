@@ -1,105 +1,55 @@
-import { compositionKey, gameData, type BaseUnit, type ElementId, type GameData } from './data';
-import type { Rng } from './rng';
+import { gameData, type Element, type ElementId, type GameData } from './data';
 
-function getElement(id: ElementId, data: GameData) {
+function getElement(id: ElementId, data: GameData): Element {
   const el = data.elementById.get(id);
-  if (!el) throw new Error(`Elemen tidak dikenal: "${id}"`);
-  return el;
+  if (el) return el;
+  throw new Error(`Elemen tidak dikenal: "${id}"`);
 }
 
-/** Base units of an element, in `baseElements` order. */
-export function elementUnits(id: ElementId, data: GameData = gameData): BaseUnit[] {
-  return sortUnits(getElement(id, data).composition, data);
+/** Single-element unit shim returning [id] for single-element system. */
+export function elementUnits(id: ElementId, data: GameData = gameData): string[] {
+  getElement(id, data);
+  return [id];
 }
 
-export function sortUnits(units: readonly BaseUnit[], data: GameData = gameData): BaseUnit[] {
-  const key = compositionKey(units, data.baseUnits);
-  return key === '' ? [] : key.split('+');
+/** Legacy helper: returns false as secret elements are removed in 100-monster system. */
+export function isSecretElement(_id: ElementId, _data: GameData = gameData): boolean {
+  return false;
 }
 
-/** Union of the base units of two elements. */
-export function unionComposition(
-  a: ElementId,
-  b: ElementId,
-  data: GameData = gameData,
-): BaseUnit[] {
-  return sortUnits([...elementUnits(a, data), ...elementUnits(b, data)], data);
+/** Legacy helper: max units is 1. */
+export function maxElementUnitsForFormTier(_tier: number, _data: GameData = gameData): number {
+  return 1;
 }
 
-/** Finds the non-secret element with exactly these units. Secret elements are never returned. */
+/** Legacy helper shim for union. */
+export function unionComposition(a: ElementId, b: ElementId, _data: GameData = gameData): string[] {
+  return [a, b];
+}
+
+/** Legacy helper shim for composition. */
 export function findElementByComposition(
-  units: readonly BaseUnit[],
+  units: readonly string[],
   data: GameData = gameData,
 ): ElementId | undefined {
-  return data.elementByComposition.get(compositionKey(units, data.baseUnits))?.id;
-}
-
-export function isSecretElement(id: ElementId, data: GameData = gameData): boolean {
-  return getElement(id, data).secret === true;
-}
-
-export function maxElementUnitsForFormTier(tier: number, data: GameData = gameData): number {
-  const cap = data.rules.mixer.maxElementUnitsByFormTier[String(tier)];
-  if (cap === undefined) throw new Error(`Tingkat wujud tidak dikenal: ${tier}`);
-  return cap;
+  if (units.length === 0) return undefined;
+  return data.elementById.get(units[0]!)?.id;
 }
 
 /**
- * Randomly drops units until at most `limit` remain. Units in `keep` are dropped
- * only if nothing else is left to drop.
+ * 1 if attacker beats defender, -1 if defender beats attacker, 0 if neutral or tied.
+ * Uses 13-element advantage table in data/elements.json (beats).
  */
-export function capUnits(
-  units: readonly BaseUnit[],
-  limit: number,
-  rng: Rng,
-  keep: readonly BaseUnit[] = [],
-  data: GameData = gameData,
-): BaseUnit[] {
-  let remaining = sortUnits(units, data);
-  while (remaining.length > limit) {
-    const droppable = remaining.filter((u) => !keep.includes(u));
-    const drop = rng.pick(droppable.length > 0 ? droppable : remaining);
-    remaining = remaining.filter((u) => u !== drop);
-  }
-  return remaining;
-}
-
-/**
- * Returns an element allowed on a form of `tier`: unchanged if it fits, otherwise
- * the non-secret element left after dropping random units down to the tier limit.
- * Secret elements below `secretElementMinFormTier` fall back to their composition.
- */
-export function capElementForFormTier(
-  id: ElementId,
-  tier: number,
-  rng: Rng,
-  data: GameData = gameData,
-): ElementId {
-  const limit = maxElementUnitsForFormTier(tier, data);
-  const units = elementUnits(id, data);
-  const secretAllowed = tier >= data.rules.mixer.secretElementMinFormTier;
-  if (units.length <= limit && (!isSecretElement(id, data) || secretAllowed)) return id;
-  const capped = capUnits(units, limit, rng, [], data);
-  const found = findElementByComposition(capped, data);
-  if (!found) throw new Error(`Tidak ada elemen untuk komposisi ${capped.join('+')}`);
-  return found;
-}
-
-/** Number of (a, d) unit pairs where a beats d, minus pairs where d beats a. */
 export function elementAdvantageScore(
   attackerId: ElementId,
   defenderId: ElementId,
   data: GameData = gameData,
 ): number {
-  const beats = (x: BaseUnit, y: BaseUnit) => data.elements.beats[x]?.includes(y) ?? false;
-  let score = 0;
-  for (const a of elementUnits(attackerId, data)) {
-    for (const d of elementUnits(defenderId, data)) {
-      if (beats(a, d)) score++;
-      if (beats(d, a)) score--;
-    }
-  }
-  return score;
+  const beatsAttacker = data.elements.beats[attackerId]?.includes(defenderId) ?? false;
+  const beatsDefender = data.elements.beats[defenderId]?.includes(attackerId) ?? false;
+  if (beatsAttacker) return 1;
+  if (beatsDefender) return -1;
+  return 0;
 }
 
 /** Damage multiplier: clamp(1 + score × advantageStep, advantageMin, advantageMax). */

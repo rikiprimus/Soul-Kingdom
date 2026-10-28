@@ -191,12 +191,20 @@ export interface SecretClue {
 export function knownSecretClues(state: PlayerState, data: GameData = gameData): SecretClue[] {
   const count = getResearchBonus(state, 'secretRecipeClues', data);
   if (count <= 0) return [];
-  return data.elements.secretRecipes.slice(0, count * 2).map((r) => {
-    const el = data.elementById.get(r.result);
-    return {
-      element: r.result,
-      name: el?.name ?? r.result,
-      pair: r.pair,
-    };
-  });
+  if (data.elements.secretRecipes && Array.isArray(data.elements.secretRecipes)) {
+    return data.elements.secretRecipes.slice(0, count * 2).map((r) => {
+      const el = data.elementById.get(r.result);
+      return {
+        element: r.result,
+        name: el?.name ?? r.result,
+        pair: r.pair,
+      };
+    });
+  }
+  const recipes = data.monsters.monsters.filter((m) => m.recipe !== null);
+  return recipes.slice(0, count * 2).map((m) => ({
+    element: m.element,
+    name: m.name,
+    pair: [m.recipe!.parentA, m.recipe!.parentB] as [string, string],
+  }));
 }

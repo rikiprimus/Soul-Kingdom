@@ -69,12 +69,25 @@ export function rollSoulEgg(rng: Rng, data: GameData = gameData): MonsterKind {
   const { hatch } = data.rules.nest;
   let roll = rng.next();
   const outcome = hatch.find((h) => (roll -= h.chance) < 0) ?? hatch[hatch.length - 1]!;
-  const elements = [...data.elementByComposition.values()].filter(
-    (e) => e.composition.length === outcome.units,
+  const tier = outcome.formTier;
+  const eggSpecies = (data.monstersByTier.get(tier) ?? []).filter((m) =>
+    m.sources.includes('telur'),
   );
+  const pool = eggSpecies.length > 0 ? eggSpecies : (data.monstersByTier.get(tier) ?? []);
+  if (pool.length > 0) {
+    const picked = rng.pick(pool);
+    return {
+      species: picked.id,
+      form: picked.id,
+      element: picked.element,
+    };
+  }
+  const forms = data.formsByTier.get(outcome.formTier) ?? [];
+  const form = forms.length > 0 ? rng.pick(forms).id : 'kucing';
   return {
-    form: rng.pick(data.formsByTier.get(outcome.formTier)!).id,
-    element: rng.pick(elements).id,
+    species: form,
+    form,
+    element: 'air',
   };
 }
 
@@ -93,9 +106,16 @@ export function hatchSoulEgg(
   const kind = rollSoulEgg(rng, data);
   if (!hasRoomFor(kind, state, data)) return fail('populationFull');
   next.rngState = rng.getState();
+  const species =
+    'species' in kind && kind.species
+      ? kind.species
+      : (('form' in kind ? kind.form : '') ?? 'baby-slime');
+  const def = data.monsterById.get(species);
   const monster: Monster = {
     id: `m${next.nextId}`,
-    ...kind,
+    species,
+    form: 'form' in kind ? kind.form : species,
+    element: 'element' in kind && kind.element ? kind.element : def?.element,
     stage: data.rules.growth.stages[0]!.id,
     food: 0,
   };

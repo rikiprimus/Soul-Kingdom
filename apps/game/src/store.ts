@@ -114,6 +114,11 @@ export class GameStore {
     return this.link?.pvp(request) ?? Promise.resolve({ ok: false, error: 'offline' });
   }
 
+  /** An Arena request to the server (Tugas 2.3); offline it answers `offline`. */
+  arena(request: object): Promise<{ ok: boolean; error?: string; [key: string]: unknown }> {
+    return this.link?.arena(request) ?? Promise.resolve({ ok: false, error: 'offline' });
+  }
+
   signInWithGoogle(): void {
     this.link?.signInWithGoogle();
   }

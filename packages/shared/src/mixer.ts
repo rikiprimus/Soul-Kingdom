@@ -4,26 +4,10 @@ import {
   type ElementId,
   type FormId,
   type GameData,
+  type MonsterDef,
   type Rarity,
 } from './data';
-import {
-  capUnits,
-  elementUnits,
-  findElementByComposition,
-  isSecretElement,
-  maxElementUnitsForFormTier,
-  sortUnits,
-  unionComposition,
-} from './elements';
-import {
-  formTierOf,
-  getStage,
-  monsterKey,
-  rarityOf,
-  rarityRank,
-  type Monster,
-  type MonsterKind,
-} from './monster';
+import { getStage, rarityOf, rarityRank, tierOf, type Monster, type MonsterKind } from './monster';
 import type { Rng } from './rng';
 
 export interface MixContext {
@@ -36,12 +20,13 @@ export type TierOutcome = 'recipe' | 'same' | 'up' | 'down' | 'mutation';
 export type ElementSource = 'recipe' | 'secret' | 'fullUnion' | 'parent' | 'partial';
 
 export interface MixResult {
+  species?: string;
   form: FormId;
   element: ElementId;
   rarity: Rarity;
   tierOutcome: TierOutcome;
   elementSource: ElementSource;
-  /** Set when a monster recipe from recipes.json produced the result. */
+  /** Set when a monster recipe from monsters.json / recipes.json produced the result. */
   recipeId?: string;
   mutation: boolean;
   /** The extra base unit added by a mutation (absent if none could be added). */
@@ -75,7 +60,7 @@ export function maxFormTier(bossesDefeated: number, data: GameData = gameData): 
 }
 
 function clampTier(tier: number, context: MixContext, data: GameData): number {
-  const min = data.formTiers[0]!;
+  const min = data.formTiers[0] ?? 1;
   return Math.max(min, Math.min(tier, maxFormTier(context.bossesDefeated, data)));
 }
 
@@ -106,18 +91,16 @@ export function formTierOddsWithPity(
   return odds;
 }
 
-export function findMonsterRecipe(a: MonsterKind, b: MonsterKind, data: GameData = gameData) {
-  const ka = monsterKey(a);
-  const kb = monsterKey(b);
-  return data.recipes.monsterRecipes.find(
-    ({ parents: [p, q] }) => (p === ka && q === kb) || (p === kb && q === ka),
-  );
-}
-
-function findSecretElementRecipe(a: ElementId, b: ElementId, data: GameData) {
-  return data.elements.secretRecipes.find(
-    ({ pair: [p, q] }) => (p === a && q === b) || (p === b && q === a),
-  );
+/** Looks up crossbreed recipe from monsters.json (parentA + parentB commutative). */
+export function findMonsterRecipe(
+  a: MonsterKind,
+  b: MonsterKind,
+  data: GameData = gameData,
+): MonsterDef | undefined {
+  const sa = 'species' in a && a.species ? a.species : a.form;
+  const sb = 'species' in b && b.species ? b.species : b.form;
+  const key = [sa, sb].sort().join('+');
+  return data.monsterRecipeByParents.get(key);
 }
 
 function nextPity(rarity: Rarity, context: MixContext, data: GameData): number {
@@ -142,9 +125,10 @@ const TIER_DELTA: Record<Exclude<TierOutcome, 'recipe'>, number> = {
 };
 
 /**
- * Rolls a Soul Mixer result. Order: monster recipe → form tier (capped by the
- * Adventure tier) → random form → element (secret pair → full union / a parent /
- * partial union) → mutation unit → element unit cap for the form → pity.
+ * Rolls an Altar crossbreed result:
+ * 1. Definitive recipe from monsters.json if parents match a recipe.
+ * 2. If no recipe matches, returns a random Common-Elite (tier 1..4) monster,
+ *    influenced by pity and mutation.
  */
 export function rollMix(
   parentA: MonsterKind,
@@ -156,97 +140,58 @@ export function rollMix(
 ): MixResult {
   const recipe = findMonsterRecipe(parentA, parentB, data);
   if (recipe) {
-    const [form = '', element = ''] = recipe.result.split(':');
-    const kind = { form, element };
-    if (formTierOf(kind, data) <= maxFormTier(context.bossesDefeated, data)) {
-      const rarity = rarityOf(kind, data);
-      return {
-        ...kind,
-        rarity,
-        tierOutcome: 'recipe',
-        elementSource: 'recipe',
-        recipeId: recipe.id,
-        mutation: false,
-        secretElement: isSecretElement(element, data),
-        nextPityStreak: nextPity(rarity, context, data),
-      };
-    }
+    const rarity = rarityOf({ species: recipe.id }, data);
+    return {
+      species: recipe.id,
+      form: recipe.id,
+      element: recipe.element,
+      rarity,
+      tierOutcome: 'recipe',
+      elementSource: 'recipe',
+      recipeId: recipe.id,
+      mutation: false,
+      secretElement: false,
+      nextPityStreak: nextPity(rarity, context, data),
+    };
   }
 
-  const baseTier = Math.max(formTierOf(parentA, data), formTierOf(parentB, data));
-  const tierOutcome = rollTierOutcome(
-    formTierOddsWithPity(context.pityStreak, data, mutationBonus),
-    rng,
-  );
-  const tier = clampTier(baseTier + TIER_DELTA[tierOutcome], context, data);
-  const candidates = data.formsByTier.get(tier);
-  if (!candidates || candidates.length === 0) throw new Error(`Tidak ada wujud tingkat ${tier}`);
-  const form = rng.pick(candidates).id;
+  // Non-recipe pairs: random Common to Elite (tier 1..4)
+  const odds = formTierOddsWithPity(context.pityStreak, data, mutationBonus);
+  const tierOutcome = rollTierOutcome(odds, rng);
   const mutation = tierOutcome === 'mutation';
-  const secretAllowed = tier >= data.rules.mixer.secretElementMinFormTier;
 
-  let element: ElementId | undefined;
-  let elementSource: ElementSource;
-  let mutationUnit: BaseUnit | undefined;
+  const baseTier = Math.min(4, Math.max(tierOf(parentA, data), tierOf(parentB, data)));
+  const targetTier = Math.max(1, Math.min(4, baseTier + TIER_DELTA[tierOutcome]));
 
-  const secretRecipe = secretAllowed
-    ? findSecretElementRecipe(parentA.element, parentB.element, data)
-    : undefined;
-  if (secretRecipe && rng.chance(secretRecipe.chance)) {
-    element = secretRecipe.result;
-    elementSource = 'secret';
-  } else {
-    const union = unionComposition(parentA.element, parentB.element, data);
-    const { fullUnion, parent } = data.rules.mixer.elementOdds;
-    const r = rng.next();
-    let units: BaseUnit[];
-    if (r < fullUnion) {
-      elementSource = 'fullUnion';
-      units = union;
-    } else if (r < fullUnion + parent) {
-      elementSource = 'parent';
-      const chosen = rng.chance(0.5) ? parentA.element : parentB.element;
-      if (isSecretElement(chosen, data) && secretAllowed && !mutation) element = chosen;
-      units = elementUnits(chosen, data);
-    } else {
-      elementSource = 'partial';
-      const size = union.length > 1 ? rng.int(1, union.length - 1) : union.length;
-      units = rng.shuffle(union).slice(0, size);
-    }
+  const tierMonsters = (data.monstersByTier.get(targetTier) ?? []).filter(
+    (m) => !m.sources.includes('boss'),
+  );
+  const pool =
+    tierMonsters.length > 0
+      ? tierMonsters
+      : (data.monstersByTier.get(targetTier) ??
+        [1, 2, 3, 4].flatMap((t) => data.monstersByTier.get(t) ?? []));
 
-    if (element === undefined) {
-      if (mutation) {
-        const missing = data.baseUnits.filter((u) => !units.includes(u));
-        if (missing.length > 0) {
-          mutationUnit = rng.pick(missing);
-          units = [...units, mutationUnit];
-        }
-      }
-      const limit = maxElementUnitsForFormTier(tier, data);
-      units = capUnits(units, limit, rng, mutationUnit ? [mutationUnit] : [], data);
-      element = findElementByComposition(sortUnits(units, data), data);
-      if (!element) throw new Error(`Tidak ada elemen untuk komposisi ${units.join('+')}`);
-    }
-  }
+  const chosen = pool.length > 0 ? rng.pick(pool) : { id: 'baby-slime', element: 'air', tier: 1 };
+  const rarity = rarityOf({ species: chosen.id }, data);
 
-  const rarity = rarityOf({ form, element }, data);
-  const result: MixResult = {
-    form,
-    element,
+  return {
+    species: chosen.id,
+    form: chosen.id,
+    element: chosen.element,
     rarity,
     tierOutcome,
-    elementSource,
+    elementSource: 'parent',
     mutation,
-    secretElement: isSecretElement(element, data),
+    secretElement: false,
     nextPityStreak: nextPity(rarity, context, data),
   };
-  if (mutationUnit) result.mutationUnit = mutationUnit;
-  return result;
 }
 
 /**
- * Cost is paid up front from the highest tier the pair could reach
- * (highest parent tier + 1, capped by the Adventure tier), so it reveals nothing.
+ * Altar crossbreed cost:
+ * Free (0 gold, 0 soul crystals) per owner decision 2026-10-28.
+ * Duration is based on result tier from rules.json (altar.durationByTier).
  */
 export function mixCost(
   parentA: MonsterKind,
@@ -255,16 +200,26 @@ export function mixCost(
   data: GameData = gameData,
   altarTimeReduction = 0,
 ): MixCost {
-  const baseTier = Math.max(formTierOf(parentA, data), formTierOf(parentB, data));
-  const resultTier = clampTier(baseTier + 1, { pityStreak: 0, ...context }, data);
+  const recipe = findMonsterRecipe(parentA, parentB, data);
+  const baseTier = Math.max(tierOf(parentA, data), tierOf(parentB, data));
+  const resultTier = recipe
+    ? recipe.tier
+    : clampTier(Math.min(4, baseTier + 1), { pityStreak: 0, ...context }, data);
   const t = String(resultTier);
-  const cost = data.rules.mixer.costByResultTier[t]!;
-  const effSeconds = Math.max(1, Math.ceil(cost.seconds * Math.max(0.1, 1 - altarTimeReduction)));
+
+  const durationSeconds =
+    data.rules.altar?.durationByTier?.[t] ?? data.rules.mixer.costByResultTier[t]?.seconds ?? 600;
+  const effSeconds = Math.max(
+    1,
+    Math.ceil(durationSeconds * Math.max(0.1, 1 - altarTimeReduction)),
+  );
+
   return {
     resultTier,
-    ...cost,
     seconds: effSeconds,
-    prophecyGems: data.rules.premium.soulProphecyGemsByResultTier[t]!,
+    gold: 0,
+    soulCrystal: 0,
+    prophecyGems: data.rules.premium.soulProphecyGemsByResultTier[t] ?? 5,
   };
 }
 
@@ -281,65 +236,42 @@ export function validateParents(
   return { ok: true };
 }
 
-/**
- * Whether a parent is used up by mixing. With `protectLegendaryParents`, legendary
- * parents survive the mix (so recipes that need legendary parents stay reachable).
- */
-export function isParentConsumed(parent: MonsterKind, data: GameData = gameData): boolean {
-  const { consumeParents, protectLegendaryParents } = data.rules.mixer;
-  if (!consumeParents) return false;
-  return !(protectLegendaryParents && rarityOf(parent, data) === 'legenda');
+/** Parents are NOT consumed in the revised Altar system (Keputusan pemilik 2026-10-28). */
+export function isParentConsumed(_parent: MonsterKind, _data: GameData = gameData): boolean {
+  return false;
 }
 
 export interface MixOddsTable {
   baseTier: number;
   maxTier: number;
-  /** Probability of each resulting form tier, after the Adventure cap. */
   tiers: { tier: number; probability: number }[];
   formTierOdds: FormTierOdds;
-  elements: {
-    source: 'fullUnion' | 'parent' | 'partial';
-    probability: number;
-    element?: ElementId;
-  }[];
+  guaranteedRecipe?: MonsterDef;
 }
 
-/** The free "base odds" table shown before mixing. Never reveals recipes. */
 export function mixOddsTable(
   parentA: MonsterKind,
   parentB: MonsterKind,
   context: MixContext,
   data: GameData = gameData,
 ): MixOddsTable {
-  const baseTier = Math.max(formTierOf(parentA, data), formTierOf(parentB, data));
+  const recipe = findMonsterRecipe(parentA, parentB, data);
+  const baseTier = Math.min(4, Math.max(tierOf(parentA, data), tierOf(parentB, data)));
   const odds = formTierOddsWithPity(context.pityStreak, data);
+
   const byTier = new Map<number, number>();
   for (const outcome of ['same', 'up', 'down', 'mutation'] as const) {
-    const tier = clampTier(baseTier + TIER_DELTA[outcome], context, data);
+    const tier = Math.max(1, Math.min(4, baseTier + TIER_DELTA[outcome]));
     byTier.set(tier, (byTier.get(tier) ?? 0) + odds[outcome]);
   }
-  const { fullUnion, parent, partial } = data.rules.mixer.elementOdds;
-  const unionElement = findElementByComposition(
-    unionComposition(parentA.element, parentB.element, data),
-    data,
-  );
-  const elements: MixOddsTable['elements'] = [
-    { source: 'fullUnion', probability: fullUnion, ...(unionElement && { element: unionElement }) },
-  ];
-  if (parentA.element === parentB.element) {
-    elements.push({ source: 'parent', probability: parent, element: parentA.element });
-  } else {
-    elements.push({ source: 'parent', probability: parent / 2, element: parentA.element });
-    elements.push({ source: 'parent', probability: parent / 2, element: parentB.element });
-  }
-  elements.push({ source: 'partial', probability: partial });
+
   return {
     baseTier,
-    maxTier: maxFormTier(context.bossesDefeated, data),
+    maxTier: 4,
     tiers: [...byTier.entries()]
       .sort(([a], [b]) => a - b)
       .map(([tier, probability]) => ({ tier, probability })),
     formTierOdds: odds,
-    elements,
+    ...(recipe ? { guaranteedRecipe: recipe } : {}),
   };
 }

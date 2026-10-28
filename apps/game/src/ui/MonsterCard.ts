@@ -2,30 +2,31 @@ import Phaser from 'phaser';
 import {
   foodToNextStage,
   gameData,
-  getForm,
   getStage,
   isFinalStage,
   monsterName,
   monsterStats,
   rarityOf,
+  tierOf,
   type Monster,
   type MonsterKind,
   type Rarity,
 } from '@soul-monster/shared';
 import { MonsterView } from '../art/MonsterView';
 import { t } from '../text';
-import { COLORS, RARITY_COLORS, textStyle } from './theme';
+import { COLORS, RARITY_COLORS, TIER_COLORS, textStyle } from './theme';
 import { Button, darken, deferClick, icons, pointerState } from './widgets';
 
-/** Card frame coloured by rarity; legends get the gold double frame. */
+/** Card frame coloured by tier and rarity; legends get the gold double frame. */
 export function drawCardFrame(
   g: Phaser.GameObjects.Graphics,
   w: number,
   h: number,
   rarity: Rarity,
   highlight = false,
+  tier?: number,
 ) {
-  const color = RARITY_COLORS[rarity];
+  const color = tier && TIER_COLORS[tier] ? TIER_COLORS[tier] : RARITY_COLORS[rarity];
   g.fillStyle(darken(color, 0.78), 1).fillRoundedRect(0, 0, w, h, 12);
   g.fillStyle(COLORS.panel, 1).fillRoundedRect(3, 3, w - 6, h - 6, 10);
   const gold = gameData.rules.rarity.visuals[rarity].goldFrame === true;
@@ -133,10 +134,11 @@ export function collectionCard(
 ): Phaser.GameObjects.Container {
   const { width: w, monster } = opts;
   const h = COLLECTION_CARD_HEIGHT;
+  const tier = tierOf(monster);
   const rarity = rarityOf(monster);
   const card = scene.add.container(x, y);
   const frame = scene.add.graphics();
-  drawCardFrame(frame, w, h, rarity);
+  drawCardFrame(frame, w, h, rarity, false, tier);
   card.add(frame);
 
   const art = Math.min(104, w - 24);
@@ -161,14 +163,15 @@ export function collectionCard(
     .setOrigin(0.5, 0);
   card.add(name);
   cy += 34;
-  const tier = getForm(monster.form).tier;
+  const tierDef = gameData.rules.tiers?.[String(tier)];
+  const tierLabel = tierDef ? `${tierDef.name} (T${tier})` : t('monster.tier', { tier });
   card.add(
     scene.add
       .text(
         w / 2,
         cy,
-        `${t('monster.tier', { tier })} · ${stageName(monster.stage)}`,
-        textStyle(11, COLORS.textDim),
+        `${tierLabel} · ${stageName(monster.stage)}`,
+        textStyle(11, TIER_COLORS[tier] ?? COLORS.textDim),
       )
       .setOrigin(0.5, 0),
   );
@@ -243,17 +246,19 @@ export function compactCollectionCard(
 ): Phaser.GameObjects.Container {
   const { width: w, monster } = opts;
   const h = COMPACT_CARD_HEIGHT;
+  const tier = tierOf(monster);
   const rarity = rarityOf(monster);
   const card = scene.add.container(x, y);
   const frame = scene.add.graphics();
-  drawCardFrame(frame, w, h, rarity);
+  drawCardFrame(frame, w, h, rarity, false, tier);
   card.add(frame);
 
   const art = 96;
   card.add(new MonsterView(scene, 10 + art / 2, h / 2, monster, art));
   const tx = art + 18;
   const tw = w - tx - 10;
-  const tier = getForm(monster.form).tier;
+  const tierDef = gameData.rules.tiers?.[String(tier)];
+  const tierLabel = tierDef ? `${tierDef.name} (T${tier})` : t('monster.tier', { tier });
   const name = scene.add.text(
     tx,
     10,
@@ -265,8 +270,8 @@ export function compactCollectionCard(
   const info = scene.add.text(
     tx,
     10 + name.height + 2,
-    `${t('monster.tier', { tier })} · ${stageName(monster.stage)}`,
-    textStyle(11, COLORS.textDim),
+    `${tierLabel} · ${stageName(monster.stage)}`,
+    textStyle(11, TIER_COLORS[tier] ?? COLORS.textDim),
   );
   const rare = scene.add.text(
     tx,
@@ -328,10 +333,11 @@ export function miniCard(
   onClick: () => void,
 ): Phaser.GameObjects.Container {
   const h = MINI_CARD_HEIGHT;
+  const tier = tierOf(kind);
   const rarity = rarityOf(kind);
   const card = scene.add.container(x, y);
   const frame = scene.add.graphics();
-  drawCardFrame(frame, w, h, rarity);
+  drawCardFrame(frame, w, h, rarity, false, tier);
   card.add(frame);
   const art = Math.min(70, w - 16);
   card.add(
@@ -358,13 +364,15 @@ export function miniCard(
       )
       .setOrigin(0.5, 0),
   );
+  const tierDef = gameData.rules.tiers?.[String(tier)];
+  const tierLabel = tierDef ? `${tierDef.name}` : t('monster.tier', { tier });
   card.add(
     scene.add
       .text(
         w / 2,
         h - 12,
-        `${t('monster.tier', { tier: getForm(kind.form).tier })} · ${rarityName(rarity)}`,
-        textStyle(10, RARITY_COLORS[rarity]),
+        `${tierLabel} · ${rarityName(rarity)}`,
+        textStyle(10, TIER_COLORS[tier] ?? RARITY_COLORS[rarity]),
       )
       .setOrigin(0.5),
   );

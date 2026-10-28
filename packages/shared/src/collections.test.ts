@@ -53,12 +53,12 @@ describe('collection sets', () => {
     expect(items.length).toBeGreaterThan(1);
     for (const item of items) {
       const el = gameData.elementById.get(item.id)!;
-      expect(el.composition).toContain(fireSet.unit);
-      expect(el.composition.length).toBeLessThanOrEqual(fireSet.maxUnits);
+      expect(el.composition!).toContain(fireSet.unit);
+      expect(el.composition!.length).toBeLessThanOrEqual(fireSet.maxUnits);
       expect(el.secret).toBeFalsy();
     }
     const all = [...gameData.elementByComposition.values()].filter(
-      (e) => e.composition.includes(fireSet.unit) && e.composition.length <= fireSet.maxUnits,
+      (e) => e.composition?.includes(fireSet.unit) && e.composition.length <= fireSet.maxUnits,
     );
     expect(items).toHaveLength(all.length);
   });

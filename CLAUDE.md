@@ -23,14 +23,13 @@ soul-monster/
   CLAUDE.md
   docs/PLAN.md            rencana tugas bertahap
   data/                   SATU-SATUNYA sumber angka & isi game
-    elements.json         66 elemen: komposisi unsur, siklus keunggulan, resep elemen rahasia
-    forms.json            23 wujud monster per tingkat dan peran
-    recipes.json          resep rahasia tingkat monster
-    rules.json            semua angka penyeimbangan (peluang, biaya, statistik, batas)
+    monsters.json         100 monster tetap (8 tier: Common s/d Mythical), 65 resep Altar
+    elements.json         13 elemen: 8 siklus natural, 4 siklus kosmik, 1 netral (normal)
+    rules.json            semua angka penyeimbangan (peluang, waktu, statistik, batas, fragmen)
     buildings.json        bangunan desa, desa awal, wilayah (plot)
     wilds.json            alam liar: pohon/batu/semak, hewan, musuh liar, Kuburan
     text.json             semua teks UI (bahasa Indonesia)
-  packages/shared/src/    logika murni: elemen, mixer, pertumbuhan, pertarungan, ekonomi
+  packages/shared/src/    logika murni: monster, elemen, mixer, pertumbuhan, pertarungan, ekonomi
   apps/game/src/          Phaser: scene, UI, penyimpanan lokal
   apps/game/art/          sumber PNG per atlas (buildings/, ui/, monsters/) → `pnpm atlas`
   apps/game/public/atlas/ atlas hasil kemasan (png + json Phaser 3)
@@ -65,40 +64,40 @@ Setelah mengubah kode, selalu jalankan `pnpm test` dan `pnpm lint` sebelum menya
 2. **Logika game di `packages/shared` harus murni dan deterministik.** Tidak boleh memakai `Math.random()`, `Date.now()`, DOM, atau Phaser. Keacakan lewat RNG berbenih (seeded) yang dioper sebagai parameter; waktu dioper sebagai parameter.
 3. **Validasi data saat dimuat** dengan zod. Data tidak valid harus gagal keras dengan pesan jelas.
 4. **Setiap fungsi logika baru wajib punya tes.** Untuk peluang, pakai tes Monte Carlo (misalnya 100.000 percobaan) dengan toleransi yang wajar.
-5. **Kode berbahasa Inggris, teks yang dilihat pemain berbahasa Indonesia.** Nama elemen, wujud, dan teks UI diambil dari data, bukan ditulis ulang di kode.
+5. **Kode berbahasa Inggris, teks yang dilihat pemain berbahasa Indonesia.** Nama elemen, monster, dan teks UI diambil dari data, bukan ditulis ulang di kode.
 6. **Server adalah sumber kebenaran (mulai tugas 1.6).** Hasil acak, saldo, timer, dan hasil pertarungan dihitung di server; client hanya meminta dan menampilkan.
-7. **Tidak ada monster yang bisa dibeli dengan uang asli.** Monster hanya lahir dari menetas telur (telur awal, Sarang Telur Jiwa), Soul Mixer, atau hadiah — tidak dari barak maupun toko (telur tidak dijual dengan uang asli maupun permata). Barak melatih prajurit manusia, bukan monster (Tugas 1A.13). Permata hanya untuk: buka slot, mempercepat waktu (termasuk "Sembuhkan semua" di Pohon Jiwa), Ramalan Jiwa, dan menghidupkan kembali monster yang mati di Kuburan.
+7. **Tidak ada monster yang bisa dibeli dengan uang asli.** Monster hanya lahir dari menetas telur (telur awal, Sarang Telur Jiwa), Altar, atau hadiah/fragmen — tidak dari barak maupun toko (telur tidak dijual dengan uang asli maupun permata). Barak melatih prajurit manusia, bukan monster (Tugas 1A.13). Permata hanya untuk: buka slot, mempercepat waktu (termasuk "Sembuhkan semua" di Pohon Jiwa), Ramalan Jiwa, dan menghidupkan kembali monster yang mati di Kuburan.
 8. **Aset gambar:** boleh gambar buatan kode, ilustrator, atau generator (mis. SpriteCook), asal **orisinal** dan mengikuti skill `soul-monster-art-style`. Jangan memakai gambar, karakter, atau aset dari game lain (termasuk meniru gaya khas Social Empires secara persis). Aset yang belum dibuat tetap memakai gambar buatan kode sebagai cadangan.
 9. Setelah tugas selesai, centang tugas itu di `docs/PLAN.md` dan tulis ringkasan singkat perubahan.
 
 ## Ringkasan aturan game (detail angka di `data/`)
 
-### Monster = wujud + elemen + tahap tumbuh
+### Monster = spesies (100 jenis) + elemen + tingkatan (8 tier) + tahap tumbuh
 
-- **Wujud** tingkat 1–5: hewan kecil (kucing, anjing, landak...) → hewan liar → pemburu & makhluk gaib (elang, hantu...) → makhluk perkasa (naga...) → legenda (naga purba, titan...). Lihat `forms.json`.
-- **Elemen** disusun dari 6 unsur dasar: api, air, tanah, angin, cahaya, kegelapan. Setiap elemen punya `composition` (daftar unsur). Jumlah unsur = tingkat elemen. Lihat `elements.json`.
-- **Tahap tumbuh:** bayi → remaja → dewasa, naik dengan diberi makanan. Statistik dikali pengali tahap. Hanya dewasa yang bisa jadi induk.
-- **Kelangkaan** dari jumlah unsur elemen: 1 = biasa, 2 = langka, 3 = epik, 4+ = legenda; wujud tingkat 5 atau elemen rahasia selalu legenda.
-- **Batas elemen per wujud:** wujud tingkat N hanya boleh memiliki elemen dengan unsur ≤ `rules.mixer.maxElementUnitsByFormTier[N]`.
+- **100 Spesies Tetap:** 8 tingkat kelangkaan (1: Common, 2: Uncommon, 3: Veteran, 4: Elite, 5: Rare, 6: Epic, 7: Legendary, 8: Mythical). Lihat `data/monsters.json` dan `docs/MONSTER-100.md`.
+- **13 Elemen:**
+  - 8 Elemen Alam: Api → Es → Alam → Tanah → Petir → Air → Racun → Angin → Api.
+  - 4 Elemen Kosmik: Cahaya → Kegelapan → Ruang → Waktu → Cahaya.
+  - 1 Netral: Normal.
+- **Tahap tumbuh:** bayi → remaja → dewasa, naik dengan diberi makanan. Statistik dikali pengali tahap. Hanya dewasa yang bisa jadi induk di Altar.
+- **Sistem Fragmen (Serpihan Monster):** pemain dapat mengumpulkan pecahan monster (10 s/d 150 pecahan sesuai tier) dari pertempuran Serbu atau pencapaian koleksi untuk menempa monster langsung ke desa.
 
-### Soul Mixer (urutan perhitungan)
+### Altar (Kawin Silang Monster)
 
 1. Terbuka saat Balai Utama mencapai level `rules.mixer.unlockTownHallLevel`. Kedua induk harus dewasa.
-2. **Resep monster rahasia** (`recipes.json`): pasangan wujud+elemen tertentu → hasil pasti.
-3. **Wujud hasil:** tingkat dasar = tingkat induk tertinggi, lalu diacak: sama / naik / turun / mutasi menurut `rules.mixer.formTierOdds`. Dibatasi tingkat maksimum dari jumlah bos Petualangan yang dikalahkan. Wujud dipilih acak dari tingkat itu.
-4. **Elemen hasil:**
-   - Cek pasangan elemen rahasia (`elements.json → secretRecipes`) dengan peluangnya.
-   - Selain itu, gabungkan unsur kedua induk (union). Peluang: elemen gabungan penuh / salah satu elemen induk / elemen dari sebagian unsur gabungan (`rules.mixer.elementOdds`).
-   - Jika unsur melebihi batas wujud, buang unsur secara acak sampai memenuhi batas.
-   - Elemen rahasia tidak pernah didapat lewat pencarian komposisi biasa.
-5. **Mutasi:** wujud naik satu tingkat dan elemen mendapat satu unsur dasar tambahan acak.
-6. **Pity:** setiap `rules.mixer.pity.streak` campuran berturut-turut tanpa hasil epik ke atas, peluang mutasi bertambah.
-7. Hasil menetas sebagai **bayi** setelah waktu campur selesai.
-8. **Ramalan Jiwa:** hasil diacak dan dikunci saat pencampuran disiapkan; pemain bisa membayar permata untuk melihatnya, lalu memilih lanjut atau batal (induk dan emas kembali).
+2. **Gratis:** Kawin silang tidak memakan biaya emas atau kristal jiwa (biaya 0).
+3. **Induk Tetap Ada:** Kedua induk **tidak dikonsumsi/dilebur**, tetap tinggal di desa pemain.
+4. **Resep Definitif:** 65 resep kawin silang pasti di `data/monsters.json`. Jika pasangan induk cocok dengan resep, hasilnya 100% monster target.
+5. **Pasangan Tanpa Resep:** Jika pasangan tidak memiliki resep terdaftar, menghasilkan monster acak tingkatan Common s/d Elite (Tier 1–4).
+6. **Ramalan Jiwa:** pemain bisa membayar permata untuk mengintip hasil pencampuran di Altar sebelum menunggu waktu menetas selesai.
 
 ### Keunggulan elemen
 
-Siklus dasar ada di `elements.json → beats`. Untuk penyerang A dan bertahan D: skor = jumlah pasangan unsur (a, d) di mana a mengalahkan d, dikurangi pasangan di mana d mengalahkan a. Pengali kerusakan = `clamp(1 + skor × advantageStep, advantageMin, advantageMax)` dari `rules.battle`.
+Siklus ada di `elements.json → beats`.
+
+- Siklus Alam (8 elemen): Api mengalahkan Es, Es mengalahkan Alam, Alam mengalahkan Tanah, Tanah mengalahkan Petir, Petir mengalahkan Air, Air mengalahkan Racun, Racun mengalahkan Angin, Angin mengalahkan Api (+20% kerusakan).
+- Siklus Kosmik (4 elemen): Cahaya mengalahkan Kegelapan, Kegelapan mengalahkan Ruang, Ruang mengalahkan Waktu, Waktu mengalahkan Cahaya (+20% kerusakan).
+- Siklus Alam vs Kosmik seimbang (1.0x). Normal netral (1.0x). Pengali diatur di `data/rules.json`.
 
 ### Pertarungan
 

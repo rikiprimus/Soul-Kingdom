@@ -94,7 +94,29 @@ export class ServerLink {
     );
   }
 
-  private async post(fn: 'action' | 'social' | 'pvp', body: object): Promise<ServerAnswer> {
+  /**
+   * Calls the `arena` function (3v3 Arena duels & leaderboard), after pending actions.
+   * An answer carrying the player's save is applied like an action's.
+   */
+  arena(request: object): Promise<ServerAnswer> {
+    const run = this.queue.then(() => this.post('arena', { request }));
+    this.queue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run.then(
+      (answer) => {
+        if (this.waiting === 0 && answer.save && answer.now) this.onSave(answer.save, answer.now);
+        return answer;
+      },
+      () => ({ ok: false, error: 'offline' }),
+    );
+  }
+
+  private async post(
+    fn: 'action' | 'social' | 'pvp' | 'arena',
+    body: object,
+  ): Promise<ServerAnswer> {
     const call = async (session: Session) =>
       fetch(`${this.config.url}/functions/v1/${fn}`, {
         method: 'POST',

@@ -2,17 +2,15 @@ import Phaser from 'phaser';
 import {
   eligibleParents,
   gameData,
-  getForm,
   isMixerUnlocked,
-  isParentConsumed,
   mixCost,
-  mixOddsTable,
   mixRemaining,
   monsterName,
   nextMixerSlotGems,
   rarityOf,
   rarityRank,
   speedUpCost,
+  tierOf,
   type Monster,
   type MixEntry,
   type MixResult,
@@ -21,7 +19,7 @@ import { MonsterView } from '../art/MonsterView';
 import { playSfx } from '../audio/sound';
 import { ART_RES, eggTexture } from '../art/monsterArt';
 import { elementColor } from '../art/palette';
-import { errorText, formatDuration, formatNumber, percent, t } from '../text';
+import { errorText, formatDuration, t } from '../text';
 import { MINI_CARD_HEIGHT, drawCardFrame, miniCard, rarityName } from '../ui/MonsterCard';
 import { COLORS, RARITY_COLORS, textStyle } from '../ui/theme';
 import {
@@ -314,35 +312,43 @@ export class MixerView extends View {
   ): number {
     const { scene } = this;
     const [a, b] = this.selectedParents();
-    const boxW = (width - GAP) / 2;
+    const boxW = Math.floor((width - 2 * GAP) / 3);
     const boxH = 160;
-    (
-      [
-        ['a', a, t('mixer.parentA')],
-        ['b', b, t('mixer.parentB')],
-      ] as const
-    ).forEach(([key, monster, label], i) => {
-      const box = scene.add.container(left + i * (boxW + GAP), y);
+
+    const pairKey =
+      a && b ? [a.species ?? a.form, b.species ?? b.form].sort().join('+') : undefined;
+    const recipeDef = pairKey ? gameData.monsterRecipeByParents.get(pairKey) : undefined;
+
+    // Slot Kiri: Induk A
+    {
+      const box = scene.add.container(left, y);
       const frame = scene.add.graphics();
-      if (monster) drawCardFrame(frame, boxW, boxH, rarityOf(monster));
+      if (a) drawCardFrame(frame, boxW, boxH, rarityOf(a), false, a ? tierOf(a) : undefined);
       else {
         frame.fillStyle(COLORS.panelDark).fillRoundedRect(0, 0, boxW, boxH, 12);
         frame.lineStyle(2, COLORS.accent, 0.7).strokeRoundedRect(1, 1, boxW - 2, boxH - 2, 12);
       }
       box.add(frame);
-      box.add(scene.add.text(10, 8, label, textStyle(11, COLORS.textDim, { fontStyle: 'bold' })));
-      if (monster) {
-        box.add(new MonsterView(scene, boxW / 2, 72, monster, 92));
+      box.add(
+        scene.add.text(
+          10,
+          8,
+          t('mixer.parentA'),
+          textStyle(11, COLORS.textDim, { fontStyle: 'bold' }),
+        ),
+      );
+      if (a) {
+        box.add(new MonsterView(scene, boxW / 2, 72, a, 84));
         box.add(
           scene.add
             .text(
               boxW / 2,
               boxH - 34,
-              monsterName(monster),
-              textStyle(12, COLORS.text, {
+              monsterName(a),
+              textStyle(11, COLORS.text, {
                 fontStyle: 'bold',
                 align: 'center',
-                wordWrap: { width: boxW - 12 },
+                wordWrap: { width: boxW - 10 },
               }),
             )
             .setOrigin(0.5, 0),
@@ -350,12 +356,12 @@ export class MixerView extends View {
       } else {
         box.add(
           scene.add
-            .text(boxW / 2, 70, '+', textStyle(44, COLORS.accent, { fontStyle: 'bold' }))
+            .text(boxW / 2, 70, '+', textStyle(38, COLORS.accent, { fontStyle: 'bold' }))
             .setOrigin(0.5),
         );
         box.add(
           scene.add
-            .text(boxW / 2, 118, t('mixer.choose'), textStyle(12, COLORS.textDim))
+            .text(boxW / 2, 118, t('mixer.choose'), textStyle(11, COLORS.textDim))
             .setOrigin(0.5),
         );
       }
@@ -364,56 +370,189 @@ export class MixerView extends View {
         .setOrigin(0)
         .setInteractive({ useHandCursor: true });
       zone.on('pointerup', () => {
-        if (!pointerState.dragMoved) deferClick(scene, () => this.openPicker(key));
+        if (!pointerState.dragMoved) deferClick(scene, () => this.openPicker('a'));
       });
       box.add(zone);
       content.add(box);
-    });
+    }
+
+    // Slot Tengah: Calon Hasil (Siluet)
+    {
+      const centerBox = scene.add.container(left + boxW + GAP, y);
+      const centerFrame = scene.add.graphics();
+      centerBox.add(centerFrame);
+      centerBox.add(
+        scene.add.text(10, 8, 'Calon Hasil', textStyle(11, COLORS.textDim, { fontStyle: 'bold' })),
+      );
+
+      if (a && b) {
+        if (recipeDef) {
+          const resDef = recipeDef;
+          const discovered = this.state.pedia.monsters.includes(resDef.id);
+          drawCardFrame(
+            centerFrame,
+            boxW,
+            boxH,
+            rarityOf({ species: resDef.id }),
+            false,
+            resDef.tier,
+          );
+          centerBox.add(
+            new MonsterView(
+              scene,
+              boxW / 2,
+              72,
+              { species: resDef.id, element: resDef.element, stage: 'bayi' },
+              84,
+              { silhouette: !discovered, effects: discovered },
+            ),
+          );
+          centerBox.add(
+            scene.add
+              .text(
+                boxW / 2,
+                boxH - 34,
+                discovered ? resDef.name : t('pedia.unknown'),
+                textStyle(11, discovered ? COLORS.text : COLORS.textDim, {
+                  fontStyle: 'bold',
+                  align: 'center',
+                  wordWrap: { width: boxW - 10 },
+                }),
+              )
+              .setOrigin(0.5, 0),
+          );
+        } else {
+          centerFrame.fillStyle(COLORS.panelDark).fillRoundedRect(0, 0, boxW, boxH, 12);
+          centerFrame
+            .lineStyle(2, COLORS.stroke, 0.7)
+            .strokeRoundedRect(1, 1, boxW - 2, boxH - 2, 12);
+          const egg = scene.add
+            .image(boxW / 2, 70, eggTexture(scene, 64, COLORS.textDim))
+            .setScale(1 / ART_RES);
+          centerBox.add(egg);
+          centerBox.add(
+            scene.add
+              .text(
+                boxW / 2,
+                boxH - 34,
+                'Acak Common–Elite',
+                textStyle(10.5, COLORS.textDim, {
+                  fontStyle: 'bold',
+                  align: 'center',
+                  wordWrap: { width: boxW - 10 },
+                }),
+              )
+              .setOrigin(0.5, 0),
+          );
+        }
+      } else {
+        centerFrame.fillStyle(COLORS.panelDark).fillRoundedRect(0, 0, boxW, boxH, 12);
+        centerFrame
+          .lineStyle(2, COLORS.disabled, 0.5)
+          .strokeRoundedRect(1, 1, boxW - 2, boxH - 2, 12);
+        centerBox.add(
+          scene.add
+            .text(boxW / 2, 70, '?', textStyle(38, COLORS.disabled, { fontStyle: 'bold' }))
+            .setOrigin(0.5),
+        );
+        centerBox.add(
+          scene.add
+            .text(boxW / 2, 118, 'Pilih 2 induk', textStyle(11, COLORS.disabled))
+            .setOrigin(0.5),
+        );
+      }
+      content.add(centerBox);
+    }
+
+    // Slot Kanan: Induk B
+    {
+      const box = scene.add.container(left + 2 * (boxW + GAP), y);
+      const frame = scene.add.graphics();
+      if (b) drawCardFrame(frame, boxW, boxH, rarityOf(b), false, b ? tierOf(b) : undefined);
+      else {
+        frame.fillStyle(COLORS.panelDark).fillRoundedRect(0, 0, boxW, boxH, 12);
+        frame.lineStyle(2, COLORS.accent, 0.7).strokeRoundedRect(1, 1, boxW - 2, boxH - 2, 12);
+      }
+      box.add(frame);
+      box.add(
+        scene.add.text(
+          10,
+          8,
+          t('mixer.parentB'),
+          textStyle(11, COLORS.textDim, { fontStyle: 'bold' }),
+        ),
+      );
+      if (b) {
+        box.add(new MonsterView(scene, boxW / 2, 72, b, 84));
+        box.add(
+          scene.add
+            .text(
+              boxW / 2,
+              boxH - 34,
+              monsterName(b),
+              textStyle(11, COLORS.text, {
+                fontStyle: 'bold',
+                align: 'center',
+                wordWrap: { width: boxW - 10 },
+              }),
+            )
+            .setOrigin(0.5, 0),
+        );
+      } else {
+        box.add(
+          scene.add
+            .text(boxW / 2, 70, '+', textStyle(38, COLORS.accent, { fontStyle: 'bold' }))
+            .setOrigin(0.5),
+        );
+        box.add(
+          scene.add
+            .text(boxW / 2, 118, t('mixer.choose'), textStyle(11, COLORS.textDim))
+            .setOrigin(0.5),
+        );
+      }
+      const zone = scene.add
+        .zone(0, 0, boxW, boxH)
+        .setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerup', () => {
+        if (!pointerState.dragMoved) deferClick(scene, () => this.openPicker('b'));
+      });
+      box.add(zone);
+      content.add(box);
+    }
+
     y += boxH + 12;
     if (!a || !b) return y;
 
-    // Cost, time and the free base odds table.
+    // Cost, time and recipe info
     const context = {
       bossesDefeated: this.state.bossesDefeated,
       pityStreak: this.state.pityStreak,
     };
     const cost = mixCost(a, b, context);
-    const odds = mixOddsTable(a, b, context);
     const lines: { text: string; color?: number; bold?: boolean }[] = [];
     lines.push({
-      text: `${t('mixer.cost', { gold: formatNumber(cost.gold) })}${cost.soulCrystal ? ` ${t('mixer.costCrystal', { crystal: cost.soulCrystal })}` : ''}   ·   ${t('mixer.time', { time: formatDuration(cost.seconds) })}`,
+      text: `Biaya: Gratis (0 emas)   ·   Waktu: ${formatDuration(cost.seconds)}`,
       bold: true,
+      color: COLORS.good,
     });
-    lines.push({ text: t('mixer.oddsTitle'), color: COLORS.accent, bold: true });
-    const mutationTier = odds.tiers.length
-      ? Math.min(odds.baseTier + 1, odds.maxTier)
-      : odds.baseTier;
-    for (const row of odds.tiers) {
-      // The mutation share is listed separately below.
-      const p =
-        row.tier === mutationTier ? row.probability - odds.formTierOdds.mutation : row.probability;
-      if (p > 1e-9)
-        lines.push({
-          text: `  ${t('mixer.oddsTier', { tier: row.tier })} — ${gameData.forms.tiers[String(row.tier)]?.name ?? ''}: ${percent(p)}`,
-        });
-    }
     lines.push({
-      text: `  ${t('mixer.oddsMutation', { tier: mutationTier })}: ${percent(odds.formTierOdds.mutation)}`,
+      text: 'Induk tidak lebur (tetap ada di desa)',
+      color: COLORS.good,
     });
-    lines.push({ text: `  ${t('mixer.oddsCap', { tier: odds.maxTier })}`, color: COLORS.textDim });
-    for (const el of odds.elements) {
-      const name = el.element ? (gameData.elementById.get(el.element)?.name ?? el.element) : '';
-      const label =
-        el.source === 'fullUnion'
-          ? t('mixer.oddsElementUnion', { element: name })
-          : el.source === 'parent'
-            ? t('mixer.oddsElementParent', { element: name })
-            : t('mixer.oddsElementPartial');
-      lines.push({ text: `  ${label}: ${percent(el.probability)}` });
+    if (recipeDef) {
+      const resDef = recipeDef;
+      lines.push({
+        text: `Resep Altar ditemukan: ${resDef.name} (Tingkat ${resDef.tier} · ${resDef.element})`,
+        color: COLORS.gold,
+        bold: true,
+      });
+    } else {
+      lines.push({
+        text: 'Pasangan tanpa resep: menghasilkan monster acak tingkatan Common–Elite (Tier 1–4)',
+        color: COLORS.accent,
+      });
     }
-    lines.push({ text: t('mixer.oddsNote'), color: COLORS.textDim });
-    if (!isParentConsumed(a) || !isParentConsumed(b))
-      lines.push({ text: t('mixer.parentsKept'), color: COLORS.warn });
 
     const text = scene.add.text(
       left + 14,
@@ -432,9 +571,9 @@ export class MixerView extends View {
       new Button(scene, left + bw / 2, y + 22, {
         width: bw,
         height: 44,
-        label: t('mixer.mix'),
+        label: `${t('mixer.mix')} (Gratis)`,
         fontSize: 16,
-        icon: icons.gold,
+        color: COLORS.good,
         onClick: () => this.mix(a, b, false),
       }),
     );
@@ -476,7 +615,7 @@ export class MixerView extends View {
     }
     const { cols, cardW } = gridColumns(rect.width, 100, 3);
     candidates
-      .sort((x, y) => getForm(y.form).tier - getForm(x.form).tier)
+      .sort((x, y) => tierOf(y) - tierOf(x))
       .forEach((m, i) => {
         const x = (i % cols) * (cardW + GAP);
         const yy = Math.floor(i / cols) * (MINI_CARD_HEIGHT + GAP);
@@ -584,7 +723,7 @@ export class MixerView extends View {
         .text(
           mw / 2,
           y + 30,
-          `${rarityName(result.rarity)} · ${t('monster.tier', { tier: getForm(result.form).tier })}`,
+          `${rarityName(result.rarity)} · ${t('monster.tier', { tier: tierOf(result) })}`,
           textStyle(13, RARITY_COLORS[result.rarity], { fontStyle: 'bold' }),
         )
         .setOrigin(0.5, 0),

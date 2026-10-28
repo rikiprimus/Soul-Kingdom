@@ -9,9 +9,9 @@ describe('pediaProgress', () => {
     });
     expect([...p.elements].sort()).toEqual(['api', 'uap']);
     expect([...p.forms].sort()).toEqual(['anjing', 'kucing', 'naga']);
-    expect(p.total).toBe(66 + 23 + 4);
-    expect(p.found).toBe(2 + 3 + 1);
-    expect(p.ratio).toBeCloseTo(6 / 93);
+    expect(p.total).toBe(p.monsterCount + p.recipeCount);
+    expect(p.found).toBe(p.discoveredSpecies.size + p.recipes.size);
+    expect(p.ratio).toBeCloseTo(p.found / p.total);
   });
 
   it('starts empty', () => {

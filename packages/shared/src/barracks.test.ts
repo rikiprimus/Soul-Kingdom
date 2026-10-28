@@ -236,7 +236,7 @@ describe('a new game and its egg', () => {
     const r = ok(hatchEgg(s, egg.id, egg.readyAt));
     expect(r.monster).toMatchObject({ form: egg.form, element: egg.element, food: 0 });
     expect(r.monster.stage).toBe(growth.stages[0]!.id);
-    expect(gameData.formById.get(egg.form)!.tier).toBe(gameData.formTiers[0]);
+    expect(gameData.formById.get(egg.form!)!.tier).toBe(gameData.formTiers[0]);
     expect(gameData.baseUnits).toContain(egg.element);
     expect(r.state.monsters).toEqual([r.monster]);
     expect(r.state.eggs).toEqual([]);
@@ -269,8 +269,8 @@ describe('a new game and its egg', () => {
     const N = 100_000;
     for (let i = 0; i < N; i++) {
       const e = rollEgg(rng, 'e', 0);
-      forms.set(e.form, (forms.get(e.form) ?? 0) + 1);
-      elements.set(e.element, (elements.get(e.element) ?? 0) + 1);
+      forms.set(e.form!, (forms.get(e.form!) ?? 0) + 1);
+      elements.set(e.element!, (elements.get(e.element!) ?? 0) + 1);
     }
     const tier1 = gameData.formsByTier.get(gameData.formTiers[0]!)!;
     expect([...forms.keys()].sort()).toEqual(tier1.map((f) => f.id).sort());
@@ -294,7 +294,14 @@ describe('save migration v10', () => {
     expect(loaded.eggs).toEqual([]);
     const adult = growth.stages[growth.stages.length - 1]!.id;
     expect(loaded.monsters).toEqual([
-      { id: expect.any(String), form: 'anjing', element: 'air', stage: adult, food: 0 },
+      {
+        id: expect.any(String),
+        species: 'dire-wolf-pup',
+        form: 'anjing',
+        element: 'air',
+        stage: adult,
+        food: 0,
+      },
     ]);
     expect(loaded.pedia.monsters).toContain('anjing:air');
     expect(deserializeState(serializeState(loaded))).toEqual(loaded);

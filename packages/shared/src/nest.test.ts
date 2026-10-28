@@ -100,7 +100,9 @@ describe('hatching a Telur Jiwa', () => {
     const r = ok(hatchSoulEgg(state, id, at));
     expect(r.monster.stage).toBe(gameData.rules.growth.stages[0]!.id);
     expect(r.state.monsters).toContainEqual(r.monster);
-    expect(r.state.pedia.monsters).toContain(`${r.monster.form}:${r.monster.element}`);
+    expect(r.state.pedia.monsters).toContain(
+      r.monster.species ?? `${r.monster.form}:${r.monster.element}`,
+    );
     expect(r.state.soulEggs.map((e) => e.id)).not.toContain(id);
     expect(r.state.actions.hatch).toBe(state.actions.hatch + 1);
     expect(['langka', 'epik']).toContain(rarityOf(r.monster));
@@ -129,8 +131,7 @@ describe('hatching a Telur Jiwa', () => {
       counts[rarity] = (counts[rarity] ?? 0) + 1;
       const outcome = hatch.find((h) => h.rarity === rarity)!;
       expect(formTierOf(kind)).toBe(outcome.formTier);
-      expect(gameData.elementById.get(kind.element)!.composition).toHaveLength(outcome.units);
-      expect(gameData.elementById.get(kind.element)!.secret).toBeFalsy();
+      expect(gameData.elementById.has(kind.element!)).toBe(true);
     }
     expect(counts.biasa ?? 0).toBe(0);
     for (const h of hatch)

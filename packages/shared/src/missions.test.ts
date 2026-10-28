@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { deepClone } from './clone';
-import { gameData } from './data';
+import { gameData, type ElementId } from './data';
 import { elementAdvantage } from './elements';
 import {
   encounterLevelIndex,
@@ -106,7 +106,7 @@ describe('encounter spawns', () => {
         } else {
           expect(e.enemies).toHaveLength(e.count);
           for (const x of e.enemies) {
-            expect(gameData.formById.get(x.form)!.tier).toBe(def.formTier);
+            expect(gameData.formById.get(x.form!)!.tier).toBe(def.formTier);
             expect(x.stage).toBe(def.stage);
           }
         }
@@ -119,7 +119,8 @@ describe('encounter spawns', () => {
   });
 });
 
-const units = (ms: Monster[]) => ms.map((m) => ({ power: monsterPower(m), element: m.element }));
+const units = (ms: Monster[]) =>
+  ms.map((m) => ({ power: monsterPower(m), element: (m.element ?? null) as ElementId | null }));
 
 /** The team reaches its enemy: the fight is simulated now. */
 const arrive = (s: PlayerState) => settleMissions(s, s.missions[0]!.arriveAt);

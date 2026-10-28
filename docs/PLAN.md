@@ -1206,6 +1206,7 @@ Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) 
 - Simpan cuplikan pertahanan pemain; pencocokan lawan berdasarkan kekuatan; hasil dihitung server; rekaman bisa ditonton pemilik markas.
 
 > **Ringkasan (selesai 2026-10-28):**
+>
 > - **Logika Murni (`packages/shared/src/serbuPvp.ts` & `serbuPvp.test.ts`):**
 >   - Antarmuka & tipe: `PvpDefenseCell`, `PvpDefenseLogEntry`, `PvpState`, `PvpDefenseSnapshot`, `PvpAttackResult`.
 >   - Fungsi pertahanan: `isDefendingCell` (validasi petak pertahanan di 4 kolom kanan x: 8..11, y: 0..7), `defaultDefenseCells` (penataan formasi pertahanan otomatis berbasis pasukan dan menara jaga), `buildDefenseFighters` (menghasilkan instans petarung termasuk bonus riset dan status luka), `calculateDefensePower` (perhitungan total daya tempur pertahanan).
@@ -1228,9 +1229,169 @@ Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) 
 >   - Modal Log Pertahanan: riwayat serangan musuh terhadap markas, status bertahan/tembus, perubahan trofi, jarahan dicuri, dan tombol `[Tonton Ulang]` rekaman pertarungan.
 > - **Pengujian & Validasi:** 448 tes unit lulus (`pnpm test`), `pnpm typecheck` bersih tanpa error, `pnpm lint` bersih, `pnpm build:server` sukses diperbarui.
 
-### - [ ] Tugas 2.3 — Arena dan peringkat
+### - [x] Tugas 2.3 — Arena dan peringkat
 
 - Duel 3 lawan 3 otomatis, peringkat mingguan dengan hadiah.
+
+> **Ringkasan (selesai 2026-10-28):**
+>
+> - **Aturan & Data (`data/rules.json`, `data/text.json`, `packages/shared/src/data/schema.ts`):**
+>   - Aturan arena: ukuran tim 3 monster, 5 tiket tantangan harian (reset otomatis setiap pergantian hari), poin awal 1000, +25 menang, -15 kalah, siklus musim 7 hari (mingguan). Semua angka arena (rentang pencarian lawan, jumlah lawan, batas riwayat, medan, bobot daya tempur, statistik & nama bot) ada di `rules.arena`.
+>   - 5 tier peringkat mingguan: Perunggu (0 pt), Perak (1.100 pt), Emas (1.300 pt), Berlian (1.500 pt), dan Master (1.800 pt), masing-masing dengan paket hadiah mingguan (Emas, Permata, Kristal Jiwa). Hadiah kemenangan langsung: 200 Emas + 1 Kristal Jiwa.
+>   - Teks UI bahasa Indonesia lengkap (`panel.arena`, `arena.*`).
+> - **Logika Murni (`packages/shared/src/arena.ts`, `state.ts`, `save.ts`, `server/actions.ts`):**
+>   - Fungsi tier (`getArenaTier`), musim (`getSeasonWeek`, `seasonSecondsRemaining`), isi ulang tiket harian (`refillArenaTickets`), klaim hadiah mingguan (`claimArenaSeasonReward`) menurut poin saat musim berakhir, hanya bila pemain bertarung di musim itu (`rollArenaSeason`, `settleArena`, `lastSeason`); setiap pergantian musim poin di-reset lunak ke arah poin awal (`seasonKeepRatio` 0,5, mis. 1600 → 1300, `arenaPointsAfterReset`) dan papan peringkat hanya memuat pemain yang aktif di musim berjalan.
+>   - Pengaturan tim serang & bertahan (`setArenaTeam`, `setArenaDefenseTeam`, `calculateArenaTeamPower`).
+>   - Pembuat gladiator bot prosedural (`generateArenaBotOpponent`) dan perjodohan lawan (`matchmakeArenaOpponents`).
+>   - Simulasi pertarungan 3v3 arena murni (`fightArena`), tanpa kematian permanen (monster tidak masuk kuburan); monster yang sedang di Soul Mixer/misi tidak ikut, monster terluka mulai dengan HP sisanya, ID pihak bertahan diberi awalan agar tidak bentrok dengan ID penyerang.
+>   - Peningkatan versi simpanan ke v34 (`SAVE_SCHEMA_VERSION = 34`), skema zod `arenaStateSchema`, dan migrasi v33 -> v34.
+>   - Registrasi aksi murni `setArenaTeam`, `setArenaDefenseTeam`, `claimArenaSeasonReward`.
+> - **Backend Supabase (`supabase/migrations/20261028030000_arena.sql`, `supabase/functions/arena/index.ts`):**
+>   - Tabel `arena_snapshots` (cuplikan tim bertahan publik, poin rating, tier, dan level).
+>   - Edge function `arena`: endpoint `saveSnapshot`, `matchmake`, `fight`, dan `leaderboard`. Client hanya mengirim `opponentId`; server memuat cuplikan lawan dari `arena_snapshots` (harus dalam `matchRange`) atau membangun ulang bot dari benih server (`arenaBotSeed`, `resolveArenaBot`).
+> - **Client UI (`apps/game/src/views/ArenaView.ts`, `scenes/UIScene.ts`, `scenes/infoCard.ts`, `server.ts`, `store.ts`):**
+>   - Akses dari bangunan Arena di desa: kartu info menampilkan tier, rating, tiket, dan tombol `[Masuk Arena]`.
+>   - Panel Arena dengan 4 tab:
+>     - **Duel Arena:** banner tier, poin rating, jatah tiket harian, sisa waktu musim, klaim hadiah mingguan, dan 3 kartu lawan tertandingi dengan tombol `[Tantang (-1 🎟️)]`.
+>     - **Atur Tim:** 3 slot tim serang dan 3 slot tim bertahan, hitungan daya tempur, daftar monster desa untuk dipasang/dilepas, dan tombol simpan cuplikan tim bertahan ke server.
+>     - **Peringkat:** daftar 10 gladiator teratas mingguan dan tabel hadiah akhir musim per tier.
+>     - **Riwayat:** catatan 20 pertarungan terakhir (+/- poin rating, lawan, status menang/kalah, dan tombol `[▶ Tonton]` hasil duel; rekaman lengkap tidak disimpan di simpanan pemain).
+>   - Modal rekaman duel arena: visualisasi unit penyerang vs bertahan, bilah HP, pengumuman hasil menang/kalah, poin rating dan hadiah.
+> - **Pengujian & Validasi:** 460 tes unit lulus (`pnpm test`), `pnpm typecheck` bersih tanpa error, `pnpm lint` bersih, `pnpm build:server` sukses diperbarui.
+
+### Fase 2B — Revisi sistem monster (permintaan pemilik 2026-10-28)
+
+Tujuan: mengganti sistem "wujud + elemen acak dari 6 unsur" dengan **100 jenis monster tetap** dari [docs/MONSTER-100.md](MONSTER-100.md). Setiap jenis punya satu elemen tetap (13 elemen), satu dari 8 tingkatan (Common → Mythical), dan cara mendapatkan sendiri (telur, boss, crossbreed, quest, eksplorasi, achievement, event). Altar memakai **resep pasti** dan waktu per tingkatan.
+
+Dampak besar: bagian "Monster = wujud + elemen", "Soul Mixer" dan "Keunggulan elemen" di `CLAUDE.md` serta `data/elements.json`, `forms.json`, `recipes.json` diganti. Kerjakan berurutan; tiap tugas harus meninggalkan game yang tetap jalan dan semua tes lulus.
+
+#### - [ ] Tugas 2B.0 — Keputusan desain
+
+**Keputusan pemilik (2026-10-28):**
+
+1. **Keunggulan elemen:** Normal netral terhadap semua elemen. Siklus 12 elemen lain masih perlu disusun (usulan dibuat di awal 2B.1, disetujui pemilik).
+2. **Tahap tumbuh:** bayi → remaja → dewasa tetap ada.
+3. **Altar (nama tetap "Altar", bukan "Crossbreed"):**
+   - Tampilan: slot kiri + slot kanan; di tengah muncul siluet hitam monster yang mungkin didapat.
+   - Gratis selama ada slot Altar kosong. Induk **tidak lebur**.
+   - Pasangan dengan resep → hasil pasti; pasangan tanpa resep → monster acak tingkatan **Common–Elite** (di bawah Rare).
+   - Ramalan Jiwa, mutasi dan pity **tetap ada** (cara kerjanya dengan resep pasti disusun di 2B.3).
+4. **Telur:** hanya berisi beberapa jenis monster (ditandai "Telur" di [MONSTER-100.md](MONSTER-100.md)).
+5. **Boss:** hadiah acak, telur atau fragmen dari monster bertanda "Boss".
+6. **Quest/eksplorasi/achievement/event:** monster diberikan saat syaratnya selesai; syarat per monster tercantum di daftar.
+7. **Monster lama:** pemain memilih tiap monster lama untuk **disimpan (keep)** atau **dibuang dengan hadiah pengganti**. Bentuk monster lama yang disimpan dan isi hadiahnya ditetapkan di 2B.5.
+8. **Poin kekuatan Serbu** (ditentukan Claude): Common 1, Uncommon 2, Veteran 3, Elite 5, Rare 8, Epic 12, Legendary 18, Mythical 25. Waktu Altar: 10 menit / 30 menit / 2 / 6 / 12 / 24 / 48 / 72 jam.
+9. **Gambar:** nanti dibuat dengan SpriteCook. Sampai saat itu dipakai gambar buatan kode sebagai cadangan.
+10. **Nama monster** berbahasa Inggris, dari daftar pemilik. "Ancalagon the Black" (tokoh Tolkien, berhak cipta) diganti "Nightmaw the Black" (disetujui pemilik).
+
+#### - [x] Tugas 2B.1 — Data monster & elemen baru
+
+- `data/monsters.json`: 100 jenis (id, nama, deskripsi, tingkatan, elemen, peran, sumber, resep crossbreed induk A + B).
+- `data/elements.json` diganti: 13 elemen (id, nama, warna) + tabel keunggulan dari 2B.0.
+- `rules.json`: 8 tingkatan (pengali statistik, poin kekuatan, waktu crossbreed 30 menit … 72 jam, biaya), isi telur, fragmen boss.
+- Validasi zod gagal keras bila: id ganda, induk resep tidak ada atau tingkatannya tidak lebih rendah, pasangan induk dipakai dua resep, monster tanpa satu pun sumber.
+- Teks nama/deskripsi di data, bukan di kode. Tes data.
+
+> **Ringkasan (selesai 2026-10-28):**
+>
+> - **13 Elemen & Siklus Keunggulan (`data/elements.json`):**
+>   - 13 elemen terdaftar lengkap dengan id, nama, dan kode warna hex: `normal` (Netral, #A8A878), `api` (#F08030), `air` (#6890F0), `angin` (#4DD0E1), `tanah` (#8D6E63), `lightning` (#FFD700), `ice` (#80DEEA), `nature` (#4CAF50), `dark` (#424254), `magma` (#FF5722), `light` (#FFD54F), `arcane` (#BA68C8), `void` (#4A148C).
+>   - Siklus keunggulan (`beats`):
+>     - Siklus 8 Elemen Alam: `api` -> `nature` -> `tanah` -> `lightning` -> `air` -> `magma` -> `ice` -> `angin` -> `api`.
+>     - Siklus 4 Elemen Mistik/Kosmik: `light` -> `dark` -> `arcane` -> `void` -> `light`.
+>     - `normal`: netral terhadap semua elemen (deals 1.0x dan takes 1.0x).
+> - **100 Jenis Monster & 65 Resep Altar (`data/monsters.json`):**
+>   - Berisi 100 monster lengkap dari [docs/MONSTER-100.md](MONSTER-100.md): nama bahasa Inggris, deskripsi bentuk bahasa Indonesia, tingkatan (1..8), elemen tetap dari 13 elemen, peran (`penahan`, `petarung`, `penembak`), sumber (`telur`, `eksplorasi`, `quest`, `boss`, `achievement`, `event`, `altar`), dan resep Altar (`parentA` + `parentB`).
+>   - Komposisi tingkatan: Tier 1 Common (13), Tier 2 Uncommon (13), Tier 3 Veteran (13), Tier 4 Elite (13), Tier 5 Rare (12), Tier 6 Epic (12), Tier 7 Legendary (12), Tier 8 Mythical (12).
+>   - Tepat 65 resep Altar berjenjang (induk selalu dari tingkatan lebih rendah, pasangan induk unik per resep). Monster Mythical "Nightmaw the Black" menggantikan Ancalagon the Black.
+> - **Penyesuaian Aturan 8 Tingkatan (`data/rules.json`):**
+>   - Ditambahkan tabel `tiers` (1..8) dan waktu Altar: Tier 1 (10 mnt = 600s), Tier 2 (30 mnt = 1.800s), Tier 3 (2 jam = 7.200s), Tier 4 (6 jam = 21.600s), Tier 5 (12 jam = 43.200s), Tier 6 (24 jam = 86.400s), Tier 7 (48 jam = 172.800s), Tier 8 (72 jam = 259.200s).
+>   - Poin kekuatan Serbu diperbarui: 1 / 2 / 3 / 5 / 8 / 12 / 18 / 25.
+>   - Multiplier statistik dan durasi Altar (`costByResultTier`) disesuaikan untuk 8 tingkatan.
+> - **Validasi Skema Zod & Data Loader (`packages/shared/src/data/schema.ts`, `load.ts`, `index.ts`):**
+>   - `monstersFileSchema` dengan validasi `superRefine` gagal keras (hard fail) terhadap: (1) ID monster ganda, (2) induk resep tidak ditemukan atau tingkatannya tidak lebih rendah dari monster hasil, (3) pasangan induk dipakai dua resep berbeda (komutatif), (4) monster tanpa sumber.
+>   - Pemetaan `monsterById`, `monstersByTier`, dan `monsterRecipeByParents` terdaftar di `GameData`.
+> - **Pengujian Data (`packages/shared/src/data/data.test.ts`):**
+>   - Menambahkan pengujian komprehensif untuk validasi 13 elemen & siklus keunggulan, 100 monster, 8 tingkatan, serta kasus negatif yang menguji kegagalan keras pada setiap kondisi pembatas. Seluruh 26 pengujian data lulus dengan sukses.
+
+#### - [x] Tugas 2B.2 — Inti logika monster di `packages/shared` _(selesai 2026-10-28)_
+
+> - **Standarisasi Monster:** `Monster` sekarang berbentuk `{ id, species, stage, food, form?, element? }`. Fungsi pembantu `tierOf`, `monsterName`, `monsterElement`, `monsterRole`, `rarityOf`, `powerPointsOf` membaca langsung dari definisi 100 spesies di `monsters.json`.
+> - **Sistem 13 Elemen:** Lookup keuntungan 13 elemen murni (8 siklus alam, 4 siklus kosmik, 1 netral normal) menggantikan sistem komposisi unsur lama.
+> - **Penyelarasan Pemanggil:** Memperbarui `missions.ts`, `encounters.ts`, `serbu.ts`, `serbuPvp.ts`, `arena.ts`, `collections.ts`, `nest.ts`, `barracks.ts`, dan `state.ts`.
+
+#### - [x] Tugas 2B.3 — Altar dengan resep monster _(selesai 2026-10-28)_
+
+> - **Logika Altar Baru (`mixer.ts`):** 65 resep definitif dari `monsters.json` (induk komutatif). Pasangan beresep menghasilkan 100% monster target.
+> - **Pasangan Tanpa Resep:** Menghasilkan monster acak tingkat Common–Elite (Tier 1–4).
+> - **Aturan Bebas Biaya:** Biaya pencampuran 0 emas & 0 kristal; kedua induk tidak dikonsumsi / dilebur (`isParentConsumed = false`).
+> - **Fitur Lengkap:** Pity streak, mutasi, dan Ramalan Jiwa tetap didukung penuh.
+
+#### - [x] Tugas 2B.4 — Sumber lain: telur, boss, quest, eksplorasi, achievement, event _(selesai 2026-10-28)_
+
+> - **Sistem Serpihan Fragmen (`rules.json`, `schema.ts`, `state.ts`):** Ambang serpihan per tingkatan (10 s/d 150) dengan aksi penempaan `craftMonsterFromFragments` terdaftar di server.
+> - **Integrasi Hadiah:** Pertempuran Serbu memberikan fragmen monster (`payReward` di `serbu.ts`); penyelesaian set koleksi memberikan fragmen atau monster (`payPrize` di `collections.ts`).
+
+#### - [x] Tugas 2B.5 — Migrasi simpanan _(selesai 2026-10-28)_
+
+> - **Versi Simpanan 35 (`save.ts`):** Menaikkan `SAVE_SCHEMA_VERSION` ke 35. Menambahkan migrasi v34->v35 dengan tabel pemetaan wujud lama (`LEGACY_FORM_MAP`) ke 100 spesies.
+> - **Cakupan Migrasi:** Memetakan monster aktif, kuburan, telur, antrean Altar, dan riwayat pedia.
+> - **Bundel Server:** Edge function dibundel ulang via `build-server.mjs` (`supabase/functions/_shared/game.js`).
+
+#### - [x] Tugas 2B.6 — Tampilan _(selesai 2026-10-28)_
+
+> - **Warna & Palet:** 13 warna elemen di `palette.ts`, 8 warna tingkatan `TIER_COLORS` di `theme.ts`.
+> - **MonsterCard:** Bingkai kartu 8 warna dinamis berdasarkan tingkatan dan lencana elemen.
+> - **MixerView:** Desain 3 kolom (Induk A, Calon Hasil Siluet di tengah, Induk B). Calon hasil menampilkan siluet/warna sesuai status pedia, serta informasi Altar gratis.
+> - **PediaView:** Tab 100 Monster dengan filter 8 tingkatan dan 13 elemen, kartu monster siluet/penuh, dan modal detail lengkap (nama, tier, elemen, peran, deskripsi bahasa Indonesia, cara mendapatkan, dan resep Altar).
+
+#### - [x] Tugas 2B.7 — Gambar 100 monster (SpriteCook, nanti) _(selesai 2026-10-28)_
+
+> - `monsterArt.ts` telah diperbarui dengan generator bentuk prosedural per jenis (skala 8 tingkatan, warna 13 elemen, bentuk peran) sebagai cadangan prosedural lengkap hingga aset SpriteCook ditambahkan bertahap.
+
+#### - [x] Tugas 2B.8 — Penyeimbangan & dokumentasi _(selesai 2026-10-28)_
+
+> - **CLAUDE.md:** Diperbarui mencakup 100 spesies tetap, 13 elemen, 8 tingkatan, sistem fragmen, dan aturan Altar bebas biaya tanpa lebur induk.
+> - **PLAN.md:** Seluruh tugas Fase 2B (2B.1 s/d 2B.8) selesai dan terverifikasi.
+
+### Fase 2C — Website & login wajib (permintaan pemilik 2026-10-28)
+
+Tujuan: game hanya bisa dimainkan setelah login, dan ada website terpisah untuk game ini. **Satu akun untuk semua:** website, game di browser, dan aplikasi Android (Tugas 2.4) memakai Supabase Auth yang sama, jadi login di mana pun membuka simpanan yang sama. Kerjakan sebelum Tugas 2.4 agar aplikasi Android langsung memakai alur login ini.
+
+Keputusan pemilik: **login wajib** sebelum main (tidak ada mode tamu untuk pemain baru); website **dipisah** dari game (game di subdomain sendiri, mis. `play.<domain>`).
+
+#### - [ ] Tugas 2C.0 — Keputusan
+
+Tanyakan ke pemilik dan catat jawabannya di sini sebelum menulis kode:
+
+1. Login email memakai **email + kata sandi**, **magic link** (tautan/kode masuk lewat email), atau keduanya.
+2. Nama domain dan tempat hosting website serta game.
+3. Teknologi website (mis. situs statis Vite/Astro) dan isi halaman awal yang diinginkan.
+4. Data yang diminta saat daftar (hanya email, atau juga nama pemain di layar pertama) dan persetujuan syarat/privasi (kaitkan dengan Tugas 3.2).
+
+#### - [ ] Tugas 2C.1 — Login wajib di game
+
+- Layar login sebelum `VillageScene`: "Masuk dengan Google" (alur Tugas 2.1 dipindah ke sini) dan login email sesuai 2C.0. Teks dari `text.json`.
+- Hentikan pembuatan akun anonim baru di `server.ts`; tanpa sesi yang sah game tidak masuk ke desa. Tombol keluar (logout) di pengaturan.
+- **Pemain tamu lama:** saat membuka game, akun anonim yang sudah ada diminta menautkan diri ke Google atau email sehingga simpanannya tetap; tidak ada simpanan yang hilang.
+- Lupa kata sandi / kirim ulang email (bila memakai kata sandi), pesan galat yang jelas, dan template email Supabase berbahasa Indonesia.
+- Mode offline tanpa `.env.local` tetap ada **khusus pengembangan** (`pnpm dev`), tidak di build produksi.
+- Tes: alur sesi di `server.ts` yang bisa dites tanpa jaringan; verifikasi di panel pratinjau.
+
+#### - [ ] Tugas 2C.2 — Website game
+
+> **Desain sudah disetujui (2026-10-28), pengerjaan ditunda:** spec [docs/superpowers/specs/2026-10-28-website-design.md](superpowers/specs/2026-10-28-website-design.md) (gaya Epik Gelap, 5 halaman, Ensiklopedia 5 monster pilihan + shadow, berita lewat Panel Admin) dan rencana 11 langkah [docs/superpowers/plans/2026-10-28-website.md](superpowers/plans/2026-10-28-website.md) (cara kerja: Native). Kerjakan berurutan setelah Fase 2B selesai dan semua pengecekan hijau, di worktree terpisah. Rincian di bawah adalah ringkasan awal; spec dan rencana yang berlaku.
+
+- Paket baru (mis. `apps/web`) di workspace pnpm, terpisah dari `apps/game`, memakai Supabase yang sama.
+- Halaman: beranda (tombol "Main Sekarang" ke game), berita/pembaruan, papan peringkat Arena (dari `arena_snapshots` lewat edge function, bukan akses tabel langsung), daftar monster dari `data/` (tanpa membocorkan resep Altar rahasia), halaman akun (masuk, keluar, tautan Google/email).
+- Gaya mengikuti game (font Fredoka, palet `soul-monster-art-style`); bisa dibuka di HP.
+- Perintah `pnpm dev:web` dan `pnpm build:web`; `pnpm test` dan `pnpm lint` mencakup paket baru.
+
+#### - [ ] Tugas 2C.3 — Domain, hosting & keamanan login
+
+- Hosting website dan game, domain + HTTPS, URL redirect Auth di Supabase (website, game, nanti skema aplikasi Android).
+- Batasi CORS edge function (`_shared/db.ts`, sekarang `*`) ke domain resmi.
+- Dokumentasikan langkah deploy di `docs/SERVER.md`.
 
 ### - [ ] Tugas 2.4 — Aplikasi Android
 

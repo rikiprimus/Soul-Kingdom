@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import {
   gameData,
-  getForm,
   getStage,
   hashSeed,
   isSecretElement,
@@ -16,9 +15,21 @@ import { elementColors } from './palette';
 export const ART_RES = 2;
 
 export interface MonsterArtSpec {
-  form: FormId;
-  element: ElementId;
+  species?: string;
+  form?: FormId;
+  element?: ElementId;
   stage: StageId;
+}
+
+export function getSpecInfo(spec: MonsterArtSpec) {
+  const speciesId = spec.species ?? spec.form;
+  const def = speciesId ? gameData.monsterById.get(speciesId) : undefined;
+  const form = spec.form ? gameData.formById.get(spec.form) : undefined;
+  const tier = def?.tier ?? form?.tier ?? 1;
+  const role = def?.role ?? form?.role ?? 'penahan';
+  const element = (def?.element ?? spec.element ?? 'normal') as ElementId;
+  const id = speciesId ?? 'baby-slime';
+  return { id, tier, role, element };
 }
 
 type Pt = { x: number; y: number };
@@ -48,19 +59,17 @@ const mirror = (points: Pt[], cx: number): Pt[] => points.map((p) => ({ x: 2 * c
 /**
  * Draws a code-generated monster: tier sets the silhouette (round → fanged →
  * horned → winged → crowned), the stage sets size and head proportion, and the
- * element units set the colours. Form id adds small stable variations.
+ * element units set the colours. Form/species id adds small stable variations.
  */
 function drawMonster(g: G, spec: MonsterArtSpec, S: number) {
-  const form = getForm(spec.form);
-  const tier = form.tier;
-  const role = form.role;
+  const { id, tier, role, element } = getSpecInfo(spec);
   const stages = gameData.rules.growth.stages.length;
   const grow = stages > 1 ? getStage(spec.stage).index / (stages - 1) : 1;
-  const variant = hashSeed(spec.form);
+  const variant = hashSeed(id);
   const v1 = variant & 3;
   const v2 = (variant >> 2) & 3;
 
-  const colors = elementColors(spec.element);
+  const colors = elementColors(element);
   const c0 = colors[0]!;
   const c1 = colors[1] ?? lighten(c0, 0.45);
   const c2 = colors[2] ?? darken(c0, 0.22);
@@ -71,7 +80,7 @@ function drawMonster(g: G, spec: MonsterArtSpec, S: number) {
 
   const k = 0.62 + 0.38 * grow;
   const headScale = 1.4 - 0.4 * grow;
-  const tierScale = [1, 1, 1.03, 1.07, 1.12][tier - 1] ?? 1;
+  const tierScale = [1, 1, 1.03, 1.07, 1.12, 1.15, 1.2, 1.25][tier - 1] ?? 1;
   const cx = S / 2;
   const ground = S * 0.94;
   const bodyW = S * 0.44 * k * tierScale * (role === 'penahan' ? 1.12 : 1);
@@ -374,7 +383,7 @@ function drawMonster(g: G, spec: MonsterArtSpec, S: number) {
   }
 
   // Secret elements get a glowing chest gem.
-  if (isSecretElement(spec.element)) {
+  if (isSecretElement(element)) {
     const gy = bodyCY + bodyH * 0.05;
     g.fillStyle(0xffffff, 0.35).fillCircle(cx, gy, bodyW * 0.11);
     fillStroke(
@@ -409,7 +418,8 @@ function drawToTexture(
 
 /** Returns a cached texture key for this monster at `size` display pixels. */
 export function monsterTexture(scene: Phaser.Scene, spec: MonsterArtSpec, size: number): string {
-  const key = `mon:${spec.form}:${spec.element}:${spec.stage}:${size}`;
+  const { id, element } = getSpecInfo(spec);
+  const key = `mon:${id}:${element}:${spec.stage}:${size}`;
   if (scene.textures.exists(key)) return key;
   const frame = paintedFrame(scene, spec);
   if (frame) return paintedMonster(scene, spec, frame, key, Math.round(size * ART_RES));
@@ -425,7 +435,8 @@ const MONSTER_ATLAS = 'monsters';
 function paintedFrame(scene: Phaser.Scene, spec: MonsterArtSpec): string | undefined {
   if (!scene.textures.exists(MONSTER_ATLAS)) return undefined;
   const atlas = scene.textures.get(MONSTER_ATLAS);
-  return [`${spec.form}/${spec.stage}`, `${spec.form}/bayi`].find((name) => atlas.has(name));
+  const { id } = getSpecInfo(spec);
+  return [`${id}/${spec.stage}`, `${id}/bayi`].find((name) => atlas.has(name));
 }
 
 /**
@@ -441,14 +452,15 @@ function paintedMonster(
   key: string,
   S: number,
 ) {
+  const { tier, element } = getSpecInfo(spec);
   const stages = gameData.rules.growth.stages.length;
   const grow = stages > 1 ? getStage(spec.stage).index / (stages - 1) : 1;
-  const tierScale = [1, 1, 1.03, 1.07, 1.12][getForm(spec.form).tier - 1] ?? 1;
+  const tierScale = [1, 1, 1.03, 1.07, 1.12, 1.15, 1.2, 1.25][tier - 1] ?? 1;
   const image = scene.make.image({ key: MONSTER_ATLAS, frame }, false);
   image
     .setOrigin(0.5, 1)
     .setScale(((0.62 + 0.38 * grow) * tierScale * S * 0.86) / image.width)
-    .setTint(lighten(elementColors(spec.element)[0]!, 0.2));
+    .setTint(lighten(elementColors(element)[0]!, 0.2));
   // The render texture owns the saved texture, so it is kept rather than destroyed.
   const rt = scene.make.renderTexture({ width: S, height: S }, false);
   rt.draw(image, S / 2, S * 0.94).saveTexture(key);

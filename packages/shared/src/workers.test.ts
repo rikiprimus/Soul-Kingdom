@@ -131,8 +131,8 @@ describe('population', () => {
       parents: [monster('p1', 1), monster('p2', 1)],
       consumedParentIds: ['p1', 'p2'],
       result: {
-        form: kind.form,
-        element: kind.element,
+        form: kind.form!,
+        element: kind.element!,
         rarity: 'biasa',
         tierOutcome: 'same',
         elementSource: 'parent',
@@ -165,8 +165,8 @@ describe('population', () => {
         parents: [deepClone(target), monster('other', 1)],
         consumedParentIds: [],
         result: {
-          form: target.form,
-          element: target.element,
+          form: target.form!,
+          element: target.element!,
           rarity: 'biasa',
           tierOutcome: 'same',
           elementSource: 'parent',

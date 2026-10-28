@@ -9,6 +9,7 @@ import adventure from '../../../../data/adventure.json';
 import quests from '../../../../data/quests.json';
 import collections from '../../../../data/collections.json';
 import islands from '../../../../data/islands.json';
+import monsters from '../../../../data/monsters.json';
 import { loadGameData, type RawGameData } from './load';
 
 export * from './load';
@@ -27,6 +28,7 @@ export const rawGameData: RawGameData = {
   quests,
   collections,
   islands,
+  monsters,
 };
 
 /** Validated game data. Importing this module throws if `data/` is invalid. */

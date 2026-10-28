@@ -17,7 +17,7 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 33;
+export const SAVE_SCHEMA_VERSION = 35;
 
 const int = z.number().int();
 const villageAmountSchema = z.object({
@@ -35,13 +35,54 @@ const actionCountsSchema = z.object({
   hatch: int.min(0),
   help: int.min(0),
 });
-const monsterSchema = z.object({
-  id: z.string(),
-  form: z.string(),
-  element: z.string(),
-  stage: z.string(),
-  food: int.min(0),
-});
+export const LEGACY_FORM_MAP: Record<string, string> = {
+  kucing: 'cave-rat',
+  anjing: 'dire-wolf-pup',
+  landak: 'hedgehog-knight',
+  kelinci: 'frost-hare',
+  tupai: 'forest-sprite',
+  katak: 'horned-toad',
+  serigala: 'dire-wolf-pup',
+  'babi-hutan': 'wild-boar',
+  ular: 'swamp-lurker',
+  kera: 'goblin-archer',
+  'kura-kura': 'iron-turtle',
+  elang: 'harpy-scout',
+  harimau: 'shadow-panther',
+  buaya: 'swamp-lurker',
+  hantu: 'wisp-witch',
+  golem: 'gargoyle-sentinel',
+  naga: 'wyvern',
+  raksasa: 'cyclops-brute',
+  'burung-agung': 'griffin',
+  siluman: 'werewolf',
+  'naga-purba': 'frost-dragon',
+  titan: 'primordial-titan',
+  'penjaga-abadi': 'soulforged-juggernaut',
+};
+
+const monsterSchema = z
+  .object({
+    id: z.string(),
+    species: z.string().optional(),
+    form: z.string().optional(),
+    element: z.string().optional(),
+    stage: z.string(),
+    food: int.min(0),
+  })
+  .transform((m) => {
+    const species =
+      m.species ||
+      (m.form
+        ? (LEGACY_FORM_MAP[m.form] ?? (gameData.monsterById.has(m.form) ? m.form : 'baby-slime'))
+        : 'baby-slime');
+    const def = gameData.monsterById.get(species);
+    return {
+      ...m,
+      species,
+      element: m.element ?? def?.element ?? 'normal',
+    };
+  });
 
 const villageSchema = z.object({
   buildings: z.array(
@@ -109,6 +150,7 @@ const villageSchema = z.object({
 });
 
 import type { SerbuResult } from './serbu';
+import { initialArenaState } from './arena';
 
 const pvpDefenseCellSchema = z.object({
   id: z.string(),
@@ -140,6 +182,30 @@ const pvpStateSchema = z.object({
   defenseCells: z.array(pvpDefenseCellSchema),
   trophies: int.min(0),
   history: z.array(pvpDefenseLogEntrySchema),
+});
+
+const arenaHistoryEntrySchema = z.object({
+  id: z.string(),
+  opponentId: z.string(),
+  opponentName: z.string(),
+  opponentLevel: int.min(1),
+  opponentPower: int.min(0),
+  won: z.boolean(),
+  pointsDelta: int,
+  reward: villageAmountSchema.extend({ soulCrystal: int.min(0), gems: int.min(0) }),
+  timestamp: z.number(),
+});
+
+const arenaStateSchema = z.object({
+  team: z.array(z.string()),
+  defenseTeam: z.array(z.string()),
+  points: int.min(0),
+  tickets: int.min(0),
+  ticketsLastRefill: z.number(),
+  seasonWeek: int.min(0),
+  seasonFights: int.min(0),
+  lastSeason: z.object({ week: int.min(0), points: int.min(0), claimed: z.boolean() }).nullable(),
+  history: z.array(arenaHistoryEntrySchema),
 });
 
 const playerStateSchema = z.object({
@@ -190,7 +256,13 @@ const playerStateSchema = z.object({
     }),
   ),
   eggs: z.array(
-    z.object({ id: z.string(), form: z.string(), element: z.string(), readyAt: z.number() }),
+    z.object({
+      id: z.string(),
+      species: z.string().optional(),
+      form: z.string().optional(),
+      element: z.string().optional(),
+      readyAt: z.number(),
+    }),
   ),
   collections: z.array(z.string()),
   storage: z.array(
@@ -245,6 +317,7 @@ const playerStateSchema = z.object({
       parents: z.tuple([monsterSchema, monsterSchema]),
       consumedParentIds: z.array(z.string()),
       result: z.object({
+        species: z.string().optional(),
         form: z.string(),
         element: z.string(),
         rarity: raritySchema,
@@ -273,13 +346,15 @@ const playerStateSchema = z.object({
   pityStreak: int.min(0),
   serbu: z.object({ cleared: z.array(z.string()) }),
   pvp: pvpStateSchema,
+  arena: arenaStateSchema,
   adventure: z.object({
     cleared: z.array(z.string()),
     refillAt: z.record(z.string(), z.number()),
   }),
+  fragments: z.record(z.string(), int.min(0)).optional(),
   rngState: int.min(0),
   nextId: int.min(1),
-}) satisfies z.ZodType<PlayerState>;
+}) satisfies z.ZodType<PlayerState, z.ZodTypeDef, unknown>;
 
 const saveFileSchema = z.object({
   schemaVersion: int,
@@ -436,8 +511,8 @@ const migrations: Record<number, (state: unknown) => unknown> = {
   // v10 trained monsters in the barracks: those still in training join now as adult
   // monsters (they already hold their slots); from v11 barracks train human soldiers.
   10: (raw) => {
-    const state = raw as PlayerState;
-    const old = (raw as { barracksQueue: { form: string; element: string }[] }).barracksQueue;
+    const state = raw as PlayerState & { barracksQueue: { form: string; element: string }[] };
+    const old = state.barracksQueue;
     const adult = gameData.rules.growth.stages[gameData.rules.growth.stages.length - 1]!.id;
     for (const e of old) {
       const monster = {
@@ -690,6 +765,89 @@ const migrations: Record<number, (state: unknown) => unknown> = {
   32: (raw) => {
     const state = raw as PlayerState;
     state.pvp = { defenseCells: [], trophies: 1000, history: [] };
+    return state;
+  },
+  // v33 (Tugas 2.3) added Arena & peringkat mingguan.
+  33: (raw) => {
+    const state = raw as PlayerState;
+    state.arena = initialArenaState(0);
+    return state;
+  },
+  // v34 (Fase 2B) migrated monsters to fixed 100 species and 13 elements.
+  34: (raw) => {
+    type RawMonster = {
+      species?: string;
+      form?: string;
+      element?: string;
+      [key: string]: unknown;
+    };
+    const state = raw as {
+      monsters?: RawMonster[];
+      graveyard?: RawMonster[];
+      eggs?: { form?: string; species?: string; [key: string]: unknown }[];
+      mixQueue?: {
+        parents?: RawMonster[];
+        result?: { form?: string; species?: string; element?: string; [key: string]: unknown };
+        [key: string]: unknown;
+      }[];
+      pedia?: { monsters?: string[] };
+      fragments?: Record<string, number>;
+    };
+    const mapMonster = (m: RawMonster) => {
+      const species =
+        m.species ||
+        (m.form ? LEGACY_FORM_MAP[m.form] : undefined) ||
+        (m.form && gameData.monsterById.has(m.form) ? m.form : 'baby-slime');
+      const def = gameData.monsterById.get(species);
+      return {
+        ...m,
+        species,
+        form: m.form || species,
+        element: m.element ?? def?.element ?? 'normal',
+      };
+    };
+
+    if (Array.isArray(state.monsters)) {
+      state.monsters = state.monsters.map(mapMonster);
+    }
+    if (Array.isArray(state.graveyard)) {
+      state.graveyard = state.graveyard.map(mapMonster);
+    }
+    if (Array.isArray(state.eggs)) {
+      state.eggs = state.eggs.map((e) => {
+        const species = e.species || (e.form ? LEGACY_FORM_MAP[e.form] : undefined) || 'baby-slime';
+        return { ...e, species };
+      });
+    }
+    if (Array.isArray(state.mixQueue)) {
+      state.mixQueue = state.mixQueue.map((entry) => {
+        if (entry.parents && Array.isArray(entry.parents)) {
+          entry.parents = entry.parents.map(mapMonster);
+        }
+        if (entry.result) {
+          const resSpecies =
+            entry.result.species ||
+            (entry.result.form ? LEGACY_FORM_MAP[entry.result.form] : undefined) ||
+            'baby-slime';
+          const def = gameData.monsterById.get(resSpecies);
+          entry.result.species = resSpecies;
+          entry.result.element = def?.element ?? entry.result.element ?? 'normal';
+        }
+        return entry;
+      });
+    }
+    if (state.pedia && Array.isArray(state.pedia.monsters)) {
+      const set = new Set<string>(state.pedia.monsters);
+      for (const k of state.pedia.monsters) {
+        if (k.includes(':')) {
+          const [f] = k.split(':');
+          const mapped = LEGACY_FORM_MAP[f!];
+          if (mapped) set.add(mapped);
+        }
+      }
+      state.pedia.monsters = Array.from(set);
+    }
+    state.fragments = state.fragments || {};
     return state;
   },
 };

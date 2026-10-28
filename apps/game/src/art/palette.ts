@@ -1,24 +1,41 @@
-import { elementUnits, type ElementId } from '@soul-monster/shared';
+import { gameData, type ElementId } from '@soul-monster/shared';
 
-/** Display colour of each base unit (visual only, not game data). */
+/** Display colour of each element (visual only, not game data). */
 export const UNIT_COLORS: Record<string, number> = {
-  api: 0xff6b35,
-  air: 0x3fa7ff,
-  tanah: 0xa8743f,
-  angin: 0x7fe0b0,
-  cahaya: 0xffe066,
-  kegelapan: 0x7b4bb3,
+  normal: 0xa8a878,
+  api: 0xf08030,
+  air: 0x6890f0,
+  angin: 0x4dd0e1,
+  tanah: 0x8d6e63,
+  lightning: 0xffd700,
+  ice: 0x80deea,
+  nature: 0x4caf50,
+  dark: 0x424254,
+  magma: 0xff5722,
+  light: 0xffd54f,
+  arcane: 0xba68c8,
+  void: 0x4a148c,
+  // legacy aliases
+  cahaya: 0xffd54f,
+  kegelapan: 0x424254,
 };
 
-export const unitColor = (unit: string) => UNIT_COLORS[unit] ?? 0xcccccc;
+export const unitColor = (unit: string) => {
+  const el = gameData.elementById.get(unit);
+  if (el?.color) {
+    const parsed = parseInt(el.color.replace('#', ''), 16);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return UNIT_COLORS[unit] ?? 0xa8a878;
+};
 
 export function elementColors(element: ElementId): number[] {
-  return elementUnits(element).map(unitColor);
+  return [unitColor(element)];
 }
 
 /** Main colour used for auras and accents. */
 export function elementColor(element: ElementId): number {
-  return elementColors(element)[0] ?? 0xcccccc;
+  return elementColors(element)[0] ?? 0xa8a878;
 }
 
 /** Ground colours per island (islands.json ids): two tile shades, a light spot, the edge. */

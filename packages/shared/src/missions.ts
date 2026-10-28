@@ -9,7 +9,14 @@ import {
   type VillageAmount,
 } from './data';
 import { elementAdvantage } from './elements';
-import { getStage, monsterStats, powerPointsOf, type Monster, type MonsterKind } from './monster';
+import {
+  getStage,
+  monsterElement,
+  monsterStats,
+  powerPointsOf,
+  type Monster,
+  type MonsterKind,
+} from './monster';
 import { setWounds, withWounds } from './healing';
 import { recordAction } from './player';
 import { createRng } from './rng';
@@ -113,7 +120,7 @@ export function teamUnits(
   const units: TeamUnit[] = [];
   for (const id of ids) {
     const m = state.monsters.find((x) => x.id === id);
-    if (m) units.push({ power: monsterPower(m, data), element: m.element });
+    if (m) units.push({ power: monsterPower(m, data), element: monsterElement(m, data) });
     const s = state.soldiers.find((x) => x.id === id);
     if (s) units.push({ power: soldierPower(s, data), element: null });
   }
@@ -126,7 +133,9 @@ export function teamPower(team: TeamUnit[], e: WildEncounter, data: GameData = g
     const edge =
       u.element === null
         ? 1
-        : average(e.enemies.map((x) => elementAdvantage(u.element!, x.element, data)));
+        : average(
+            e.enemies.map((x) => elementAdvantage(u.element!, monsterElement(x, data), data)),
+          );
     return sum + u.power * edge;
   }, 0);
 }
@@ -141,7 +150,9 @@ export function encounterPower(
   if (group.kind !== 'monster') return e.count * (group.banditPower ?? 0);
   return e.enemies.reduce((sum, x) => {
     const edge = average(
-      team.map((u) => (u.element === null ? 1 : elementAdvantage(x.element, u.element, data))),
+      team.map((u) =>
+        u.element === null ? 1 : elementAdvantage(monsterElement(x, data), u.element, data),
+      ),
     );
     return sum + monsterPower(x, data) * edge;
   }, 0);
@@ -166,7 +177,7 @@ export function teamFighters(
       out.push({
         id,
         stats: monsterStats(m, data, mStatsBonus),
-        element: m.element,
+        element: monsterElement(m, data),
         skill: true,
         elementBonus,
       });
@@ -202,7 +213,7 @@ export function encounterFighters(e: WildEncounter, data: GameData = gameData): 
   return e.enemies.map((x, i) => ({
     id: `x${i}`,
     stats: monsterStats(x, data),
-    element: x.element,
+    element: monsterElement(x, data),
     skill: true,
   }));
 }

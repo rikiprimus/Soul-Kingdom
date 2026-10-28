@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { deepClone } from './clone';
 import { townHallLevel } from './village';
 import { gameData } from './data';
-import { foodToNextStage } from './monster';
+import { foodToNextStage, type Monster } from './monster';
 import {
   deserializeState,
   loadWithBackup,
@@ -55,13 +55,13 @@ export function withMixer(s: PlayerState): PlayerState {
 function unlocked(): PlayerState {
   const s = createInitialState(T0, 123);
   const adult = rules.growth.stages[rules.growth.stages.length - 1]!.id;
-  for (const [id, form, element] of [
-    ['m1', 'kucing', 'api'],
-    ['m2', 'anjing', 'air'],
-    ['m3', 'landak', 'tanah'],
-    ['m4', 'kelinci', 'angin'],
+  for (const [id, species, element] of [
+    ['m1', 'cave-rat', 'normal'],
+    ['m2', 'dire-wolf-pup', 'normal'],
+    ['m3', 'hedgehog-knight', 'lightning'],
+    ['m4', 'frost-hare', 'ice'],
   ] as const) {
-    s.monsters.push({ id, form, element, stage: adult, food: 0 });
+    s.monsters.push({ id, species, form: species, element, stage: adult, food: 0 });
   }
   return withMixer(s);
 }
@@ -96,7 +96,7 @@ describe('startMix', () => {
     expect(entry.status).toBe('mixing');
     expect(entry.endsAt).toBe(T0 + entry.cost.seconds);
     expect(r.state.resources.gold).toBe(s.resources.gold - entry.cost.gold);
-    expect(r.state.monsters.map((m) => m.id)).toEqual([m3, 'm4']);
+    expect(r.state.monsters.map((m) => m.id)).toEqual([m1, m2, m3, 'm4']);
     expect(r.state.rngState).not.toBe(s.rngState);
     // The input state is never mutated.
     expect(s.mixQueue).toHaveLength(0);
@@ -112,13 +112,10 @@ describe('startMix', () => {
     expect(startMix(s, { parentAId: m1, parentBId: m2, skipUnlock: true }, T0).ok).toBe(true);
   });
 
-  it('fails without enough gold', () => {
+  it('does not fail when broke because altar mixing is free (Tugas 2B.3)', () => {
     const s = unlocked();
     s.resources.gold = 0;
-    expect(startMix(s, { parentAId: m1, parentBId: m2 }, T0)).toEqual({
-      ok: false,
-      error: 'notEnoughGold',
-    });
+    expect(startMix(s, { parentAId: m1, parentBId: m2 }, T0).ok).toBe(true);
   });
 
   it('fails when a parent is not adult or the same monster', () => {
@@ -146,21 +143,14 @@ describe('startMix', () => {
     });
   });
 
-  it('keeps legendary parents but marks them busy', () => {
+  it('keeps parents without consuming them (Tugas 2B.3)', () => {
     const s = unlocked();
-    s.monsters.push(
-      { id: 'L1', form: 'naga', element: 'badai', stage: 'dewasa', food: 0 },
-      { id: 'L2', form: 'burung-agung', element: 'petir', stage: 'dewasa', food: 0 },
-    );
-    s.resources.gold = 1_000_000;
-    s.resources.soulCrystal = 100;
-    s.bossesDefeated = gameData.rules.mixer.maxFormTierByBossesDefeated.length - 1;
-    const r = ok(startMix(s, { parentAId: 'L1', parentBId: 'L2' }, T0));
+    const r = ok(startMix(s, { parentAId: m1, parentBId: m2 }, T0));
     const ids = r.state.monsters.map((m) => m.id);
-    expect(ids).toContain('L1');
-    expect(ids).not.toContain('L2');
-    expect(eligibleParents(r.state).map((m) => m.id)).not.toContain('L1');
-    expect(r.state.mixQueue[0]!.result).toMatchObject({ form: 'naga-purba', element: 'langit' });
+    expect(ids).toContain(m1);
+    expect(ids).toContain(m2);
+    expect(eligibleParents(r.state).map((m) => m.id)).not.toContain(m1);
+    expect(eligibleParents(r.state).map((m) => m.id)).not.toContain(m2);
   });
 });
 
@@ -219,7 +209,9 @@ describe('collectMix and speedUp', () => {
       stage: rules.growth.stages[0]!.id,
     });
     expect(c.state.mixQueue).toHaveLength(0);
-    expect(c.state.pedia.monsters).toContain(`${entry.result.form}:${entry.result.element}`);
+    expect(c.state.pedia.monsters).toContain(
+      entry.result.species ?? `${entry.result.form}:${entry.result.element}`,
+    );
     expect(c.state.pityStreak).toBe(entry.result.nextPityStreak);
   });
 
@@ -229,13 +221,27 @@ describe('collectMix and speedUp', () => {
     s.resources.gold = 100_000;
     s.resources.soulCrystal = 10;
     s.monsters.push(
-      { id: 'a', form: 'harimau', element: 'api', stage: 'dewasa', food: 0 },
-      { id: 'b', form: 'buaya', element: 'air', stage: 'dewasa', food: 0 },
+      {
+        id: 'a',
+        species: 'mud-goblin',
+        form: 'mud-goblin',
+        element: 'tanah',
+        stage: 'dewasa',
+        food: 0,
+      },
+      {
+        id: 'b',
+        species: 'thorn-beetle',
+        form: 'thorn-beetle',
+        element: 'nature',
+        stage: 'dewasa',
+        food: 0,
+      },
     );
     const r = ok(startMix(s, { parentAId: 'a', parentBId: 'b' }, T0));
     const c = ok(collectMix(r.state, r.entryId, T0 + 10 ** 6));
-    expect(c.result.recipeId).toBe('naga-uap');
-    expect(c.state.pedia.recipes).toEqual(['naga-uap']);
+    expect(c.result.recipeId).toBe('goblin-archer');
+    expect(c.state.pedia.recipes).toEqual(['goblin-archer']);
   });
 
   it('speeds up with gems', () => {
@@ -265,7 +271,8 @@ function withBaby(element: string) {
   const s = createInitialState(T0, 1);
   s.monsters.push({
     id: 'baby',
-    form: 'tupai',
+    species: 'forest-sprite',
+    form: 'forest-sprite',
     element,
     stage: rules.growth.stages[0]!.id,
     food: 0,
@@ -462,6 +469,27 @@ describe('save and load', () => {
     expect(staffedIn('mill1')).toBe(1);
     expect(staffedIn('mill3')).toBe(2);
     expect(loaded.workers.filter((w) => w.task.kind === 'idle')).toHaveLength(1);
+  });
+
+  it('migrates v34 save: maps legacy forms to 100 species and sets fragments (Tugas 2B.5)', () => {
+    const s = createInitialState(T0, 10);
+    s.monsters = [
+      {
+        id: 'm1',
+        form: 'kucing',
+        element: 'air',
+        stage: 'dewasa',
+        food: 0,
+      } as Monster,
+    ];
+    s.pedia.monsters = ['kucing:air', 'landak:tanah'];
+    delete (s as Partial<PlayerState>).fragments;
+    const json = JSON.stringify({ schemaVersion: 34, state: s });
+    const loaded = deserializeState(json);
+    expect(loaded.monsters[0]?.species).toBe('cave-rat');
+    expect(loaded.pedia.monsters).toContain('cave-rat');
+    expect(loaded.pedia.monsters).toContain('hedgehog-knight');
+    expect(loaded.fragments).toBeDefined();
   });
 });
 

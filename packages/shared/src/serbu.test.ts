@@ -24,7 +24,14 @@ function army(): PlayerState {
   const s = createInitialState(T0, 9);
   // At the max player level, so no level-up reward mixes into the battle rewards.
   s.xp = gameData.rules.player.levels.at(-1)!.xp;
-  s.monsters.push({ id: 'm1', form: 'naga', element: 'api', stage: adult, food: 0 });
+  s.monsters.push({
+    id: 'm1',
+    species: 'wyvern',
+    form: 'naga',
+    element: 'api',
+    stage: adult,
+    food: 0,
+  });
   return s;
 }
 
@@ -68,7 +75,14 @@ describe('serbu bases', () => {
 describe('attacking a base', () => {
   it('rejects bad placements, busy units, locked bases and armies over the cap', () => {
     const s = army();
-    s.monsters.push({ id: 'm2', form: 'harimau', element: 'air', stage: adult, food: 0 });
+    s.monsters.push({
+      id: 'm2',
+      species: 'orc-berserker',
+      form: 'harimau',
+      element: 'air',
+      stage: adult,
+      food: 0,
+    });
     const attack = (cells: SerbuCell[], baseId = first!.id) => attackBase(s, { baseId, cells }, 0);
     expect(attack([at('m1')], second!.id)).toEqual({ ok: false, error: 'notUnlocked' });
     expect(attack([])).toEqual({ ok: false, error: 'invalidAmount' });
@@ -105,7 +119,14 @@ describe('attacking a base', () => {
 
   it('sends fallen monsters to the Kuburan and removes fallen soldiers; a loss pays nothing', () => {
     const s = createInitialState(T0, 3);
-    s.monsters.push({ id: 'm1', form: 'kucing', element: 'api', stage: baby, food: 0 });
+    s.monsters.push({
+      id: 'm1',
+      species: 'baby-slime',
+      form: 'kucing',
+      element: 'api',
+      stage: baby,
+      food: 0,
+    });
     s.soldiers.push({ id: 's1', kind: 'pemanah', rank: 0 });
     // The last base, opened for the test: far too strong for a baby and a recruit.
     const last = serbu.bases.at(-1)!;

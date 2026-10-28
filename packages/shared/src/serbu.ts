@@ -9,7 +9,7 @@ import {
   type GameData,
 } from './data';
 import { isOnMission, monsterPower } from './missions';
-import { monsterStats, powerPointsOf } from './monster';
+import { monsterElement, monsterStats, powerPointsOf, type MonsterKind } from './monster';
 import { setWounds, withWounds } from './healing';
 import { recordAction } from './player';
 import { createRng, type Rng } from './rng';
@@ -122,13 +122,17 @@ export function defenderFighters(
           skill: false,
         });
       } else if (d.kind === 'monster') {
-        add({ stats: monsterStats(d, data), element: d.element, skill: true });
+        add({
+          stats: monsterStats(d, data),
+          element: monsterElement(d as unknown as MonsterKind, data),
+          skill: true,
+        });
       } else if (d.kind === 'boss') {
         const stats = monsterStats(d, data);
         const k = d.statMultiplier;
         add({
           stats: { ...stats, hp: stats.hp * k, atk: stats.atk * k, def: stats.def * k },
-          element: d.element,
+          element: monsterElement(d as unknown as MonsterKind, data),
           skill: true,
         });
       } else if (d.kind === 'soldier') {
@@ -172,6 +176,12 @@ export function payReward(next: PlayerState, reward: BattleReward): void {
   for (const r of VILLAGE_RESOURCES) next.resources[r] += reward[r];
   next.resources.soulCrystal += reward.soulCrystal;
   next.resources.gems += reward.gems;
+  if (reward.fragments) {
+    if (!next.fragments) next.fragments = {};
+    for (const [species, count] of Object.entries(reward.fragments)) {
+      next.fragments[species] = (next.fragments[species] ?? 0) + count;
+    }
+  }
 }
 
 /**
@@ -229,7 +239,7 @@ export function fightPlaced(
       const f: Fighter = {
         id: c.id,
         stats: monsterStats(m, data, mStatsBonus),
-        element: m.element,
+        element: monsterElement(m, data),
         skill: true,
         elementBonus,
       };

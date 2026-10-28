@@ -1,10 +1,10 @@
 import { deepClone } from './clone';
 import { gameData, type CollectionSet, type GameData, type Prize } from './data';
-import { parseMonsterKey } from './monster';
+import { firstStage, parseMonsterKey } from './monster';
 import { addSoulEggs } from './nest';
 import { payReward } from './serbu';
 import { addToStorage } from './storage';
-import type { ActionError, ActionResult, PlayerState } from './state';
+import { addMonster, type ActionError, type ActionResult, type PlayerState } from './state';
 import { allBuildings } from './village';
 
 const fail = (error: ActionError): { ok: false; error: ActionError } => ({ ok: false, error });
@@ -17,21 +17,25 @@ export interface SetItem {
 
 /** What a set asks for, each marked found when the Monsterpedia has it. */
 export function setProgress(state: PlayerState, set: CollectionSet, data: GameData = gameData) {
-  const kinds = state.pedia.monsters.map(parseMonsterKey);
+  const kinds = state.pedia.monsters.map((key) => parseMonsterKey(key, data));
   const items: SetItem[] =
     set.kind === 'formTier'
-      ? (data.formsByTier.get(set.tier) ?? []).map((f) => ({
+      ? (data.formsByTier.get(set.tier) ?? data.monstersByTier.get(set.tier) ?? []).map((f) => ({
           kind: 'form',
           id: f.id,
-          found: kinds.some((k) => k.form === f.id),
+          found: kinds.some((k) => k.species === f.id || k.form === f.id),
         }))
-      : [...data.elementByComposition.values()]
-          .filter((e) => e.composition.includes(set.unit) && e.composition.length <= set.maxUnits)
-          .map((e) => ({
-            kind: 'element',
-            id: e.id,
-            found: kinds.some((k) => k.element === e.id),
-          }));
+      : (data.elementByComposition.size > 0
+          ? [...data.elementByComposition.values()].filter(
+              (e) =>
+                e.composition?.includes(set.unit) && (e.composition?.length ?? 0) <= set.maxUnits,
+            )
+          : data.elements.elements.filter((e) => e.id === set.unit)
+        ).map((e) => ({
+          kind: 'element',
+          id: e.id,
+          found: kinds.some((k) => k.element === e.id),
+        }));
   return {
     items,
     found: items.filter((i) => i.found).length,
@@ -53,10 +57,21 @@ export function ownsWonder(state: PlayerState, wonder: string): boolean {
  * Keajaiban go to the Gudang; a Keajaiban the player already owns is not given again
  * (at most one per kind). Returns whether the Keajaiban was given.
  */
-export function payPrize(state: PlayerState, prize: Prize): boolean {
+export function payPrize(state: PlayerState, prize: Prize, data: GameData = gameData): boolean {
   payReward(state, prize);
   addSoulEggs(state, prize.soulEggs);
   for (const type of prize.decorations) addToStorage(state, type);
+  if (prize.monsters) {
+    for (const species of prize.monsters) {
+      const def = data.monsterById.get(species);
+      addMonster(state, {
+        species,
+        form: species,
+        element: def?.element ?? 'normal',
+        stage: firstStage(data),
+      });
+    }
+  }
   if (!prize.wonder || ownsWonder(state, prize.wonder)) return false;
   addToStorage(state, prize.wonder);
   return true;

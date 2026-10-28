@@ -2,7 +2,7 @@ import { simulateBattle, type Fighter } from './battle';
 import { serbuPowerCap, soldierStats } from './barracks';
 import { deepClone } from './clone';
 import { gameData, VILLAGE_RESOURCES, type BattleReward, type GameData } from './data';
-import { monsterStats } from './monster';
+import { monsterElement, monsterStats } from './monster';
 import { setWounds, withWounds } from './healing';
 import { recordAction } from './player';
 import { createRng, type Rng } from './rng';
@@ -150,7 +150,7 @@ export function buildDefenseFighters(
       const f: Fighter = {
         id: c.id,
         stats: monsterStats(m, data, mStatsBonus),
-        element: m.element,
+        element: monsterElement(m, data),
         skill: true,
         elementBonus,
       };
@@ -405,7 +405,7 @@ export function attackPlayerBase(
       return withWounds(next, {
         id: c.id,
         stats: monsterStats(m, data, mStatsBonus),
-        element: m.element,
+        element: monsterElement(m, data),
         skill: true,
         elementBonus,
       });

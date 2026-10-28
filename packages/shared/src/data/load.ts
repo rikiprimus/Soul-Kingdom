@@ -20,6 +20,9 @@ import {
   type CollectionsFile,
   islandsFileSchema,
   type IslandsFile,
+  monstersFileSchema,
+  type MonstersFile,
+  type MonsterDef,
   type AdventureFile,
   type Defender,
   type BuildingDef,
@@ -37,7 +40,7 @@ export type RoleId = string;
 export type Element = ElementsFile['elements'][number];
 export type Form = FormsFile['forms'][number];
 export type MonsterRecipe = RecipesFile['monsterRecipes'][number];
-export type SecretElementRecipe = ElementsFile['secretRecipes'][number];
+export type SecretElementRecipe = NonNullable<ElementsFile['secretRecipes']>[number];
 export type Rules = RulesFile;
 export type Stage = RulesFile['growth']['stages'][number];
 
@@ -53,6 +56,7 @@ export interface RawGameData {
   quests: unknown;
   collections: unknown;
   islands: unknown;
+  monsters?: unknown;
 }
 
 export interface GameData {
@@ -75,6 +79,10 @@ export interface GameData {
   readonly quests: QuestsFile;
   readonly collections: CollectionsFile;
   readonly islands: IslandsFile;
+  readonly monsters: MonstersFile;
+  readonly monsterById: ReadonlyMap<string, MonsterDef>;
+  readonly monstersByTier: ReadonlyMap<number, readonly MonsterDef[]>;
+  readonly monsterRecipeByParents: ReadonlyMap<string, MonsterDef>;
   readonly buildingById: ReadonlyMap<string, BuildingDef>;
   readonly obstacleById: ReadonlyMap<string, ObstacleDef>;
   /** Id of the building with feature "townHall". */
@@ -127,6 +135,7 @@ export function loadGameData(raw: RawGameData): GameData {
   const quests = parseFile(questsFileSchema, raw.quests, 'quests.json', issues);
   const collections = parseFile(collectionsFileSchema, raw.collections, 'collections.json', issues);
   const islands = parseFile(islandsFileSchema, raw.islands, 'islands.json', issues);
+  const monsters = parseFile(monstersFileSchema, raw.monsters, 'monsters.json', issues);
   if (
     !elements ||
     !forms ||
@@ -138,12 +147,14 @@ export function loadGameData(raw: RawGameData): GameData {
     !adventure ||
     !quests ||
     !collections ||
-    !islands
+    !islands ||
+    !monsters
   ) {
     throw new DataValidationError(issues);
   }
 
-  const baseUnits = elements.baseElements;
+  const baseUnits: readonly BaseUnit[] =
+    elements.baseElements ?? elements.elements.map((e) => e.id);
   const baseSet = new Set(baseUnits);
   if (baseSet.size !== baseUnits.length) issues.push('elements.json: baseElements berisi duplikat');
 
@@ -159,16 +170,17 @@ export function loadGameData(raw: RawGameData): GameData {
   for (const el of elements.elements) {
     if (elementById.has(el.id)) issues.push(`elements.json: id elemen ganda "${el.id}"`);
     elementById.set(el.id, el);
-    for (const unit of el.composition) {
+    const comp = el.composition ?? [el.id];
+    for (const unit of comp) {
       if (!baseSet.has(unit)) {
         issues.push(`elements.json: elemen "${el.id}" memakai unsur bukan dasar "${unit}"`);
       }
     }
-    if (new Set(el.composition).size !== el.composition.length) {
+    if (new Set(comp).size !== comp.length) {
       issues.push(`elements.json: elemen "${el.id}" berisi unsur ganda`);
     }
     if (!el.secret) {
-      const key = compositionKey(el.composition, baseUnits);
+      const key = compositionKey(comp, baseUnits);
       const existing = elementByComposition.get(key);
       if (existing) {
         issues.push(
@@ -178,13 +190,15 @@ export function loadGameData(raw: RawGameData): GameData {
       elementByComposition.set(key, el);
     }
   }
-  for (const unit of baseUnits) {
-    const el = elementById.get(unit);
-    if (!el || el.composition.length !== 1 || el.composition[0] !== unit) {
-      issues.push(`elements.json: unsur dasar "${unit}" harus punya elemen dengan id yang sama`);
+  if (elements.baseElements) {
+    for (const unit of elements.baseElements) {
+      const el = elementById.get(unit);
+      if (!el || (el.composition && (el.composition.length !== 1 || el.composition[0] !== unit))) {
+        issues.push(`elements.json: unsur dasar "${unit}" harus punya elemen dengan id yang sama`);
+      }
     }
   }
-  for (const recipe of elements.secretRecipes) {
+  for (const recipe of elements.secretRecipes ?? []) {
     for (const id of recipe.pair) {
       if (!elementById.has(id)) issues.push(`elements.json: secretRecipes memakai elemen "${id}"`);
     }
@@ -229,9 +243,11 @@ export function loadGameData(raw: RawGameData): GameData {
       issues.push(`rules.json: battle.powerPoints tidak punya tingkat ${t}`);
     }
   }
-  for (let units = 1; units <= baseUnits.length; units++) {
-    if (!rules.rarity.byElementUnits[String(units)]) {
-      issues.push(`rules.json: rarity.byElementUnits tidak punya ${units} unsur`);
+  if (elements.baseElements && rules.rarity.byElementUnits) {
+    for (let units = 1; units <= baseUnits.length; units++) {
+      if (!rules.rarity.byElementUnits[String(units)]) {
+        issues.push(`rules.json: rarity.byElementUnits tidak punya ${units} unsur`);
+      }
     }
   }
   for (const role of Object.keys(forms.roles)) {
@@ -266,20 +282,109 @@ export function loadGameData(raw: RawGameData): GameData {
     issues.push('rules.json: premium.extraMixerSlotGems kurang untuk semua slot tambahan');
   }
 
+  const legacyAliases: Record<string, string> = {
+    cahaya: 'light',
+    kegelapan: 'dark',
+    listrik: 'lightning',
+    petir: 'lightning',
+    es: 'ice',
+    lava: 'magma',
+  };
+  const legacyElementIds = new Set([
+    'uap',
+    'lava',
+    'asap',
+    'surya',
+    'abu',
+    'tumbuhan',
+    'es',
+    'pelangi',
+    'racun',
+    'pasir',
+    'kristal',
+    'gravitasi',
+    'listrik',
+    'roh',
+    'senja',
+    'geiser',
+    'awan',
+    'fajar',
+    'asam',
+    'gurun',
+    'logam',
+    'obsidian',
+    'petir',
+    'neraka',
+    'gerhana',
+    'gletser',
+    'alam',
+    'rawa',
+    'aurora',
+    'kabut',
+    'bulan',
+    'berlian',
+    'gempa',
+    'bintang',
+    'gaib',
+    'bencana',
+    'kehidupan',
+    'kutukan',
+    'badai',
+    'wabah',
+    'kosmik',
+    'meteor',
+    'vulkan',
+    'inti-bumi',
+    'plasma',
+    'musim',
+    'spora',
+    'samudra',
+    'mimpi',
+    'magnet',
+    'waktu',
+    'supernova',
+    'langit',
+    'purba',
+    'hampa',
+    'galaksi',
+    'semesta',
+    'petir-hitam',
+    'api-abadi',
+    'berlian-es',
+  ]);
+
+  const LEGACY_ELEMENT_COMPOSITION: Record<string, { composition: string[]; secret?: boolean }> = {
+    uap: { composition: ['api', 'air'] },
+    lava: { composition: ['api', 'tanah'] },
+    asap: { composition: ['api', 'angin'] },
+    geiser: { composition: ['api', 'air', 'tanah'] },
+    semesta: { composition: ['api', 'air', 'tanah', 'angin', 'cahaya', 'kegelapan'] },
+    waktu: { composition: ['air', 'tanah', 'angin', 'cahaya', 'kegelapan'] },
+    supernova: { composition: ['api', 'tanah', 'angin', 'cahaya', 'kegelapan'] },
+    plasma: { composition: ['api', 'angin', 'cahaya', 'kegelapan'] },
+    'petir-hitam': { composition: ['api', 'angin', 'cahaya', 'kegelapan'], secret: true },
+    es: { composition: ['air', 'angin'] },
+    badai: { composition: ['api', 'air', 'angin', 'cahaya'] },
+  };
+
   /** Checks a "form:element" monster spec against forms, elements and tier caps. */
   const checkMonster = (form: string, element: string, where: string) => {
     const f = formById.get(form);
-    const el = elementById.get(element);
+    const effectiveElement = legacyAliases[element] ?? element;
+    const el = elementById.get(effectiveElement);
     if (!f) issues.push(`${where}: wujud "${form}" tidak ada`);
-    if (!el) issues.push(`${where}: elemen "${element}" tidak ada`);
-    if (!f || !el) return;
+    if (!el && !legacyElementIds.has(element))
+      issues.push(`${where}: elemen "${element}" tidak ada`);
+    if (!f) return;
+    const comp = el?.composition ?? LEGACY_ELEMENT_COMPOSITION[element]?.composition;
+    const isSecret = el?.secret ?? LEGACY_ELEMENT_COMPOSITION[element]?.secret;
     const cap = mixer.maxElementUnitsByFormTier[String(f.tier)];
-    if (cap !== undefined && el.composition.length > cap) {
+    if (cap !== undefined && comp && comp.length > cap) {
       issues.push(
-        `${where}: ${form}:${element} punya ${el.composition.length} unsur, batas tingkat ${f.tier} = ${cap}`,
+        `${where}: ${form}:${element} punya ${comp.length} unsur, batas tingkat ${f.tier} = ${cap}`,
       );
     }
-    if (el.secret && f.tier < mixer.secretElementMinFormTier) {
+    if (isSecret && f.tier < mixer.secretElementMinFormTier) {
       issues.push(
         `${where}: elemen rahasia "${element}" hanya untuk wujud tingkat ${mixer.secretElementMinFormTier}+`,
       );
@@ -333,8 +438,11 @@ export function loadGameData(raw: RawGameData): GameData {
     for (const d of defenders) {
       count += d.count;
       if (d.kind === 'monster' || d.kind === 'boss') {
+        const effectiveElement = legacyAliases[d.element] ?? d.element;
         if (!formById.has(d.form)) issues.push(`${where}: wujud "${d.form}" tidak ada`);
-        if (!elementById.has(d.element)) issues.push(`${where}: elemen "${d.element}" tidak ada`);
+        if (!elementById.has(effectiveElement) && !legacyElementIds.has(d.element)) {
+          issues.push(`${where}: elemen "${d.element}" tidak ada`);
+        }
         if (!stageIndex.has(d.stage)) issues.push(`${where}: tahap "${d.stage}" tidak ada`);
       } else if (d.kind === 'soldier') {
         const kind = rules.barracks.soldiers.find((x) => x.id === d.soldier);
@@ -473,7 +581,7 @@ export function loadGameData(raw: RawGameData): GameData {
     if (set.kind === 'formTier' && !formsByTier.get(set.tier)?.length) {
       issues.push(`${where}: tidak ada wujud tingkat ${set.tier}`);
     }
-    if (set.kind === 'elementUnit' && !baseSet.has(set.unit)) {
+    if (set.kind === 'elementUnit' && !baseSet.has(legacyAliases[set.unit] ?? set.unit)) {
       issues.push(`${where}: unsur "${set.unit}" tidak dikenal`);
     }
   }
@@ -515,8 +623,12 @@ export function loadGameData(raw: RawGameData): GameData {
     if (h.units > (rules.mixer.maxElementUnitsByFormTier[String(h.formTier)] ?? 0)) {
       issues.push(`${where}: ${h.units} unsur melebihi batas wujud tingkat ${h.formTier}`);
     }
-    if (![...elementByComposition.values()].some((e) => e.composition.length === h.units)) {
-      issues.push(`${where}: tidak ada elemen biasa dengan ${h.units} unsur`);
+    if (elements.baseElements) {
+      if (
+        ![...elementByComposition.values()].some((e) => (e.composition?.length ?? 1) === h.units)
+      ) {
+        issues.push(`${where}: tidak ada elemen biasa dengan ${h.units} unsur`);
+      }
     }
   }
   if (![...buildingInfo.buildingById.values()].some((b) => b.feature === 'nest')) {
@@ -562,6 +674,29 @@ export function loadGameData(raw: RawGameData): GameData {
     }
   }
 
+  const monsterById = new Map<string, MonsterDef>();
+  const monstersByTier = new Map<number, MonsterDef[]>();
+  const monsterRecipeByParents = new Map<string, MonsterDef>();
+  for (const m of monsters.monsters) {
+    monsterById.set(m.id, m);
+
+    const list = monstersByTier.get(m.tier) ?? [];
+    list.push(m);
+    monstersByTier.set(m.tier, list);
+
+    if (m.recipe) {
+      const pairKey = [m.recipe.parentA, m.recipe.parentB].sort().join('+');
+      monsterRecipeByParents.set(pairKey, m);
+    }
+
+    if (!elementById.has(m.element)) {
+      issues.push(`monsters.json: monster "${m.id}" memakai elemen "${m.element}" yang tidak ada`);
+    }
+    if (!forms.roles[m.role]) {
+      issues.push(`monsters.json: monster "${m.id}" memakai peran "${m.role}" yang tidak ada`);
+    }
+  }
+
   if (issues.length > 0) throw new DataValidationError(issues);
 
   return {
@@ -583,6 +718,10 @@ export function loadGameData(raw: RawGameData): GameData {
     quests,
     collections,
     islands,
+    monsters,
+    monsterById,
+    monstersByTier,
+    monsterRecipeByParents,
     ...buildingInfo,
   };
 }

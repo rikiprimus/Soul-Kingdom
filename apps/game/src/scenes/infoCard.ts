@@ -19,6 +19,8 @@ import {
   teamPower,
   teamUnits,
   previewWinChance,
+  getArenaTier,
+  settleArena,
   hasFeature,
   eggInNest,
   soulEggStatus,
@@ -728,9 +730,25 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
           });
         }
         break;
-      case 'arena':
-        content.lines.push(t('info.comingSoon'));
+      case 'arena': {
+        const arena = settleArena(state, now).arena;
+        const tier = getArenaTier(arena.points);
+        content.lines.push(
+          t('arena.rating', { points: arena.points, tier: tier.name }),
+          t('arena.tickets', {
+            n: arena.tickets,
+            max: gameData.rules.arena.dailyTickets,
+          }),
+        );
+        if (b.level >= 1) {
+          buttons.push({
+            label: t('arena.enter'),
+            color: COLORS.accent,
+            onClick: () => a.openPanel('arena'),
+          });
+        }
         break;
+      }
       case 'staffed': {
         const slots = level?.workerSlots ?? 0;
         const per = level?.staffedProduction?.perWorkerPerHour ?? 0;

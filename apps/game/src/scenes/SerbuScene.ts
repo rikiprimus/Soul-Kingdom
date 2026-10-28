@@ -12,8 +12,8 @@ import {
   matchmakeOpponents,
   nodeStatus,
   regionStatus,
-  getForm,
   monsterName,
+  monsterRole,
   serbuArmy,
   serbuBase,
   serbuBaseStatus,
@@ -48,7 +48,14 @@ import { Button, Modal, roundedPanel, ScrollArea, toast } from '../ui/widgets';
 
 /** What a fighter on the Serbu field looks like. */
 type UnitLook =
-  | { type: 'monster'; form: string; element: string; stage: string; boss?: boolean }
+  | {
+      type: 'monster';
+      species?: string;
+      form?: string;
+      element?: string;
+      stage: string;
+      boss?: boolean;
+    }
   | { type: 'soldier'; kind: string; rank: number }
   | { type: 'machine'; kind: string; level: number }
   | { type: 'bandit' }
@@ -992,7 +999,14 @@ export class SerbuScene extends Phaser.Scene {
 
   private look(id: string): UnitLook | null {
     const m = this.store.state.monsters.find((x) => x.id === id);
-    if (m) return { type: 'monster', form: m.form, element: m.element, stage: m.stage };
+    if (m)
+      return {
+        type: 'monster',
+        species: m.species,
+        form: m.form,
+        element: m.element,
+        stage: m.stage,
+      };
     const s = this.store.state.soldiers.find((x) => x.id === id);
     if (s) return { type: 'soldier', kind: s.kind, rank: s.rank };
     const w = this.store.state.machines.find((x) => x.id === id);
@@ -1010,7 +1024,7 @@ export class SerbuScene extends Phaser.Scene {
 
   private role(id: string): string {
     const m = this.store.state.monsters.find((x) => x.id === id);
-    if (m) return getForm(m.form).role;
+    if (m) return monsterRole(m);
     const s = this.store.state.soldiers.find((x) => x.id === id);
     if (s) return soldierDef(s.kind).role;
     const w = this.store.state.machines.find((x) => x.id === id);

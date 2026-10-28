@@ -1,74 +1,67 @@
 import { describe, expect, it } from 'vitest';
 import { gameData } from './data';
-import {
-  capElementForFormTier,
-  capUnits,
-  elementAdvantage,
-  elementUnits,
-  findElementByComposition,
-  unionComposition,
-} from './elements';
-import { rarityOf } from './monster';
-import { createRng } from './rng';
+import { elementAdvantage, elementAdvantageScore, elementUnits } from './elements';
+import { monsterStats, powerPointsOf, rarityOf } from './monster';
 
-const mix = (a: string, b: string) => findElementByComposition(unionComposition(a, b));
+describe('13-element cycle & advantage', () => {
+  it('implements 8-element natural cycle (Api -> Nature -> Tanah -> Lightning -> Air -> Magma -> Ice -> Angin -> Api)', () => {
+    const cycle = [
+      ['api', 'nature'],
+      ['nature', 'tanah'],
+      ['tanah', 'lightning'],
+      ['lightning', 'air'],
+      ['air', 'magma'],
+      ['magma', 'ice'],
+      ['ice', 'angin'],
+      ['angin', 'api'],
+    ] as const;
 
-describe('element engine', () => {
-  it('combines compositions', () => {
-    expect(mix('uap', 'tanah')).toBe('geiser');
-    expect(mix('uap', 'lava')).toBe('geiser');
-    expect(mix('api', 'api')).toBe('api');
-    expect(mix('semesta', 'api')).toBe('semesta');
-    expect(mix('waktu', 'supernova')).toBe('semesta');
-  });
+    for (const [attacker, defender] of cycle) {
+      expect(elementAdvantageScore(attacker, defender)).toBe(1);
+      expect(elementAdvantage(attacker, defender)).toBe(1 + gameData.rules.battle.advantageStep);
 
-  it('never finds secret elements by composition', () => {
-    for (const el of gameData.elements.elements.filter((e) => e.secret)) {
-      const found = findElementByComposition(el.composition);
-      expect(found).toBeDefined();
-      expect(found).not.toBe(el.id);
-    }
-    expect(findElementByComposition(['api', 'angin', 'cahaya', 'kegelapan'])).toBe('plasma');
-  });
-
-  it('lists element units in base order', () => {
-    expect(elementUnits('uap')).toEqual(['api', 'air']);
-    expect(elementUnits('semesta')).toHaveLength(6);
-    expect(() => elementUnits('bukan-elemen')).toThrow();
-  });
-
-  it('caps elements to the form tier limit', () => {
-    const rng = createRng(5);
-    for (let i = 0; i < 200; i++) {
-      const capped = capElementForFormTier('semesta', 2, rng);
-      expect(elementUnits(capped)).toHaveLength(2);
-    }
-    expect(capElementForFormTier('uap', 2, rng)).toBe('uap');
-    expect(elementUnits(capElementForFormTier('geiser', 1, rng))).toHaveLength(1);
-    // Secret elements are only allowed on tier 5 forms.
-    expect(capElementForFormTier('petir-hitam', 5, rng)).toBe('petir-hitam');
-    expect(capElementForFormTier('petir-hitam', 4, rng)).toBe('plasma');
-  });
-
-  it('keeps protected units while capping', () => {
-    const rng = createRng(8);
-    for (let i = 0; i < 200; i++) {
-      expect(capUnits(['api', 'air', 'tanah', 'angin'], 2, rng, ['angin'])).toContain('angin');
+      // Reverse is disadvantaged
+      expect(elementAdvantageScore(defender, attacker)).toBe(-1);
+      expect(elementAdvantage(defender, attacker)).toBe(1 - gameData.rules.battle.advantageStep);
     }
   });
 
-  it('computes elemental advantage', () => {
-    expect(elementAdvantage('api', 'angin')).toBeGreaterThan(1);
-    expect(elementAdvantage('angin', 'api')).toBeLessThan(1);
-    expect(elementAdvantage('api', 'api')).toBe(1);
-    expect(elementAdvantage('api', 'angin')).toBe(1 + gameData.rules.battle.advantageStep);
-    // Es (air+angin) vs Lava (api+tanah): air>api, angin>tanah, tanah>air, api>angin → 0.
-    expect(elementAdvantage('es', 'lava')).toBe(1);
-    // Uap (api+air) vs Asap (api+angin): api>angin, air>api → +2.
-    expect(elementAdvantage('uap', 'asap')).toBe(1 + 2 * gameData.rules.battle.advantageStep);
+  it('implements 4-element cosmic cycle (Light -> Dark -> Arcane -> Void -> Light)', () => {
+    const cycle = [
+      ['light', 'dark'],
+      ['dark', 'arcane'],
+      ['arcane', 'void'],
+      ['void', 'light'],
+    ] as const;
+
+    for (const [attacker, defender] of cycle) {
+      expect(elementAdvantageScore(attacker, defender)).toBe(1);
+      expect(elementAdvantage(attacker, defender)).toBe(1 + gameData.rules.battle.advantageStep);
+
+      // Reverse is disadvantaged
+      expect(elementAdvantageScore(defender, attacker)).toBe(-1);
+      expect(elementAdvantage(defender, attacker)).toBe(1 - gameData.rules.battle.advantageStep);
+    }
   });
 
-  it('respects the damage multiplier bounds', () => {
+  it('normal is neutral against every element', () => {
+    const all = gameData.elements.elements.map((e) => e.id);
+    for (const el of all) {
+      expect(elementAdvantageScore('normal', el)).toBe(0);
+      expect(elementAdvantageScore(el, 'normal')).toBe(0);
+      expect(elementAdvantage('normal', el)).toBe(1);
+      expect(elementAdvantage(el, 'normal')).toBe(1);
+    }
+  });
+
+  it('cross-cycle encounters and mirror matches are neutral', () => {
+    expect(elementAdvantageScore('api', 'light')).toBe(0);
+    expect(elementAdvantageScore('void', 'tanah')).toBe(0);
+    expect(elementAdvantageScore('ice', 'ice')).toBe(0);
+    expect(elementAdvantage('magma', 'magma')).toBe(1);
+  });
+
+  it('respects the damage multiplier bounds [advantageMin, advantageMax]', () => {
     const { advantageMin, advantageMax } = gameData.rules.battle;
     const ids = gameData.elements.elements.map((e) => e.id);
     let max = -Infinity;
@@ -83,15 +76,43 @@ describe('element engine', () => {
     expect(max).toBeLessThanOrEqual(advantageMax);
     expect(min).toBeGreaterThanOrEqual(advantageMin);
   });
+
+  it('elementUnits returns [id] for atomic elements', () => {
+    expect(elementUnits('api')).toEqual(['api']);
+    expect(elementUnits('light')).toEqual(['light']);
+  });
 });
 
-describe('rarityOf', () => {
-  it('follows rules.rarity', () => {
-    expect(rarityOf({ form: 'kucing', element: 'api' })).toBe('biasa');
-    expect(rarityOf({ form: 'serigala', element: 'uap' })).toBe('langka');
-    expect(rarityOf({ form: 'elang', element: 'geiser' })).toBe('epik');
-    expect(rarityOf({ form: 'naga', element: 'badai' })).toBe('legenda');
-    expect(rarityOf({ form: 'titan', element: 'api' })).toBe('legenda');
-    expect(rarityOf({ form: 'titan', element: 'petir-hitam' })).toBe('legenda');
+describe('monster logic: rarity, stats, powerPoints', () => {
+  it('rarityOf follows species tier (1..8)', () => {
+    // Tier 1-2: biasa
+    expect(rarityOf({ species: 'baby-slime' })).toBe('biasa'); // tier 1
+    // Tier 3-4: langka
+    expect(rarityOf({ species: 'orc-berserker' })).toBe('langka'); // tier 3
+    // Tier 5-6: epik
+    expect(rarityOf({ species: 'wyvern' })).toBe('epik'); // tier 5
+    // Tier 7-8: legenda
+    expect(rarityOf({ species: 'bahamut' })).toBe('legenda'); // tier 7
+  });
+
+  it('powerPointsOf matches rules.json for tier 1..8 (1, 2, 3, 5, 8, 12, 18, 25)', () => {
+    expect(powerPointsOf({ species: 'baby-slime' })).toBe(1); // T1
+    expect(powerPointsOf({ species: 'orc-berserker' })).toBe(3); // T3
+    expect(powerPointsOf({ species: 'wyvern' })).toBe(8); // T5
+    expect(powerPointsOf({ species: 'bahamut' })).toBe(18); // T7
+  });
+
+  it('monsterStats scales with species tier, role, and stage', () => {
+    // baby-slime: T1, role: penahan (base hp 160, atk 12, def 14, spd 8, range 1)
+    const baby = monsterStats({ species: 'baby-slime', stage: 'bayi' });
+    expect(baby.spd).toBe(8);
+    expect(baby.range).toBe(1);
+    expect(baby.hp).toBe(Math.round(160 * 1 * 0.4)); // 64
+    expect(baby.atk).toBe(Math.round(12 * 1 * 0.4)); // 5
+
+    const adult = monsterStats({ species: 'baby-slime', stage: 'dewasa' });
+    expect(adult.hp).toBe(160);
+    expect(adult.atk).toBe(12);
+    expect(adult.def).toBe(14);
   });
 });

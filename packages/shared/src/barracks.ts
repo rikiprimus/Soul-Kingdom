@@ -26,8 +26,9 @@ export interface BarracksTraining extends SoldierKind {
 /** An unhatched monster egg; the monster inside is rolled when the egg is made. */
 export interface Egg {
   id: string;
-  form: FormId;
-  element: ElementId;
+  species?: string;
+  form?: FormId;
+  element?: ElementId;
   readyAt: number;
 }
 
@@ -192,13 +193,20 @@ export function serbuPowerCap(state: PlayerState, data: GameData = gameData): nu
 
 // ---------- Eggs ----------
 
-/** A fresh egg with a random tier-1 form and base element, ready at `readyAt`. */
+/** A fresh egg with a random tier-1 species/form and base element, ready at `readyAt`. */
 export function rollEgg(rng: Rng, id: string, readyAt: number, data: GameData = gameData): Egg {
-  const tier1 = data.formsByTier.get(data.formTiers[0]!) ?? [];
+  const tier1Monsters = data.monstersByTier.get(1) ?? [];
+  const tier1Forms = data.formsByTier.get(data.formTiers[0]!) ?? [];
+  const form = tier1Forms.length > 0 ? rng.pick(tier1Forms).id : 'kucing';
+  const element = (data.baseUnits.length > 0 ? rng.pick(data.baseUnits) : 'air') as ElementId;
+  const picked =
+    tier1Monsters.find((m) => m.element === element) ??
+    (tier1Monsters.length > 0 ? rng.pick(tier1Monsters) : null);
   return {
     id,
-    form: rng.pick(tier1).id,
-    element: rng.pick(data.baseUnits) as ElementId,
+    species: picked?.id ?? 'baby-slime',
+    form,
+    element,
     readyAt,
   };
 }
@@ -214,13 +222,16 @@ export function hatchEgg(
   if (!egg) return fail('entryNotFound');
   if (!hasFeature(state, 'nest', data)) return fail('noNest');
   if (egg.readyAt > now) return fail('notReady');
-  const slots = data.rules.battle.powerPoints[String(data.formTiers[0]!)] ?? 1;
+  const species = egg.species ?? egg.form ?? 'baby-slime';
+  const def = data.monsterById.get(species);
+  const slots = def ? (data.rules.battle.powerPoints[String(def.tier)] ?? 1) : 1;
   if (populationFree(state, data) < slots) return fail('populationFull');
   const next = deepClone(state);
   const monster: Monster = {
     id: `m${next.nextId}`,
+    species,
     form: egg.form,
-    element: egg.element,
+    element: egg.element ?? def?.element,
     stage: data.rules.growth.stages[0]!.id,
     food: 0,
   };
@@ -228,6 +239,10 @@ export function hatchEgg(
   next.monsters.push(monster);
   const key = monsterKey(monster);
   if (!next.pedia.monsters.includes(key)) next.pedia.monsters.push(key);
+  if (egg.form && egg.element) {
+    const legacyKey = `${egg.form}:${egg.element}`;
+    if (!next.pedia.monsters.includes(legacyKey)) next.pedia.monsters.push(legacyKey);
+  }
   next.eggs = next.eggs.filter((e) => e.id !== eggId);
   recordAction(next, 'hatch', 1, data);
   return { ok: true, state: next, monster };

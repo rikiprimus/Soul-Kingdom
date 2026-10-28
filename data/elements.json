@@ -1,141 +1,31 @@
 {
-  "baseElements": ["api", "air", "tanah", "angin", "cahaya", "kegelapan"],
-  "beats": {
-    "api": ["angin"],
-    "angin": ["tanah"],
-    "tanah": ["air"],
-    "air": ["api"],
-    "cahaya": ["kegelapan"],
-    "kegelapan": ["cahaya"]
-  },
   "elements": [
-    { "id": "api", "name": "Api", "composition": ["api"] },
-    { "id": "air", "name": "Air", "composition": ["air"] },
-    { "id": "tanah", "name": "Tanah", "composition": ["tanah"] },
-    { "id": "angin", "name": "Angin", "composition": ["angin"] },
-    { "id": "cahaya", "name": "Cahaya", "composition": ["cahaya"] },
-    { "id": "kegelapan", "name": "Kegelapan", "composition": ["kegelapan"] },
-
-    { "id": "uap", "name": "Uap", "composition": ["api", "air"] },
-    { "id": "lava", "name": "Lava", "composition": ["api", "tanah"] },
-    { "id": "asap", "name": "Asap", "composition": ["api", "angin"] },
-    { "id": "surya", "name": "Surya", "composition": ["api", "cahaya"] },
-    { "id": "abu", "name": "Abu", "composition": ["api", "kegelapan"] },
-    { "id": "tumbuhan", "name": "Tumbuhan", "composition": ["air", "tanah"] },
-    { "id": "es", "name": "Es", "composition": ["air", "angin"] },
-    { "id": "pelangi", "name": "Pelangi", "composition": ["air", "cahaya"] },
-    { "id": "racun", "name": "Racun", "composition": ["air", "kegelapan"] },
-    { "id": "pasir", "name": "Pasir", "composition": ["tanah", "angin"] },
-    { "id": "kristal", "name": "Kristal", "composition": ["tanah", "cahaya"] },
-    { "id": "gravitasi", "name": "Gravitasi", "composition": ["tanah", "kegelapan"] },
-    { "id": "listrik", "name": "Listrik", "composition": ["angin", "cahaya"] },
-    { "id": "roh", "name": "Roh", "composition": ["angin", "kegelapan"] },
-    { "id": "senja", "name": "Senja", "composition": ["cahaya", "kegelapan"] },
-
-    { "id": "geiser", "name": "Geiser", "composition": ["api", "air", "tanah"] },
-    { "id": "awan", "name": "Awan", "composition": ["api", "air", "angin"] },
-    { "id": "fajar", "name": "Fajar", "composition": ["api", "air", "cahaya"] },
-    { "id": "asam", "name": "Asam", "composition": ["api", "air", "kegelapan"] },
-    { "id": "gurun", "name": "Gurun", "composition": ["api", "tanah", "angin"] },
-    { "id": "logam", "name": "Logam", "composition": ["api", "tanah", "cahaya"] },
-    { "id": "obsidian", "name": "Obsidian", "composition": ["api", "tanah", "kegelapan"] },
-    { "id": "petir", "name": "Petir", "composition": ["api", "angin", "cahaya"] },
-    { "id": "neraka", "name": "Neraka", "composition": ["api", "angin", "kegelapan"] },
-    { "id": "gerhana", "name": "Gerhana", "composition": ["api", "cahaya", "kegelapan"] },
-    { "id": "gletser", "name": "Gletser", "composition": ["air", "tanah", "angin"] },
-    { "id": "alam", "name": "Alam", "composition": ["air", "tanah", "cahaya"] },
-    { "id": "rawa", "name": "Rawa", "composition": ["air", "tanah", "kegelapan"] },
-    { "id": "aurora", "name": "Aurora", "composition": ["air", "angin", "cahaya"] },
-    { "id": "kabut", "name": "Kabut", "composition": ["air", "angin", "kegelapan"] },
-    { "id": "bulan", "name": "Bulan", "composition": ["air", "cahaya", "kegelapan"] },
-    { "id": "berlian", "name": "Berlian", "composition": ["tanah", "angin", "cahaya"] },
-    { "id": "gempa", "name": "Gempa", "composition": ["tanah", "angin", "kegelapan"] },
-    { "id": "bintang", "name": "Bintang", "composition": ["tanah", "cahaya", "kegelapan"] },
-    { "id": "gaib", "name": "Gaib", "composition": ["angin", "cahaya", "kegelapan"] },
-
-    { "id": "bencana", "name": "Bencana", "composition": ["api", "air", "tanah", "angin"] },
-    { "id": "kehidupan", "name": "Kehidupan", "composition": ["api", "air", "tanah", "cahaya"] },
-    { "id": "kutukan", "name": "Kutukan", "composition": ["api", "air", "tanah", "kegelapan"] },
-    { "id": "badai", "name": "Badai", "composition": ["api", "air", "angin", "cahaya"] },
-    { "id": "wabah", "name": "Wabah", "composition": ["api", "air", "angin", "kegelapan"] },
-    { "id": "kosmik", "name": "Kosmik", "composition": ["api", "air", "cahaya", "kegelapan"] },
-    { "id": "meteor", "name": "Meteor", "composition": ["api", "tanah", "angin", "cahaya"] },
-    { "id": "vulkan", "name": "Vulkan", "composition": ["api", "tanah", "angin", "kegelapan"] },
-    {
-      "id": "inti-bumi",
-      "name": "Inti Bumi",
-      "composition": ["api", "tanah", "cahaya", "kegelapan"]
-    },
-    { "id": "plasma", "name": "Plasma", "composition": ["api", "angin", "cahaya", "kegelapan"] },
-    { "id": "musim", "name": "Musim", "composition": ["air", "tanah", "angin", "cahaya"] },
-    { "id": "spora", "name": "Spora", "composition": ["air", "tanah", "angin", "kegelapan"] },
-    { "id": "samudra", "name": "Samudra", "composition": ["air", "tanah", "cahaya", "kegelapan"] },
-    { "id": "mimpi", "name": "Mimpi", "composition": ["air", "angin", "cahaya", "kegelapan"] },
-    { "id": "magnet", "name": "Magnet", "composition": ["tanah", "angin", "cahaya", "kegelapan"] },
-
-    {
-      "id": "waktu",
-      "name": "Waktu",
-      "composition": ["air", "tanah", "angin", "cahaya", "kegelapan"]
-    },
-    {
-      "id": "supernova",
-      "name": "Supernova",
-      "composition": ["api", "tanah", "angin", "cahaya", "kegelapan"]
-    },
-    {
-      "id": "langit",
-      "name": "Langit",
-      "composition": ["api", "air", "angin", "cahaya", "kegelapan"]
-    },
-    {
-      "id": "purba",
-      "name": "Purba",
-      "composition": ["api", "air", "tanah", "cahaya", "kegelapan"]
-    },
-    {
-      "id": "hampa",
-      "name": "Hampa",
-      "composition": ["api", "air", "tanah", "angin", "kegelapan"]
-    },
-    {
-      "id": "galaksi",
-      "name": "Galaksi",
-      "composition": ["api", "air", "tanah", "angin", "cahaya"]
-    },
-    {
-      "id": "semesta",
-      "name": "Semesta",
-      "composition": ["api", "air", "tanah", "angin", "cahaya", "kegelapan"]
-    },
-
-    {
-      "id": "petir-hitam",
-      "name": "Petir Hitam",
-      "composition": ["api", "angin", "cahaya", "kegelapan"],
-      "secret": true
-    },
-    {
-      "id": "api-abadi",
-      "name": "Api Abadi",
-      "composition": ["api", "air", "angin", "cahaya", "kegelapan"],
-      "secret": true
-    },
-    {
-      "id": "berlian-es",
-      "name": "Berlian Es",
-      "composition": ["air", "tanah", "angin", "cahaya"],
-      "secret": true
-    }
+    { "id": "normal", "name": "Normal", "color": "#A8A878", "composition": ["normal"] },
+    { "id": "api", "name": "Api", "color": "#F08030", "composition": ["api"] },
+    { "id": "air", "name": "Air", "color": "#6890F0", "composition": ["air"] },
+    { "id": "angin", "name": "Angin", "color": "#4DD0E1", "composition": ["angin"] },
+    { "id": "tanah", "name": "Tanah", "color": "#8D6E63", "composition": ["tanah"] },
+    { "id": "lightning", "name": "Lightning", "color": "#FFD700", "composition": ["lightning"] },
+    { "id": "ice", "name": "Ice", "color": "#80DEEA", "composition": ["ice", "air"] },
+    { "id": "nature", "name": "Nature", "color": "#4CAF50", "composition": ["nature", "tanah"] },
+    { "id": "dark", "name": "Dark", "color": "#424254", "composition": ["dark"] },
+    { "id": "magma", "name": "Magma", "color": "#FF5722", "composition": ["magma", "api"] },
+    { "id": "light", "name": "Light", "color": "#FFD54F", "composition": ["light"] },
+    { "id": "arcane", "name": "Arcane", "color": "#BA68C8", "composition": ["arcane"] },
+    { "id": "void", "name": "Void", "color": "#4A148C", "composition": ["void"] }
   ],
-  "secretRecipes": [
-    { "pair": ["petir", "gerhana"], "result": "petir-hitam", "chance": 0.3 },
-    { "pair": ["neraka", "fajar"], "result": "api-abadi", "chance": 0.3 },
-    { "pair": ["berlian", "gletser"], "result": "berlian-es", "chance": 0.3 }
-  ],
-  "_notes": [
-    "Elemen biasa dicari lewat komposisi (urutan unsur tidak penting). Elemen dengan secret=true TIDAK boleh didapat lewat pencarian komposisi; hanya lewat secretRecipes.",
-    "Elemen rahasia hanya boleh dimiliki wujud tingkat 5.",
-    "Jika resep rahasia gagal, hasil mengikuti aturan komposisi biasa (gabungan unsur kedua induk)."
-  ]
+  "beats": {
+    "api": ["nature"],
+    "nature": ["tanah"],
+    "tanah": ["lightning"],
+    "lightning": ["air"],
+    "air": ["magma"],
+    "magma": ["ice"],
+    "ice": ["angin"],
+    "angin": ["api"],
+    "light": ["dark"],
+    "dark": ["arcane"],
+    "arcane": ["void"],
+    "void": ["light"]
+  }
 }

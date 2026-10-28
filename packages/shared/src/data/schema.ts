@@ -9,22 +9,165 @@ const nonNegInt = z.number().int().min(0);
 export const elementSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  composition: z.array(z.string().min(1)).min(1),
+  color: z.string().min(1).optional(),
+  composition: z.array(z.string().min(1)).optional(),
   secret: z.boolean().optional(),
 });
 
 export const elementsFileSchema = z.object({
-  baseElements: z.array(z.string().min(1)).min(1),
+  baseElements: z.array(z.string().min(1)).optional(),
   beats: z.record(z.string(), z.array(z.string())),
   elements: z.array(elementSchema),
-  secretRecipes: z.array(
-    z.object({
-      pair: z.tuple([z.string(), z.string()]),
-      result: z.string(),
-      chance: probability,
-    }),
-  ),
+  secretRecipes: z
+    .array(
+      z.object({
+        pair: z.tuple([z.string(), z.string()]),
+        result: z.string(),
+        chance: probability,
+      }),
+    )
+    .optional(),
 });
+
+export const monsterRecipeSchema = z.union([
+  z.object({
+    parentA: z.string().min(1),
+    parentB: z.string().min(1),
+  }),
+  z
+    .object({
+      indukA: z.string().min(1),
+      indukB: z.string().min(1),
+    })
+    .transform((val) => ({ parentA: val.indukA, parentB: val.indukB })),
+]);
+
+export const monsterSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1).optional(),
+    nama: z.string().min(1).optional(),
+    description: z.string().min(1).optional(),
+    deskripsi: z.string().min(1).optional(),
+    tier: z.number().int().min(1).max(8).optional(),
+    tingkatan: z.number().int().min(1).max(8).optional(),
+    element: z.string().min(1).optional(),
+    elemen: z.string().min(1).optional(),
+    role: z.string().min(1).optional(),
+    peran: z.string().min(1).optional(),
+    sources: z.array(z.string().min(1)).optional(),
+    sumber: z.array(z.string().min(1)).optional(),
+    recipe: monsterRecipeSchema.nullable().optional(),
+    resep: monsterRecipeSchema.nullable().optional(),
+  })
+  .transform((m) => {
+    const name = m.name ?? m.nama;
+    const description = m.description ?? m.deskripsi;
+    const tier = m.tier ?? m.tingkatan;
+    const element = m.element ?? m.elemen;
+    const role = m.role ?? m.peran;
+    const sources = m.sources ?? m.sumber;
+    const recipe = m.recipe ?? m.resep ?? null;
+    return {
+      id: m.id,
+      name: name ?? '',
+      description: description ?? '',
+      tier: tier ?? 1,
+      element: element ?? '',
+      role: role ?? '',
+      sources: sources ?? [],
+      recipe,
+    };
+  });
+
+export const monstersFileSchema = z
+  .object({
+    monsters: z.array(monsterSchema).min(1),
+  })
+  .superRefine((data, ctx) => {
+    const seenIds = new Set<string>();
+    const monsterById = new Map<string, z.infer<typeof monsterSchema>>();
+    const seenRecipePairs = new Map<string, string>(); // pairKey -> monsterId
+
+    for (let i = 0; i < data.monsters.length; i++) {
+      const monster = data.monsters[i]!;
+
+      // 1. Validasi id ganda
+      if (seenIds.has(monster.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `ID monster ganda: "${monster.id}"`,
+          path: ['monsters', i, 'id'],
+        });
+      }
+      seenIds.add(monster.id);
+      monsterById.set(monster.id, monster);
+
+      // 4. Validasi monster tanpa sumber
+      if (!monster.sources || monster.sources.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Monster "${monster.id}" tidak memiliki sumber`,
+          path: ['monsters', i, 'sources'],
+        });
+      }
+    }
+
+    // Validasi resep crossbreed Altar
+    for (let i = 0; i < data.monsters.length; i++) {
+      const monster = data.monsters[i]!;
+      if (!monster.recipe) continue;
+
+      const { parentA, parentB } = monster.recipe;
+      const pA = monsterById.get(parentA);
+      const pB = monsterById.get(parentB);
+
+      // 2. Induk resep tidak ada atau tingkatannya tidak lebih rendah
+      if (!pA) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Resep monster "${monster.id}" memakai induk A yang tidak ada: "${parentA}"`,
+          path: ['monsters', i, 'recipe', 'parentA'],
+        });
+      } else if (pA.tier >= monster.tier) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Induk A "${parentA}" (Tingkat ${pA.tier}) harus memiliki tingkatan lebih rendah dari "${monster.id}" (Tingkat ${monster.tier})`,
+          path: ['monsters', i, 'recipe', 'parentA'],
+        });
+      }
+
+      if (!pB) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Resep monster "${monster.id}" memakai induk B yang tidak ada: "${parentB}"`,
+          path: ['monsters', i, 'recipe', 'parentB'],
+        });
+      } else if (pB.tier >= monster.tier) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Induk B "${parentB}" (Tingkat ${pB.tier}) harus memiliki tingkatan lebih rendah dari "${monster.id}" (Tingkat ${monster.tier})`,
+          path: ['monsters', i, 'recipe', 'parentB'],
+        });
+      }
+
+      // 3. Pasangan induk dipakai dua resep
+      const pairKey = [parentA, parentB].sort().join('+');
+      const existingMonsterId = seenRecipePairs.get(pairKey);
+      if (existingMonsterId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Pasangan induk "${parentA}" + "${parentB}" sudah dipakai oleh monster "${existingMonsterId}" dan tidak boleh dipakai oleh "${monster.id}"`,
+          path: ['monsters', i, 'recipe'],
+        });
+      } else {
+        seenRecipePairs.set(pairKey, monster.id);
+      }
+    }
+  });
+
+export type MonsterDef = z.infer<typeof monsterSchema>;
+export type MonstersFile = z.infer<typeof monstersFileSchema>;
 
 export const formSchema = z.object({
   id: z.string().min(1),
@@ -116,10 +259,10 @@ export const defenderSchema = z.discriminatedUnion('kind', [
 ]);
 export type Defender = z.infer<typeof defenderSchema>;
 
-/** What winning a fight pays: village resources, Soul Crystals and (rarely) gems. */
 export const battleRewardSchema = villageAmountSchema.extend({
   soulCrystal: nonNegInt.default(0),
   gems: nonNegInt.default(0),
+  fragments: z.record(z.string(), nonNegInt).optional(),
 });
 export type BattleReward = z.infer<typeof battleRewardSchema>;
 
@@ -128,6 +271,7 @@ export const prizeSchema = battleRewardSchema.extend({
   wonder: z.string().min(1).optional(),
   /** Decoration building ids, delivered to the Gudang. */
   decorations: z.array(z.string().min(1)).default([]),
+  monsters: z.array(z.string().min(1)).optional(),
 });
 export type Prize = z.infer<typeof prizeSchema>;
 
@@ -186,10 +330,30 @@ export type ResearchTechBranch = z.infer<typeof researchTechBranchSchema>;
 export type ResearchTech = z.infer<typeof researchTechSchema>;
 
 export const rulesFileSchema = z.object({
+  tiers: tierRecord(
+    z.object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      powerPoints: z.number().int().positive(),
+      altarSeconds: nonNegInt,
+    }),
+  ).optional(),
+  altar: z
+    .object({
+      durationByTier: tierRecord(nonNegInt),
+    })
+    .optional(),
+  fragments: z
+    .object({
+      requiredByTier: tierRecord(nonNegInt).optional(),
+      defaultRequired: nonNegInt.optional(),
+    })
+    .optional(),
   rarity: z.object({
-    byElementUnits: tierRecord(raritySchema),
-    legendaryIfFormTier: z.number().int(),
-    legendaryIfSecretElement: z.boolean(),
+    byElementUnits: tierRecord(raritySchema).optional(),
+    byTier: tierRecord(raritySchema).optional(),
+    legendaryIfFormTier: z.number().int().optional(),
+    legendaryIfSecretElement: z.boolean().optional(),
     names: perRarity(z.string()),
     visuals: perRarity(
       z.object({
@@ -315,6 +479,62 @@ export const rulesFileSchema = z.object({
         }),
       )
       .min(1),
+  }),
+  /** Arena 3v3 auto duels and weekly rankings (Tugas 2.3, arena.ts). */
+  arena: z.object({
+    teamSize: z.number().int().min(1),
+    dailyTickets: z.number().int().min(1),
+    startingPoints: z.number().int().min(0),
+    winPoints: z.number().int().min(1),
+    lossPoints: z.number().int().min(1),
+    seasonDays: z.number().int().min(1),
+    seasonKeepRatio: z.number().min(0).max(1),
+    tiers: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          name: z.string().min(1),
+          minPoints: z.number().int().min(0),
+          weeklyReward: battleRewardSchema,
+        }),
+      )
+      .min(1)
+      .refine((tiers) => tiers[0]!.minPoints === 0, 'the first arena tier must start at 0 points')
+      .refine(
+        (tiers) => tiers.every((t, i) => i === 0 || t.minPoints > tiers[i - 1]!.minPoints),
+        'arena tiers must be in rising minPoints order',
+      ),
+    winReward: battleRewardSchema,
+    lossReward: battleRewardSchema,
+    matchRange: z.number().int().min(0),
+    opponentsOffered: z.number().int().min(1),
+    historyLimit: z.number().int().min(1),
+    grid: z.object({ columns: z.number().int().min(2), rows: z.number().int().min(1) }),
+    sideColumns: z.number().int().min(1),
+    power: z.object({
+      hp: z.number().min(0),
+      atk: z.number().min(0),
+      def: z.number().min(0),
+      spd: z.number().min(0),
+    }),
+    bot: z.object({
+      names: z.array(z.string().min(1)).min(1),
+      minPoints: z.number().int().min(0),
+      pointsJitter: z.number().int().min(0),
+      pointsScale: z.number().positive(),
+      pointsPerLevel: z.number().positive(),
+      units: z
+        .array(
+          z.object({
+            hp: z.number().positive(),
+            atk: z.number().min(0),
+            def: z.number().min(0),
+            spd: z.number().positive(),
+            range: z.number().positive(),
+          }),
+        )
+        .min(1),
+    }),
   }),
   /** Raids on the village and its defence (raids.ts). */
   raids: z.object({

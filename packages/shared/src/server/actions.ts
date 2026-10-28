@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { gameData } from '../data';
 import { careSoulEgg, hatchSoulEgg } from '../nest';
 import { claimSet } from '../collections';
 import { healAllWithGems, healWithFood } from '../healing';
@@ -13,11 +14,13 @@ import { reviveMonster } from '../missions';
 import { attackNode } from '../adventure';
 import { attackBase } from '../serbu';
 import { setDefenseLayout } from '../serbuPvp';
+import { claimArenaSeasonReward, setArenaDefenseTeam, setArenaTeam } from '../arena';
 import {
   buyMixerSlot,
   cancelMix,
   collectMix,
   confirmMix,
+  craftMonsterFromFragments,
   feedMonster,
   prophesy,
   speedUp,
@@ -50,6 +53,7 @@ import { recallWorkers, sendWorkers } from '../wilds';
 import { releaseMonster, trainWorker } from '../workers';
 
 const id = z.string().min(1).max(64);
+const arenaTeam = z.object({ monsterIds: z.array(id).max(gameData.rules.arena.teamSize) });
 const count = z.number().int().min(1).max(1000);
 const tile = z.number().int().min(0).max(1000);
 const point = z.object({ x: tile, y: tile });
@@ -132,9 +136,23 @@ export const ACTIONS = {
       awaitProphecy: z.boolean().optional(),
       /** Development only; the server always drops it. */
       skipUnlock: z.boolean().optional(),
-      /** A friend's monster; the edge function swaps in its own checked copy. */
       borrowed: z
-        .object({ id, form: id, element: id, stage: id, food: z.number().int().min(0) })
+        .object({
+          id,
+          species: id.optional(),
+          form: id.optional(),
+          element: id.optional(),
+          stage: id,
+          food: z.number().int().min(0),
+        })
+        .transform((val) => ({
+          id: val.id,
+          species: val.species ?? val.form ?? 'baby-slime',
+          form: val.form,
+          element: val.element,
+          stage: val.stage,
+          food: val.food,
+        }))
         .optional(),
     }),
     (s, p, now) => startMix(s, p, now),
@@ -170,6 +188,12 @@ export const ACTIONS = {
   speedUpResearch: action(z.object({}), (s, _p, now) => speedUpResearch(s, now)),
   setDefenseLayout: action(z.object({ cells: z.array(byId.merge(point)).max(50) }), (s, p) =>
     setDefenseLayout(s, p.cells),
+  ),
+  setArenaTeam: action(arenaTeam, (s, p) => setArenaTeam(s, p.monsterIds)),
+  setArenaDefenseTeam: action(arenaTeam, (s, p) => setArenaDefenseTeam(s, p.monsterIds)),
+  claimArenaSeasonReward: action(z.object({}), (s, _p, now) => claimArenaSeasonReward(s, now)),
+  craftMonsterFromFragments: action(z.object({ speciesId: id }), (s, p) =>
+    craftMonsterFromFragments(s, p.speciesId),
   ),
 };
 

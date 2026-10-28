@@ -11,3 +11,6 @@ supabase/functions/_shared/game.js
 # Supabase CLI local state
 supabase/.temp
 supabase/.branches
+
+# Superpowers brainstorming mockups
+.superpowers/

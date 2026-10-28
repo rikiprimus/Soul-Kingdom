@@ -36,6 +36,17 @@ export const RARITY_COLORS: Record<Rarity, number> = {
   legenda: 0xffc83d,
 };
 
+export const TIER_COLORS: Record<number, number> = {
+  1: 0x9e9e9e, // Common
+  2: 0x4caf50, // Uncommon
+  3: 0x2196f3, // Veteran
+  4: 0x9c27b0, // Elite
+  5: 0xff9800, // Rare
+  6: 0xe91e63, // Epic
+  7: 0xffd700, // Legendary
+  8: 0x00e5ff, // Mythical
+};
+
 export const hex = (color: number) => `#${color.toString(16).padStart(6, '0')}`;
 
 /** Text style factory; resolution keeps text crisp on high-density screens. */

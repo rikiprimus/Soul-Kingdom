@@ -40,12 +40,17 @@ export function rollEncounter(
   const count = rng.int(def.count[0], def.count[1]);
   const enemies: WildEncounter['enemies'] = [];
   if (def.kind === 'monster') {
-    const forms = data.formsByTier.get(def.formTier!) ?? [];
+    const tier = def.formTier ?? 1;
+    const speciesList = data.monstersByTier.get(tier) ?? [];
+    const formsInTier = data.formsByTier.get(tier) ?? [];
     for (let i = 0; i < count; i++) {
+      const picked = speciesList.length > 0 ? rng.pick(speciesList) : null;
+      const legacyForm = formsInTier.length > 0 ? rng.pick(formsInTier).id : 'kucing';
       enemies.push({
-        form: rng.pick(forms).id,
-        element: rng.pick(data.baseUnits),
+        species: picked?.id ?? 'baby-slime',
+        element: picked?.element ?? 'normal',
         stage: def.stage!,
+        form: legacyForm,
       });
     }
   }

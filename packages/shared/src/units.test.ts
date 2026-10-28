@@ -28,8 +28,8 @@ function ok<T extends object>(result: ActionResult<T>) {
 function village(): PlayerState {
   const s = createInitialState(T0, 31);
   s.monsters.push(
-    { id: 'm1', form: 'kucing', element: 'api', stage: adult, food: 0 },
-    { id: 'm2', form: 'anjing', element: 'air', stage: adult, food: 0 },
+    { id: 'm1', species: 'cave-rat', form: 'kucing', element: 'api', stage: adult, food: 0 },
+    { id: 'm2', species: 'dire-wolf-pup', form: 'anjing', element: 'air', stage: adult, food: 0 },
   );
   s.soldiers.push({ id: 's1', kind: 'prajurit', rank: 0 });
   return settleUnits(s, T0);

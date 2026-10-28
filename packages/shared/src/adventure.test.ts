@@ -32,7 +32,7 @@ function army(): PlayerState {
   setHall(s, r1!.requiresTownHall);
   // At the max player level, so no level-up reward mixes into the battle rewards.
   s.xp = gameData.rules.player.levels.at(-1)!.xp;
-  for (const [i, type] of ['petarung', 'lapangan-panah', 'barak-berkuda'].entries()) {
+  for (const [i, type] of ['barak', 'lapangan-panah', 'kandang-kuda'].entries()) {
     s.village.buildings.push({
       id: `bb${i}`,
       type,
@@ -56,8 +56,16 @@ function army(): PlayerState {
     lastCollectAt: T0,
     crop: null,
   });
+  const armySpecies = ['primordial-titan', 'primordial-titan', 'frost-dragon', 'frost-dragon'];
   for (const [i, form] of ['titan', 'titan', 'naga', 'naga'].entries()) {
-    s.monsters.push({ id: `m${i}`, form, element: 'api', stage: adult, food: 0 });
+    s.monsters.push({
+      id: `m${i}`,
+      species: armySpecies[i]!,
+      form,
+      element: 'api',
+      stage: adult,
+      food: 0,
+    });
   }
   return s;
 }
@@ -200,7 +208,9 @@ describe('petualangan nodes', () => {
 
   it('pays nothing and records nothing on a loss; the fallen go to the Kuburan', () => {
     const s = army();
-    s.monsters = [{ id: 'b1', form: 'kucing', element: 'api', stage: baby, food: 0 }];
+    s.monsters = [
+      { id: 'b1', species: 'baby-slime', form: 'kucing', element: 'api', stage: baby, food: 0 },
+    ];
     const r = attackNode(s, { nodeId: first.id, cells: [{ id: 'b1', x: 0, y: 0 }] }, T0);
     if (!r.ok) throw new Error(r.error);
     expect(r.result.won).toBe(false);

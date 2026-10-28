@@ -2009,7 +2009,7 @@ export class VillageScene extends Phaser.Scene {
   private createWalker(unit: Monster | Soldier, u: number, v: number): Walker {
     const p = isoToWorld(u, v);
     let view: Phaser.GameObjects.Container;
-    if ('form' in unit) {
+    if ('stage' in unit) {
       view = new MonsterView(this, p.x, p.y - 16, unit, 40);
       view.setData('look', unit.stage);
     } else {

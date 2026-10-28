@@ -21,7 +21,7 @@ Hal yang mungkin perlu kamu tentukan saat mengisi:
 3. **Kristal Jiwa** (dipakai Soul Mixer tingkat tinggi) hanya dari peluang saat mengambil alam liar, musuh, dan hadiah.
 4. **Dekorasi tidak punya efek** (hanya hiasan), dan semuanya 1 level.
 5. **Soul Mixer, Kuburan, Sarang Telur Jiwa, Gerbang Petualangan hanya 1 level**: tidak ada alasan untuk meng-upgrade fitur inti monster.
-6. **Arena** sudah bisa dibangun tapi belum berfungsi (Tugas 2.3).
+6. **Arena** berfungsi untuk duel monster 3 lawan 3, tiket harian, dan peringkat mingguan (Tugas 2.3).
 7. **Monster tidak punya level sendiri** selain tahap tumbuh bayi → remaja → dewasa; tidak ada objek untuk melatih atau memperkuat monster dewasa.
 
 ## 1. Bangunan
@@ -57,7 +57,7 @@ Tabel level di tiap bangunan sudah mengikuti rencana baru. Baris bertanda **\***
 | Militer   | Kandang Kuda        | `kandang-kuda`        | 3×3    | 6     | Terbuka di Balai 3. Melatih Penombak Berkuda; ikut menaikkan batas kekuatan Serbu.                                               |
 | Militer   | Bengkel             | `bengkel`             | 3×3    | 6     | Terbuka di Balai 4. Membuat 2 mesin perang (Ketapel, Pendobrak) yang naik versi tiap level; ikut menaikkan batas kekuatan Serbu. |
 | Militer   | Gerbang Petualangan | `gerbang-petualangan` | 3×3    | 4     | Membuka peta Petualangan; tiap level membuka satu wilayah berikutnya.                                                            |
-| Militer   | Arena               | `arena`               | 4×4    | 1     | **Belum berfungsi** ("Arena segera hadir", Tugas 2.3).                                                                           |
+| Militer   | Arena               | `arena`               | 4×4    | 1     | Duel monster 3 lawan 3 otomatis, tiket harian & peringkat mingguan (Tugas 2.3).                                                  |
 | Militer   | Menara Jaga         | `menara`              | 2×2    | 5     | Menembak musuh serangan desa dalam jangkauan.                                                                                    |
 | Militer   | Menara sihir        | `menara-sihir`        | 2×2    | 5     | Menembak musuh serangan desa dalam jangkauan pendek tapi lebih kuat.                                                             |
 | Militer   | Pohon Jiwa          | `pohon-jiwa`          | 2×2    | 5     | Tempat menyembuhkan pasukan.                                                                                                     |
@@ -770,11 +770,11 @@ Tabel level di tiap bangunan sudah mengikuti rencana baru. Baris bertanda **\***
 
 ### Arena (`arena`)
 
-> Duel monster 3 lawan 3. Arena segera hadir.
+> Duel monster 3 lawan 3 otomatis dan raih peringkat mingguan tertinggi.
 
 - Kategori: Militer · ukuran 4×4 · maks per Balai Lv1: 0, Lv2: 0, Lv3: 1, Lv4: 1, Lv5: 1, Lv6: 1, Lv7: 1, Lv8: 1
-- Sekarang: **Belum berfungsi** ("Arena segera hadir", Tugas 2.3).
-- Sekarang saat diketuk: Kartu: "Arena segera hadir".
+- Sekarang: **Berfungsi** (Duel monster 3 lawan 3, tiket harian, peringkat mingguan 5 tier, Tugas 2.3).
+- Sekarang saat diketuk: Kartu info menampilkan rating poin, tier gladiator, jatah tiket harian, dan tombol **Masuk Arena** untuk membuka panel Arena.
 
 | Lv  | Biaya                                              | Waktu bangun | Butuh Balai | Efek |
 | --- | -------------------------------------------------- | ------------ | ----------- | ---- |
@@ -784,7 +784,7 @@ Tabel level di tiap bangunan sudah mengikuti rencana baru. Baris bertanda **\***
 
 - Bentuk (rupa, ukuran petak, suasana): 4×4, arena bundar berlantai pasir, tribun batu, panji enam unsur di sekeliling.
 - Fungsi (apa yang dilakukan pemain dengan objek ini): Duel monster 3 lawan 3 (Tugas 2.3).
-- Saat diketuk (apa yang muncul: kartu, panel, aksi langsung, tombol apa saja): Sekarang "Arena segera hadir". Nanti: kartu peringkat musim, tombol **Pilih 3 monster** dan **Cari lawan**.
+- Saat diketuk (apa yang muncul: kartu, panel, aksi langsung, tombol apa saja): Kartu info menampilkan rating poin, tier gladiator, jatah tiket harian, dan tombol **Masuk Arena** untuk membuka panel Arena (tab Duel, Atur Tim, Papan Peringkat, Riwayat).
 - Leveling (berapa level, apa yang bertambah tiap level): 1 level.
 - Percepat dengan permata saat dibangun / naik level (boleh atau tidak, harga): Boleh, harga umum 1 permata per menit sisa (minimal 1).
 - Deskripsi tiap level (teks yang dilihat pemain):

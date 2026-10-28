@@ -1,7 +1,13 @@
 import Phaser from 'phaser';
 import { elementUnits, gameData, rarityOf, type Rarity } from '@soul-monster/shared';
 import { lighten } from '../ui/widgets';
-import { ART_RES, glowTexture, monsterTexture, type MonsterArtSpec } from './monsterArt';
+import {
+  ART_RES,
+  getSpecInfo,
+  glowTexture,
+  monsterTexture,
+  type MonsterArtSpec,
+} from './monsterArt';
 import { elementColor, unitColor } from './palette';
 
 const GOLD = 0xffcf40;
@@ -171,13 +177,14 @@ export class MonsterView extends Phaser.GameObjects.Container {
     opts: MonsterViewOptions = {},
   ) {
     super(scene, x, y);
-    this.rarity = rarityOf(spec);
+    const info = getSpecInfo(spec);
+    this.rarity = rarityOf({ species: info.id });
     const visuals = gameData.rules.rarity.visuals[this.rarity];
     const effects = (opts.effects ?? true) && !opts.silhouette;
     const s = size / 100;
 
     if (effects && visuals.aura !== 'none') {
-      const color = visuals.aura === 'gold' ? GOLD : elementColor(spec.element);
+      const color = visuals.aura === 'gold' ? GOLD : elementColor(info.element);
       const aura = scene.add
         .image(0, size * 0.08, glowTexture(scene))
         .setTint(color)
@@ -204,7 +211,7 @@ export class MonsterView extends Phaser.GameObjects.Container {
     this.add(body);
 
     if (effects && visuals.elementEffect) {
-      const units = elementUnits(spec.element);
+      const units = elementUnits(info.element);
       const frequency = 160 * Math.max(1, units.length * 0.8);
       for (const unit of units) {
         const emitter = scene.add.particles(

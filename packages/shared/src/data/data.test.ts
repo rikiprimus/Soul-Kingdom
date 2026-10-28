@@ -17,40 +17,154 @@ function expectRejected(raw: RawGameData, message: RegExp) {
 }
 
 describe('game data', () => {
-  it('loads 66 elements with the expected unit counts', () => {
+  it('loads 13 elements with approved cycle beats table', () => {
     const all = gameData.elements.elements;
-    expect(all).toHaveLength(66);
-    const normal = all.filter((e) => !e.secret);
-    const byUnits = (n: number) => normal.filter((e) => e.composition.length === n).length;
-    expect([1, 2, 3, 4, 5, 6].map(byUnits)).toEqual([6, 15, 20, 15, 6, 1]);
-    expect(all.filter((e) => e.secret)).toHaveLength(3);
+    expect(all).toHaveLength(13);
+    const ids = all.map((e) => e.id);
+    expect(ids).toEqual([
+      'normal',
+      'api',
+      'air',
+      'angin',
+      'tanah',
+      'lightning',
+      'ice',
+      'nature',
+      'dark',
+      'magma',
+      'light',
+      'arcane',
+      'void',
+    ]);
+    for (const el of all) {
+      expect(el.name).toBeTruthy();
+      expect(el.color).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    }
+    // Verify 8-element natural cycle: Api -> Nature -> Tanah -> Lightning -> Air -> Magma -> Ice -> Angin -> Api
+    expect(gameData.elements.beats['api']).toContain('nature');
+    expect(gameData.elements.beats['nature']).toContain('tanah');
+    expect(gameData.elements.beats['tanah']).toContain('lightning');
+    expect(gameData.elements.beats['lightning']).toContain('air');
+    expect(gameData.elements.beats['air']).toContain('magma');
+    expect(gameData.elements.beats['magma']).toContain('ice');
+    expect(gameData.elements.beats['ice']).toContain('angin');
+    expect(gameData.elements.beats['angin']).toContain('api');
+
+    // Verify 4-element cosmic cycle: Light -> Dark -> Arcane -> Void -> Light
+    expect(gameData.elements.beats['light']).toContain('dark');
+    expect(gameData.elements.beats['dark']).toContain('arcane');
+    expect(gameData.elements.beats['arcane']).toContain('void');
+    expect(gameData.elements.beats['void']).toContain('light');
+
+    // Normal is neutral (beats none)
+    expect(gameData.elements.beats['normal'] ?? []).toHaveLength(0);
+  });
+
+  it('loads 100 monster species across 8 tiers with 65 Altar recipes', () => {
+    const monsters = gameData.monsters.monsters;
+    expect(monsters).toHaveLength(100);
+
+    const tierCounts = [1, 2, 3, 4, 5, 6, 7, 8].map(
+      (t) => monsters.filter((m) => m.tier === t).length,
+    );
+    expect(tierCounts).toEqual([13, 13, 13, 13, 12, 12, 12, 12]);
+
+    const withRecipe = monsters.filter((m) => m.recipe !== null);
+    expect(withRecipe).toHaveLength(65);
+
+    for (const m of monsters) {
+      expect(m.name).toBeTruthy();
+      expect(m.description).toBeTruthy();
+      expect(m.sources.length).toBeGreaterThan(0);
+      expect(gameData.elementById.has(m.element)).toBe(true);
+      expect(gameData.forms.roles[m.role]).toBeDefined();
+    }
+  });
+
+  it('configures 8 tiers with Serbu power points and Altar times in rules.json', () => {
+    const power = gameData.rules.battle.powerPoints;
+    expect(power['1']).toBe(1);
+    expect(power['2']).toBe(2);
+    expect(power['3']).toBe(3);
+    expect(power['4']).toBe(5);
+    expect(power['5']).toBe(8);
+    expect(power['6']).toBe(12);
+    expect(power['7']).toBe(18);
+    expect(power['8']).toBe(25);
+
+    const cost = gameData.rules.mixer.costByResultTier;
+    expect(cost['1']!.seconds).toBe(600); // 10 min
+    expect(cost['2']!.seconds).toBe(1800); // 30 min
+    expect(cost['3']!.seconds).toBe(7200); // 2 hours
+    expect(cost['4']!.seconds).toBe(21600); // 6 hours
+    expect(cost['5']!.seconds).toBe(43200); // 12 hours
+    expect(cost['6']!.seconds).toBe(86400); // 24 hours
+    expect(cost['7']!.seconds).toBe(172800); // 48 hours
+    expect(cost['8']!.seconds).toBe(259200); // 72 hours
+  });
+
+  it('rejects duplicate monster IDs', () => {
+    expectRejected(
+      corrupt((raw) => {
+        raw.monsters.monsters[1].id = raw.monsters.monsters[0].id;
+      }),
+      /ID monster ganda/,
+    );
+  });
+
+  it('rejects recipe when parent does not exist', () => {
+    expectRejected(
+      corrupt((raw) => {
+        const recipeMonster = raw.monsters.monsters.find((m: any) => m.recipe);
+        recipeMonster.recipe.parentA = 'monster-tidak-ada';
+      }),
+      /memakai induk A yang tidak ada/,
+    );
+  });
+
+  it('rejects recipe when parent tier is not strictly lower than child tier', () => {
+    expectRejected(
+      corrupt((raw) => {
+        // Find a tier 2 monster with recipe, set parentA to a tier 3 monster
+        const recipeMonster = raw.monsters.monsters.find((m: any) => m.tier === 2 && m.recipe);
+        recipeMonster.recipe.parentA = 'orc-berserker'; // Tier 3
+      }),
+      /harus memiliki tingkatan lebih rendah/,
+    );
+    expectRejected(
+      corrupt((raw) => {
+        // Set parentA to a monster of the same tier
+        const recipeMonster = raw.monsters.monsters.find((m: any) => m.tier === 2 && m.recipe);
+        recipeMonster.recipe.parentA = 'goblin-archer'; // Tier 2
+      }),
+      /harus memiliki tingkatan lebih rendah/,
+    );
+  });
+
+  it('rejects duplicate parent pairs used across two recipes', () => {
+    expectRejected(
+      corrupt((raw) => {
+        // Set two different monsters to use the exact same parent pair
+        const recipes = raw.monsters.monsters.filter((m: any) => m.recipe);
+        recipes[1].recipe.parentA = recipes[0].recipe.parentB;
+        recipes[1].recipe.parentB = recipes[0].recipe.parentA;
+      }),
+      /sudah dipakai oleh monster/,
+    );
+  });
+
+  it('rejects monsters with no sources', () => {
+    expectRejected(
+      corrupt((raw) => {
+        raw.monsters.monsters[0].sources = [];
+      }),
+      /tidak memiliki sumber|Monster harus memiliki minimal satu sumber/,
+    );
   });
 
   it('loads 23 forms across 5 tiers', () => {
     expect(gameData.forms.forms).toHaveLength(23);
     expect(gameData.formTiers).toEqual([1, 2, 3, 4, 5]);
-  });
-
-  it('indexes non-secret elements by composition', () => {
-    expect(gameData.elementByComposition.size).toBe(63);
-  });
-
-  it('rejects a composition with a non-base unit', () => {
-    expectRejected(
-      corrupt((raw) => {
-        raw.elements.elements[6].composition = ['api', 'logam'];
-      }),
-      /unsur bukan dasar "logam"/,
-    );
-  });
-
-  it('rejects two non-secret elements with the same composition', () => {
-    expectRejected(
-      corrupt((raw) => {
-        raw.elements.elements[7].composition = ['air', 'api'];
-      }),
-      /punya komposisi sama/,
-    );
   });
 
   it('rejects recipes that reference unknown forms or elements', () => {

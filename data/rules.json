@@ -12,6 +12,16 @@
       "5": "legenda",
       "6": "legenda"
     },
+    "byTier": {
+      "1": "biasa",
+      "2": "biasa",
+      "3": "langka",
+      "4": "langka",
+      "5": "epik",
+      "6": "epik",
+      "7": "legenda",
+      "8": "legenda"
+    },
     "legendaryIfFormTier": 5,
     "legendaryIfSecretElement": true,
     "names": { "biasa": "Biasa", "langka": "Langka", "epik": "Epik", "legenda": "Legenda" },
@@ -21,6 +31,41 @@
       "epik": { "animation": true, "aura": "element", "elementEffect": true },
       "legenda": { "animation": true, "aura": "gold", "elementEffect": true, "goldFrame": true }
     }
+  },
+  "tiers": {
+    "1": { "id": "common", "name": "Common", "powerPoints": 1, "altarSeconds": 600 },
+    "2": { "id": "uncommon", "name": "Uncommon", "powerPoints": 2, "altarSeconds": 1800 },
+    "3": { "id": "veteran", "name": "Veteran", "powerPoints": 3, "altarSeconds": 7200 },
+    "4": { "id": "elite", "name": "Elite", "powerPoints": 5, "altarSeconds": 21600 },
+    "5": { "id": "rare", "name": "Rare", "powerPoints": 8, "altarSeconds": 43200 },
+    "6": { "id": "epic", "name": "Epic", "powerPoints": 12, "altarSeconds": 86400 },
+    "7": { "id": "legendary", "name": "Legendary", "powerPoints": 18, "altarSeconds": 172800 },
+    "8": { "id": "mythical", "name": "Mythical", "powerPoints": 25, "altarSeconds": 259200 }
+  },
+  "altar": {
+    "durationByTier": {
+      "1": 600,
+      "2": 1800,
+      "3": 7200,
+      "4": 21600,
+      "5": 43200,
+      "6": 86400,
+      "7": 172800,
+      "8": 259200
+    }
+  },
+  "fragments": {
+    "requiredByTier": {
+      "1": 10,
+      "2": 15,
+      "3": 20,
+      "4": 30,
+      "5": 50,
+      "6": 75,
+      "7": 100,
+      "8": 150
+    },
+    "defaultRequired": 20
   },
   "growth": {
     "stages": [
@@ -35,7 +80,16 @@
       "petarung": { "hp": 110, "atk": 20, "def": 9, "spd": 12, "range": 1 },
       "penembak": { "hp": 80, "atk": 18, "def": 6, "spd": 10, "range": 4 }
     },
-    "tierMultiplier": { "1": 1, "2": 2, "3": 4, "4": 8, "5": 15 },
+    "tierMultiplier": {
+      "1": 1,
+      "2": 1.5,
+      "3": 2.2,
+      "4": 3.2,
+      "5": 4.8,
+      "6": 7.0,
+      "7": 10.5,
+      "8": 15.0
+    },
     "_note": "hp/atk/def dikali tierMultiplier dan statMultiplier tahap tumbuh; spd dan range tidak dikali."
   },
   "mixer": {
@@ -45,18 +99,21 @@
     "protectLegendaryParents": true,
     "initialSlots": 1,
     "maxSlots": 4,
-    "maxElementUnitsByFormTier": { "1": 1, "2": 2, "3": 3, "4": 4, "5": 6 },
+    "maxElementUnitsByFormTier": { "1": 1, "2": 2, "3": 3, "4": 4, "5": 6, "6": 6, "7": 6, "8": 6 },
     "secretElementMinFormTier": 5,
     "maxFormTierByBossesDefeated": [2, 3, 4, 4, 5],
     "formTierOdds": { "same": 0.6, "up": 0.3, "down": 0.09, "mutation": 0.01 },
     "elementOdds": { "fullUnion": 0.6, "parent": 0.3, "partial": 0.1 },
     "pity": { "streak": 10, "mutationBonusPerStreak": 0.01, "resetOnRarity": "epik" },
     "costByResultTier": {
-      "1": { "seconds": 300, "gold": 100, "soulCrystal": 0 },
+      "1": { "seconds": 600, "gold": 100, "soulCrystal": 0 },
       "2": { "seconds": 1800, "gold": 500, "soulCrystal": 0 },
       "3": { "seconds": 7200, "gold": 2000, "soulCrystal": 1 },
       "4": { "seconds": 21600, "gold": 8000, "soulCrystal": 3 },
-      "5": { "seconds": 43200, "gold": 25000, "soulCrystal": 10 }
+      "5": { "seconds": 43200, "gold": 25000, "soulCrystal": 10 },
+      "6": { "seconds": 86400, "gold": 50000, "soulCrystal": 20 },
+      "7": { "seconds": 172800, "gold": 100000, "soulCrystal": 50 },
+      "8": { "seconds": 259200, "gold": 250000, "soulCrystal": 100 }
     },
     "_costNote": "Biaya dibayar saat mulai, berdasarkan tingkat MAKSIMUM yang mungkin dari pasangan induk (tingkat induk tertinggi + 1, dibatasi Tingkat Petualang)."
   },
@@ -65,11 +122,20 @@
     "speedUpGemsPerMinute": 1,
     "speedUpMinimumGems": 1,
     "extraMixerSlotGems": [100, 250, 500],
-    "soulProphecyGemsByResultTier": { "1": 5, "2": 10, "3": 25, "4": 50, "5": 100 }
+    "soulProphecyGemsByResultTier": {
+      "1": 5,
+      "2": 10,
+      "3": 25,
+      "4": 50,
+      "5": 100,
+      "6": 200,
+      "7": 400,
+      "8": 800
+    }
   },
   "battle": {
     "maxUnits": 30,
-    "powerPoints": { "1": 1, "2": 2, "3": 4, "4": 8, "5": 15 },
+    "powerPoints": { "1": 1, "2": 2, "3": 3, "4": 5, "5": 8, "6": 12, "7": 18, "8": 25 },
     "powerCapByCombinedBarracksLevel": [
       10, 20, 28, 36, 45, 54, 64, 75, 86, 98, 110, 124, 138, 154, 170, 188, 206, 226, 246, 268, 290,
       314, 338, 364, 390
@@ -287,6 +353,77 @@
         "repeatReward": { "gold": 3000, "wood": 400, "stone": 400 }
       }
     ]
+  },
+  "arena": {
+    "_note": "Tugas 2.3: Arena 3 lawan 3 otomatis. Tiket diisi penuh setiap pergantian hari (UTC). Musim berlangsung seasonDays hari; hadiah mingguan dibayar menurut poin saat musim itu berakhir, hanya bila pemain bertarung minimal sekali di musim itu, dan harus diklaim sebelum musim berikutnya berakhir. Reset lunak: setiap pergantian musim poin = startingPoints + (poin - startingPoints) * seasonKeepRatio (mis. 1600 -> 1300); papan peringkat hanya memuat pemain yang aktif di musim ini. Ditawarkan opponentsOffered lawan dalam matchRange poin; sisanya diisi bot. Daya tempur = hp*power.hp + atk*power.atk + def*power.def + spd*power.spd per unit. Bot: statistik bot.units dikali (1 + (poin - startingPoints) / bot.pointsScale), poin bot = poin pemain +/- bot.pointsJitter (min. bot.minPoints), level = poin / bot.pointsPerLevel. historyLimit = jumlah riwayat yang disimpan.",
+    "teamSize": 3,
+    "dailyTickets": 5,
+    "startingPoints": 1000,
+    "winPoints": 25,
+    "lossPoints": 15,
+    "seasonDays": 7,
+    "seasonKeepRatio": 0.5,
+    "tiers": [
+      {
+        "id": "perunggu",
+        "name": "Perunggu",
+        "minPoints": 0,
+        "weeklyReward": { "gold": 1000, "gems": 5, "soulCrystal": 1 }
+      },
+      {
+        "id": "perak",
+        "name": "Perak",
+        "minPoints": 1100,
+        "weeklyReward": { "gold": 2500, "gems": 15, "soulCrystal": 3 }
+      },
+      {
+        "id": "emas",
+        "name": "Emas",
+        "minPoints": 1300,
+        "weeklyReward": { "gold": 5000, "gems": 30, "soulCrystal": 5 }
+      },
+      {
+        "id": "berlian",
+        "name": "Berlian",
+        "minPoints": 1500,
+        "weeklyReward": { "gold": 10000, "gems": 60, "soulCrystal": 10 }
+      },
+      {
+        "id": "master",
+        "name": "Master",
+        "minPoints": 1800,
+        "weeklyReward": { "gold": 20000, "gems": 100, "soulCrystal": 20 }
+      }
+    ],
+    "winReward": { "gold": 200, "soulCrystal": 1 },
+    "lossReward": { "gold": 50 },
+    "matchRange": 300,
+    "opponentsOffered": 3,
+    "historyLimit": 20,
+    "grid": { "columns": 6, "rows": 5 },
+    "sideColumns": 2,
+    "power": { "hp": 0.05, "atk": 1, "def": 0.5, "spd": 0.5 },
+    "bot": {
+      "names": [
+        "Pendekar Cakra",
+        "Pendekar Bayangan",
+        "Pawang Api Surya",
+        "Penjinak Badai",
+        "Ksatria Bintang",
+        "Penjaga Roh Hutan",
+        "Pemanah Cahaya",
+        "Penguasa Gempa"
+      ],
+      "minPoints": 800,
+      "pointsJitter": 50,
+      "pointsScale": 2000,
+      "pointsPerLevel": 150,
+      "units": [
+        { "hp": 200, "atk": 24, "def": 10, "spd": 10, "range": 1 },
+        { "hp": 240, "atk": 29, "def": 12, "spd": 11, "range": 1 },
+        { "hp": 280, "atk": 34, "def": 14, "spd": 12, "range": 4 }
+      ]
+    }
   },
   "raids": {
     "_note": "Tugas 1.7: serangan ke desa. Hanya berjalan saat bermain: setiap intervalSeconds detik bermain (mulai Balai minTownHall) satu kelompok dari daftar musuh liar level Balai (wilds.json) muncul tepat di luar desa. Setelah warnSeconds peringatan mereka berjalan walkTilesPerSecond petak/detik menuju Balai Utama lewat petak bebas. Bangunan dan alam liar tidak bisa dilewati; Tembok menghalangi jalan, jadi musuh memilih rute tercepat: memutar, atau menjebol satu ruas (lama = HP ruas / kerusakan per detik penyerang; ruas itu hancur). Pertarungan mulai saat monster/prajurit kita ada dalam defendTiles petak, Menara Jaga dalam reachTiles (atau range levelnya bila lebih jauh), atau musuh tiba di Balai; hanya unit dalam defendTiles dan menara yang mencapai yang ikut bertahan (maks. battle.maxUnits). Menara bertarung di tempat dengan statistik per level. Menara Sihir (magicTower, Tugas 1C.6): jangkauan reachTiles, tembakan lambat, setiap serangan juga mengenai musuh lain dalam splash.radiusTiles dari sasaran sebesar splash.ratio kerusakannya. Gerbang (gate): saat serangan desa selalu tertutup, musuh menjebolnya seperti ruas tembok dengan HP gate.hpByLevel; di luar serangan unit sendiri boleh lewat gerbang yang terbuka. Kalah = musuh mencuri stealRatio emas/makanan/kayu/batu lalu pergi; menang = hadiah kelompok itu.",
@@ -690,8 +827,8 @@
       { "seconds": 7200, "food": 1200 }
     ],
     "hatch": [
-      { "rarity": "langka", "chance": 0.85, "formTier": 2, "units": 2 },
-      { "rarity": "epik", "chance": 0.15, "formTier": 3, "units": 3 }
+      { "rarity": "langka", "chance": 0.85, "formTier": 3, "units": 2 },
+      { "rarity": "epik", "chance": 0.15, "formTier": 5, "units": 3 }
     ]
   },
   "daily": {

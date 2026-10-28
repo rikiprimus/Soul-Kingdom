@@ -12,10 +12,10 @@ import {
   firstStage,
   foodToNextStage,
   formTierOf,
-  getForm,
   getStage,
   isFinalStage,
   monsterKey,
+  monsterName,
   type Monster,
   type MonsterKind,
 } from './monster';
@@ -34,6 +34,7 @@ import type { SerbuProgress } from './serbu';
 import type { DailyBonus, QuestProgress } from './quests';
 import type { Healing } from './healing';
 import type { PvpState } from './serbuPvp';
+import { initialArenaState, type ArenaState } from './arena';
 import type { MarketDraw } from './market';
 import type { Machine, WorkshopBuild } from './workshop';
 import type { SoulEgg } from './nest';
@@ -142,8 +143,11 @@ export interface PlayerState {
   serbu: SerbuProgress;
   /** Serbu against other player bases (Tugas 2.2). */
   pvp: PvpState;
+  /** Arena 3v3 and weekly rankings (Tugas 2.3). */
+  arena: ArenaState;
   /** Petualangan: nodes beaten, and when taken resource nodes come back. */
   adventure: AdventureProgress;
+  fragments?: Record<string, number>;
   rngState: RngState;
   nextId: number;
 }
@@ -184,6 +188,8 @@ export type ActionError =
   | 'encounterNotFound'
   | 'encounterBusy'
   | 'monsterBusy'
+  | 'noTickets'
+  | 'opponentNotFound'
   | 'noGraveyard'
   | 'noNest'
   | 'unknownBuilding'
@@ -245,10 +251,26 @@ function newId(state: PlayerState, prefix: string): string {
 function discover(state: PlayerState, kind: MonsterKind): void {
   const key = monsterKey(kind);
   if (!state.pedia.monsters.includes(key)) state.pedia.monsters.push(key);
+  if ('form' in kind && 'element' in kind && kind.form && kind.element) {
+    const legacyKey = `${kind.form}:${kind.element}`;
+    if (!state.pedia.monsters.includes(legacyKey)) state.pedia.monsters.push(legacyKey);
+  }
 }
 
-function addMonster(state: PlayerState, kind: MonsterKind & { stage: string }): Monster {
-  const monster: Monster = { id: newId(state, 'm'), ...kind, food: 0 };
+export function addMonster(state: PlayerState, kind: MonsterKind & { stage: string }): Monster {
+  const species =
+    'species' in kind && kind.species
+      ? kind.species
+      : (('form' in kind ? kind.form : '') ?? 'baby-slime');
+  const def = gameData.monsterById.get(species);
+  const monster: Monster = {
+    id: newId(state, 'm'),
+    species,
+    form: 'form' in kind ? kind.form : species,
+    element: 'element' in kind && kind.element ? kind.element : (def?.element ?? 'normal'),
+    stage: kind.stage,
+    food: 0,
+  };
   state.monsters.push(monster);
   discover(state, monster);
   return monster;
@@ -310,7 +332,9 @@ export function createInitialState(
     pityStreak: 0,
     serbu: { cleared: [] },
     pvp: { defenseCells: [], trophies: 1000, history: [] },
+    arena: initialArenaState(now, data),
     adventure: { cleared: [], refillAt: {} },
+    fragments: {},
     rngState: seed >>> 0,
     nextId: 1,
   };
@@ -506,6 +530,7 @@ export function collectMix(
   next.mixQueue.splice(index, 1);
   const newDiscovery = !next.pedia.monsters.includes(monsterKey(entry.result));
   const monster = addMonster(next, {
+    species: entry.result.species ?? entry.result.form,
     form: entry.result.form,
     element: entry.result.element,
     stage: firstStage(data),
@@ -570,6 +595,37 @@ export function eligibleParents(state: PlayerState, data: GameData = gameData): 
 export function compareMonsters(a: Monster, b: Monster, data: GameData = gameData): number {
   return (
     formTierOf(b, data) - formTierOf(a, data) ||
-    getForm(a.form, data).name.localeCompare(getForm(b.form, data).name)
+    monsterName(a, data).localeCompare(monsterName(b, data))
   );
+}
+
+/** Crafts a monster species from collected boss fragments. */
+export function craftMonsterFromFragments(
+  state: PlayerState,
+  speciesId: string,
+  data: GameData = gameData,
+): ActionResult<{ monster: Monster }> {
+  const def = data.monsterById.get(speciesId);
+  if (!def) return fail('entryNotFound');
+  const required =
+    data.rules.fragments?.requiredByTier?.[String(def.tier)] ??
+    data.rules.fragments?.defaultRequired ??
+    20;
+  const current = state.fragments?.[speciesId] ?? 0;
+  if (current < required) return fail('notAvailableYet');
+  if (!hasRoomFor({ species: def.id }, state, data)) return fail('populationFull');
+
+  const next = clone(state);
+  if (!next.fragments) next.fragments = {};
+  next.fragments[speciesId] = current - required;
+  if (next.fragments[speciesId] <= 0) {
+    delete next.fragments[speciesId];
+  }
+  const monster = addMonster(next, {
+    species: def.id,
+    form: def.id,
+    element: def.element,
+    stage: firstStage(data),
+  });
+  return { ok: true, state: next, monster };
 }

@@ -1,0 +1,1011 @@
+{
+  "monsters": [
+    {
+      "id": "baby-slime",
+      "name": "Baby Slime",
+      "description": "Gumpalan jeli biru-kehijauan sebesar bola, dua mata bulat di dalam tubuh beningnya; meninggalkan jejak basah saat memantul.",
+      "tier": 1,
+      "element": "air",
+      "role": "penahan",
+      "sources": ["telur"],
+      "recipe": null
+    },
+    {
+      "id": "mud-goblin",
+      "name": "Mud Goblin",
+      "description": "Goblin pendek berkulit cokelat lumpur, telinga lancip terkulai, memegang tongkat kayu bengkok.",
+      "tier": 1,
+      "element": "tanah",
+      "role": "penahan",
+      "sources": ["telur", "eksplorasi"],
+      "recipe": null
+    },
+    {
+      "id": "forest-sprite",
+      "name": "Forest Sprite",
+      "description": "Peri sekecil jari bersayap capung, rambut serbuk sari yang bercahaya hangat.",
+      "tier": 1,
+      "element": "light",
+      "role": "penembak",
+      "sources": ["telur", "eksplorasi"],
+      "recipe": null
+    },
+    {
+      "id": "cave-rat",
+      "name": "Cave Rat",
+      "description": "Tikus abu-abu kurus bermata merah, ekor botak panjang, selalu muncul bergerombol.",
+      "tier": 1,
+      "element": "normal",
+      "role": "petarung",
+      "sources": ["eksplorasi"],
+      "recipe": null
+    },
+    {
+      "id": "thorn-beetle",
+      "name": "Thorn Beetle",
+      "description": "Kumbang hijau tua sebesar kepalan, cangkang ditumbuhi duri mawar kecil.",
+      "tier": 1,
+      "element": "nature",
+      "role": "penahan",
+      "sources": ["telur"],
+      "recipe": null
+    },
+    {
+      "id": "skeleton-peasant",
+      "name": "Skeleton Peasant",
+      "description": "Kerangka petani bertopi caping robek, sabit berkarat di tangan, tulang kekuningan.",
+      "tier": 1,
+      "element": "dark",
+      "role": "petarung",
+      "sources": ["eksplorasi"],
+      "recipe": null
+    },
+    {
+      "id": "tiny-kobold",
+      "name": "Tiny Kobold",
+      "description": "Kadal kecil berdiri dua kaki, sisik merah bata, membawa lentera berisi bara dan karung curian.",
+      "tier": 1,
+      "element": "magma",
+      "role": "petarung",
+      "sources": ["telur"],
+      "recipe": null
+    },
+    {
+      "id": "puffowl",
+      "name": "Puffowl",
+      "description": "Burung hantu bulat seperti bola bulu, mata kuning raksasa; bulu tajam di dadanya bisa ditembakkan.",
+      "tier": 1,
+      "element": "angin",
+      "role": "penembak",
+      "sources": ["telur"],
+      "recipe": null
+    },
+    {
+      "id": "rockling",
+      "name": "Rockling",
+      "description": "Golem batu setinggi lutut, tubuh dari tiga bongkah kerikil, lumut kecil di kepala.",
+      "tier": 1,
+      "element": "tanah",
+      "role": "penahan",
+      "sources": ["eksplorasi"],
+      "recipe": null
+    },
+    {
+      "id": "wild-boar",
+      "name": "Wild Boar",
+      "description": "Babi hutan cokelat berbulu kasar, taring melengkung, punggung bergaris hitam.",
+      "tier": 1,
+      "element": "normal",
+      "role": "penahan",
+      "sources": ["telur"],
+      "recipe": null
+    },
+    {
+      "id": "hedgehog-knight",
+      "name": "Hedgehog Knight",
+      "description": "Landak berhelm ember logam dan tombak kecil; durinya berdesis listrik statis.",
+      "tier": 1,
+      "element": "lightning",
+      "role": "petarung",
+      "sources": ["quest"],
+      "recipe": null
+    },
+    {
+      "id": "pumpkin-imp",
+      "name": "Pumpkin Imp",
+      "description": "Iblis mungil berkepala labu berukir seringai, tubuh ungu, melempar biji labu yang meletup api.",
+      "tier": 1,
+      "element": "api",
+      "role": "penembak",
+      "sources": ["telur", "event"],
+      "recipe": null
+    },
+    {
+      "id": "rusty-squire",
+      "name": "Rusty Squire",
+      "description": "Remaja calon ksatria, helm kebesaran, pedang tumpul berkarat dan perisai papan kayu.",
+      "tier": 1,
+      "element": "normal",
+      "role": "petarung",
+      "sources": ["telur", "quest"],
+      "recipe": null
+    },
+
+    {
+      "id": "goblin-archer",
+      "name": "Goblin Archer",
+      "description": "Goblin hijau berjubah daun, busur pendek dari ranting, kantong anak panah berbulu burung.",
+      "tier": 2,
+      "element": "nature",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "mud-goblin", "parentB": "thorn-beetle" }
+    },
+    {
+      "id": "dire-wolf-pup",
+      "name": "Dire Wolf Pup",
+      "description": "Anak serigala bertubuh bongsor, bulu abu tebal, cakar kebesaran untuk ukurannya.",
+      "tier": 2,
+      "element": "normal",
+      "role": "petarung",
+      "sources": ["telur", "altar"],
+      "recipe": { "parentA": "cave-rat", "parentB": "wild-boar" }
+    },
+    {
+      "id": "harpy-scout",
+      "name": "Harpy Scout",
+      "description": "Makhluk bertubuh burung berwajah perempuan, sayap cokelat belang, kalung bulu pengintai.",
+      "tier": 2,
+      "element": "angin",
+      "role": "penembak",
+      "sources": ["eksplorasi"],
+      "recipe": null
+    },
+    {
+      "id": "bandit-knight",
+      "name": "Bandit Knight",
+      "description": "Prajurit bayaran berzirah kulit tambal sulam, syal merah menutupi wajah, pedang lebar.",
+      "tier": 2,
+      "element": "normal",
+      "role": "petarung",
+      "sources": ["boss", "quest"],
+      "recipe": null
+    },
+    {
+      "id": "swamp-lurker",
+      "name": "Swamp Lurker",
+      "description": "Makhluk rawa pipih berkulit licin, mata menonjol di atas kepala, tubuh ditutupi ganggang.",
+      "tier": 2,
+      "element": "air",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "baby-slime", "parentB": "mud-goblin" }
+    },
+    {
+      "id": "ember-fox",
+      "name": "Ember Fox",
+      "description": "Rubah jingga ramping, ujung ekor dan telinga menyala seperti bara.",
+      "tier": 2,
+      "element": "api",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "pumpkin-imp", "parentB": "cave-rat" }
+    },
+    {
+      "id": "bone-hound",
+      "name": "Bone Hound",
+      "description": "Anjing kerangka dengan mata api hijau pucat dan kalung rantai putus.",
+      "tier": 2,
+      "element": "dark",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "skeleton-peasant", "parentB": "cave-rat" }
+    },
+    {
+      "id": "horned-toad",
+      "name": "Horned Toad",
+      "description": "Katak gemuk bertanduk tiga yang berpendar biru, lidah panjang lengket yang menyetrum.",
+      "tier": 2,
+      "element": "lightning",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "baby-slime", "parentB": "hedgehog-knight" }
+    },
+    {
+      "id": "iron-turtle",
+      "name": "Iron Turtle",
+      "description": "Kura-kura bercangkang pelat besi berpaku keling, kepala kecil bermata sipit.",
+      "tier": 2,
+      "element": "tanah",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "rockling", "parentB": "hedgehog-knight" }
+    },
+    {
+      "id": "plague-crow",
+      "name": "Plague Crow",
+      "description": "Gagak kurus berbulu kusam, kabut ungu pekat menetes dari paruhnya.",
+      "tier": 2,
+      "element": "void",
+      "role": "penembak",
+      "sources": ["eksplorasi"],
+      "recipe": null
+    },
+    {
+      "id": "frost-hare",
+      "name": "Frost Hare",
+      "description": "Kelinci putih bertelinga kristal es, napasnya beruap dingin.",
+      "tier": 2,
+      "element": "ice",
+      "role": "penembak",
+      "sources": ["telur"],
+      "recipe": null
+    },
+    {
+      "id": "orc-militia",
+      "name": "Orc Militia",
+      "description": "Orc muda berkulit hijau tua, kapak obsidian dan perisai kayu bulat beruap panas.",
+      "tier": 2,
+      "element": "magma",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "tiny-kobold", "parentB": "rusty-squire" }
+    },
+    {
+      "id": "mimic-chestling",
+      "name": "Mimic Chestling",
+      "description": "Peti harta kecil bergigi tajam di tutupnya, lidah merah menjulur, kaki kayu mungil.",
+      "tier": 2,
+      "element": "arcane",
+      "role": "penahan",
+      "sources": ["achievement", "altar"],
+      "recipe": { "parentA": "rusty-squire", "parentB": "pumpkin-imp" }
+    },
+
+    {
+      "id": "orc-berserker",
+      "name": "Orc Berserker",
+      "description": "Orc berotot penuh bekas luka, dua kapak bergerigi, mata menyala merah saat terluka.",
+      "tier": 3,
+      "element": "magma",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "orc-militia", "parentB": "bandit-knight" }
+    },
+    {
+      "id": "werewolf",
+      "name": "Werewolf",
+      "description": "Manusia serigala tegak berbulu kelabu gelap, cakar panjang, sisa kemeja sobek di bahu.",
+      "tier": 3,
+      "element": "dark",
+      "role": "petarung",
+      "sources": ["event", "altar"],
+      "recipe": { "parentA": "dire-wolf-pup", "parentB": "bone-hound" }
+    },
+    {
+      "id": "minotaur-brute",
+      "name": "Minotaur Brute",
+      "description": "Manusia berkepala banteng, tanduk patah sebelah, cincin besi di hidung, kapak kayu besar.",
+      "tier": 3,
+      "element": "normal",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "iron-turtle", "parentB": "wild-boar" }
+    },
+    {
+      "id": "dark-elf-ranger",
+      "name": "Dark Elf Ranger",
+      "description": "Elf berkulit ungu kelam, jubah bertudung, busur panjang yang anak panahnya lenyap ke bayangan.",
+      "tier": 3,
+      "element": "void",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "goblin-archer", "parentB": "plague-crow" }
+    },
+    {
+      "id": "ghoul-stalker",
+      "name": "Ghoul Stalker",
+      "description": "Mayat hidup kurus membungkuk, kuku panjang hitam, hidung mengendus darah.",
+      "tier": 3,
+      "element": "dark",
+      "role": "petarung",
+      "sources": ["eksplorasi"],
+      "recipe": null
+    },
+    {
+      "id": "basilisk-hatchling",
+      "name": "Basilisk Hatchling",
+      "description": "Bayi kadal hijau bersisik zamrud, mahkota duri kecil, mata kuning yang membuat lawan melambat.",
+      "tier": 3,
+      "element": "nature",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "horned-toad", "parentB": "thorn-beetle" }
+    },
+    {
+      "id": "centaur-lancer",
+      "name": "Centaur Lancer",
+      "description": "Setengah manusia setengah kuda belang, zirah kulit, tombak panjang berpanji.",
+      "tier": 3,
+      "element": "angin",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "harpy-scout", "parentB": "bandit-knight" }
+    },
+    {
+      "id": "war-boar-rider",
+      "name": "War Boar Rider",
+      "description": "Orc kecil menunggangi babi perang berzirah, tombak pendek dan bendera compang-camping.",
+      "tier": 3,
+      "element": "normal",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "orc-militia", "parentB": "wild-boar" }
+    },
+    {
+      "id": "gargoyle-sentinel",
+      "name": "Gargoyle Sentinel",
+      "description": "Patung batu bersayap kelelawar, wajah garang, retak-retak berlumut di sayap.",
+      "tier": 3,
+      "element": "tanah",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "rockling", "parentB": "mimic-chestling" }
+    },
+    {
+      "id": "wisp-witch",
+      "name": "Wisp Witch",
+      "description": "Roh perempuan bertubuh cahaya kebiruan, topi penyihir melayang, jemari memancarkan bola energi.",
+      "tier": 3,
+      "element": "light",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "forest-sprite", "parentB": "plague-crow" }
+    },
+    {
+      "id": "mummy-guard",
+      "name": "Mummy Guard",
+      "description": "Penjaga makam berbalut perban kuning tua, tombak bermata sabit, mata hijau bercahaya.",
+      "tier": 3,
+      "element": "arcane",
+      "role": "penahan",
+      "sources": ["eksplorasi"],
+      "recipe": null
+    },
+    {
+      "id": "thunder-ram",
+      "name": "Thunder Ram",
+      "description": "Domba jantan berbulu awan kelabu, tanduk spiral memercikkan kilat.",
+      "tier": 3,
+      "element": "lightning",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "horned-toad", "parentB": "wild-boar" }
+    },
+    {
+      "id": "knight-of-ash",
+      "name": "Knight of Ash",
+      "description": "Ksatria berzirah abu-abu hangus, jubah terbakar di ujung, pedang beruap.",
+      "tier": 3,
+      "element": "api",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "rusty-squire", "parentB": "ember-fox" }
+    },
+
+    {
+      "id": "minotaur-warlord",
+      "name": "Minotaur Warlord",
+      "description": "Minotaur raksasa berzirah perunggu, jubah merah, kapak bermata ganda sebesar pintu.",
+      "tier": 4,
+      "element": "tanah",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "minotaur-brute", "parentB": "orc-berserker" }
+    },
+    {
+      "id": "griffin",
+      "name": "Griffin",
+      "description": "Tubuh singa cokelat-emas, kepala dan sayap elang, cakar depan elang yang tajam.",
+      "tier": 4,
+      "element": "angin",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "centaur-lancer", "parentB": "harpy-scout" }
+    },
+    {
+      "id": "cyclops-brute",
+      "name": "Cyclops Brute",
+      "description": "Raksasa bermata satu, kulit kemerahan seperti tembaga panas, palu tempa besar.",
+      "tier": 4,
+      "element": "magma",
+      "role": "penahan",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "death-knight",
+      "name": "Death Knight",
+      "description": "Ksatria mayat hidup berzirah hitam berduri, pedang kutukan berpendar ungu.",
+      "tier": 4,
+      "element": "dark",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "knight-of-ash", "parentB": "ghoul-stalker" }
+    },
+    {
+      "id": "troll-shaman",
+      "name": "Troll Shaman",
+      "description": "Troll hijau bungkuk berhiaskan tulang dan bulu, tongkat akar yang menumbuhkan sulur.",
+      "tier": 4,
+      "element": "nature",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "basilisk-hatchling", "parentB": "wisp-witch" }
+    },
+    {
+      "id": "manticorespawn",
+      "name": "Manticorespawn",
+      "description": "Singa merah muda bersurai api, sayap kelelawar kecil, ekor kalajengking berduri.",
+      "tier": 4,
+      "element": "api",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "ember-fox", "parentB": "basilisk-hatchling" }
+    },
+    {
+      "id": "war-golem",
+      "name": "War Golem",
+      "description": "Golem besi setinggi rumah, inti listrik biru di dada, tinju seperti godam.",
+      "tier": 4,
+      "element": "lightning",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "iron-turtle", "parentB": "thunder-ram" }
+    },
+    {
+      "id": "valkyrie-initiate",
+      "name": "Valkyrie Initiate",
+      "description": "Prajurit perempuan muda bersayap putih kecil, helm bersayap, tombak bercahaya.",
+      "tier": 4,
+      "element": "light",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "wisp-witch", "parentB": "centaur-lancer" }
+    },
+    {
+      "id": "chimera",
+      "name": "Chimera",
+      "description": "Singa berkepala tambahan kambing di punggung dan ekor ular yang mendesis.",
+      "tier": 4,
+      "element": "normal",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "werewolf", "parentB": "basilisk-hatchling" }
+    },
+    {
+      "id": "headless-rider",
+      "name": "Headless Rider",
+      "description": "Penunggang tanpa kepala di atas kuda hitam berapi biru, membawa lentera tengkorak.",
+      "tier": 4,
+      "element": "void",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "ghoul-stalker", "parentB": "war-boar-rider" }
+    },
+    {
+      "id": "frost-ogre",
+      "name": "Frost Ogre",
+      "description": "Ogre biru pucat berjanggut es, pentungan bongkahan gletser, embun beku di setiap langkah.",
+      "tier": 4,
+      "element": "ice",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "frost-hare", "parentB": "minotaur-brute" }
+    },
+    {
+      "id": "rune-knight",
+      "name": "Rune Knight",
+      "description": "Ksatria berzirah perak berukir rune biru menyala, perisai sihir melayang di depannya.",
+      "tier": 4,
+      "element": "arcane",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "mummy-guard", "parentB": "rusty-squire" }
+    },
+    {
+      "id": "shadow-panther",
+      "name": "Shadow Panther",
+      "description": "Macan kumbang hitam, tubuhnya berasap bayangan, mata ungu menyala.",
+      "tier": 4,
+      "element": "dark",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "dark-elf-ranger", "parentB": "ghoul-stalker" }
+    },
+
+    {
+      "id": "wyvern",
+      "name": "Wyvern",
+      "description": "Naga berkaki dua bersisik merah tua, sayap selaput lebar, ekor berujung duri.",
+      "tier": 5,
+      "element": "api",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "manticorespawn", "parentB": "griffin" }
+    },
+    {
+      "id": "cerberus",
+      "name": "Cerberus",
+      "description": "Anjing raksasa berkepala tiga, bulu hitam berasap, retakan lava di sela cakar.",
+      "tier": 5,
+      "element": "magma",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "werewolf", "parentB": "manticorespawn" }
+    },
+    {
+      "id": "medusa",
+      "name": "Medusa",
+      "description": "Perempuan berekor ular hijau, rambut ular-ular hidup, perisai perunggu dan mata bercahaya.",
+      "tier": 5,
+      "element": "tanah",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "troll-shaman", "parentB": "chimera" }
+    },
+    {
+      "id": "lich-acolyte",
+      "name": "Lich Acolyte",
+      "description": "Penyihir kerangka berjubah ungu lusuh, tongkat tengkorak, buku kematian melayang.",
+      "tier": 5,
+      "element": "arcane",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "death-knight", "parentB": "rune-knight" }
+    },
+    {
+      "id": "roc",
+      "name": "Roc",
+      "description": "Burung raksasa berbulu cokelat keemasan, cakar sebesar kereta, kepakannya membuat badai debu.",
+      "tier": 5,
+      "element": "angin",
+      "role": "petarung",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "oni-warrior",
+      "name": "Oni Warrior",
+      "description": "Iblis bertanduk dua berkulit merah, rambut putih liar, gada besi berpaku.",
+      "tier": 5,
+      "element": "normal",
+      "role": "penahan",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "kelpie",
+      "name": "Kelpie",
+      "description": "Kuda air biru-hijau, surai rumput laut menetes, kuku berbentuk sirip.",
+      "tier": 5,
+      "element": "air",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "centaur-lancer", "parentB": "swamp-lurker" }
+    },
+    {
+      "id": "silverback-troll",
+      "name": "Silverback Troll",
+      "description": "Troll pegunungan besar berbulu perak, kulit sekeras batu, napas berembun dingin.",
+      "tier": 5,
+      "element": "ice",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "troll-shaman", "parentB": "frost-ogre" }
+    },
+    {
+      "id": "ironclad-paladin",
+      "name": "Ironclad Paladin",
+      "description": "Ksatria suci berzirah putih tebal, palu bercahaya, aura emas melindungi kawan.",
+      "tier": 5,
+      "element": "light",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "valkyrie-initiate", "parentB": "war-golem" }
+    },
+    {
+      "id": "banshee",
+      "name": "Banshee",
+      "description": "Roh perempuan pucat tembus pandang, rambut panjang berkibar, mulut terbuka menjerit.",
+      "tier": 5,
+      "element": "dark",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "headless-rider", "parentB": "wisp-witch" }
+    },
+    {
+      "id": "thunder-roc",
+      "name": "Thunder Roc",
+      "description": "Burung raksasa berbulu hitam-biru, petir menjalar di sayap, mata putih menyala.",
+      "tier": 5,
+      "element": "lightning",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "griffin", "parentB": "thunder-ram" }
+    },
+    {
+      "id": "voidfang-stalker",
+      "name": "Voidfang Stalker",
+      "description": "Pemburu berkaki empat ramping bertaring panjang; tubuh berlubang hampa yang membuka celah teleportasi.",
+      "tier": 5,
+      "element": "void",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "shadow-panther", "parentB": "headless-rider" }
+    },
+
+    {
+      "id": "hydra",
+      "name": "Hydra",
+      "description": "Naga rawa berkepala lima, sisik hijau-biru basah, kepala yang terpotong tumbuh lagi.",
+      "tier": 6,
+      "element": "air",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "medusa", "parentB": "kelpie" }
+    },
+    {
+      "id": "fenrir",
+      "name": "Fenrir",
+      "description": "Serigala raksasa berbulu putih-kelabu, rantai putus di leher, napas beku.",
+      "tier": 6,
+      "element": "ice",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "cerberus", "parentB": "silverback-troll" }
+    },
+    {
+      "id": "behemoth",
+      "name": "Behemoth",
+      "description": "Binatang kolosal mirip badak-gajah, kulit seperti batu karang, tanduk yang meruntuhkan tembok.",
+      "tier": 6,
+      "element": "tanah",
+      "role": "penahan",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "djinn-warlord",
+      "name": "Djinn Warlord",
+      "description": "Jin bertubuh asap jingga dari pinggang ke bawah, sorban emas, pedang lengkung dan pusaran pasir.",
+      "tier": 6,
+      "element": "angin",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "roc", "parentB": "lich-acolyte" }
+    },
+    {
+      "id": "dullahan-reaper",
+      "name": "Dullahan Reaper",
+      "description": "Ksatria tanpa kepala berjubah compang-camping, kepala bercahaya dikepit, sabit panjang.",
+      "tier": 6,
+      "element": "void",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "voidfang-stalker", "parentB": "banshee" }
+    },
+    {
+      "id": "elder-treant",
+      "name": "Elder Treant",
+      "description": "Pohon purba berjalan, wajah di batang, janggut lumut, ranting seperti lengan raksasa.",
+      "tier": 6,
+      "element": "nature",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "silverback-troll", "parentB": "medusa" }
+    },
+    {
+      "id": "kraken-spawn",
+      "name": "Kraken Spawn",
+      "description": "Gurita besar ungu tua, tentakel penuh pengisap bercahaya, mata kuning bulat.",
+      "tier": 6,
+      "element": "air",
+      "role": "penahan",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "frost-dragon",
+      "name": "Frost Dragon",
+      "description": "Naga bersisik biru es, sayap seperti lembaran kristal, duri es di punggung.",
+      "tier": 6,
+      "element": "ice",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "wyvern", "parentB": "silverback-troll" }
+    },
+    {
+      "id": "salamander-lord",
+      "name": "Salamander Lord",
+      "description": "Kadal raksasa berkulit lava retak, mahkota tanduk obsidian, jejak lahar di belakangnya.",
+      "tier": 6,
+      "element": "magma",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "wyvern", "parentB": "cerberus" }
+    },
+    {
+      "id": "arachne-matriarch",
+      "name": "Arachne Matriarch",
+      "description": "Ratu laba-laba bertubuh atas perempuan, delapan kaki hitam berbulu, mahkota jaring perak.",
+      "tier": 6,
+      "element": "dark",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "banshee", "parentB": "medusa" }
+    },
+    {
+      "id": "storm-colossus",
+      "name": "Storm Colossus",
+      "description": "Raksasa dari awan badai dan batu melayang, kedua tangan memegang petir.",
+      "tier": 6,
+      "element": "lightning",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "thunder-roc", "parentB": "oni-warrior" }
+    },
+    {
+      "id": "soulforged-juggernaut",
+      "name": "Soulforged Juggernaut",
+      "description": "Golem logam hitam berlapis kristal jiwa yang menyala, langkahnya mengguncang tanah.",
+      "tier": 6,
+      "element": "arcane",
+      "role": "penahan",
+      "sources": ["achievement", "altar"],
+      "recipe": { "parentA": "ironclad-paladin", "parentB": "lich-acolyte" }
+    },
+
+    {
+      "id": "phoenix",
+      "name": "Phoenix",
+      "description": "Burung api besar berbulu emas-merah, ekor api panjang, bangkit dari abunya sendiri.",
+      "tier": 7,
+      "element": "api",
+      "role": "penembak",
+      "sources": ["event", "altar"],
+      "recipe": { "parentA": "salamander-lord", "parentB": "djinn-warlord" }
+    },
+    {
+      "id": "bahamut",
+      "name": "Bahamut",
+      "description": "Naga agung bersisik perak-biru, sayap bertabur cahaya, napas energi murni.",
+      "tier": 7,
+      "element": "arcane",
+      "role": "penembak",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "jormungandr",
+      "name": "Jörmungandr",
+      "description": "Ular raksasa hijau gelap bercorak rune, taring meneteskan racun yang melelehkan batu.",
+      "tier": 7,
+      "element": "nature",
+      "role": "penahan",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "quetzalcoatl",
+      "name": "Quetzalcoatl",
+      "description": "Ular bersayap berbulu hijau-zamrud dan merah, mahkota bulu, angin berputar di sekitarnya.",
+      "tier": 7,
+      "element": "angin",
+      "role": "penembak",
+      "sources": ["quest"],
+      "recipe": null
+    },
+    {
+      "id": "kirin",
+      "name": "Kirin",
+      "description": "Makhluk bertanduk satu bertubuh rusa bersisik emas, surai seperti petir, kuku tak menyentuh tanah.",
+      "tier": 7,
+      "element": "lightning",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "storm-colossus", "parentB": "elder-treant" }
+    },
+    {
+      "id": "nemean-lion",
+      "name": "Nemean Lion",
+      "description": "Singa raksasa berkulit keemasan sekeras batu, surai tebal seperti pasir gurun.",
+      "tier": 7,
+      "element": "tanah",
+      "role": "penahan",
+      "sources": ["achievement"],
+      "recipe": null
+    },
+    {
+      "id": "sphinx-oracle",
+      "name": "Sphinx Oracle",
+      "description": "Singa bersayap berwajah manusia bijak, mahkota bergaris biru-emas, mata yang memantulkan ilusi.",
+      "tier": 7,
+      "element": "arcane",
+      "role": "penembak",
+      "sources": ["quest", "altar"],
+      "recipe": { "parentA": "lich-acolyte", "parentB": "griffin" }
+    },
+    {
+      "id": "archangel-commander",
+      "name": "Archangel Commander",
+      "description": "Panglima bersayap enam, zirah emas, pedang cahaya, lingkaran cahaya di belakang kepala.",
+      "tier": 7,
+      "element": "light",
+      "role": "petarung",
+      "sources": ["event", "altar"],
+      "recipe": { "parentA": "ironclad-paladin", "parentB": "valkyrie-initiate" }
+    },
+    {
+      "id": "leviathan",
+      "name": "Leviathan",
+      "description": "Monster laut raksasa mirip paus bersisik, sirip seperti layar, gelombang mengikuti geraknya.",
+      "tier": 7,
+      "element": "air",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "kraken-spawn", "parentB": "hydra" }
+    },
+    {
+      "id": "eclipse-dragon",
+      "name": "Eclipse Dragon",
+      "description": "Naga hitam dengan cincin cahaya redup di dada, sayap yang menelan sinar di sekitarnya.",
+      "tier": 7,
+      "element": "dark",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "dullahan-reaper", "parentB": "frost-dragon" }
+    },
+    {
+      "id": "valkyrie-queen",
+      "name": "Valkyrie Queen",
+      "description": "Ratu prajurit bersayap besar, mahkota bersayap, tombak cahaya dan jubah putih berkibar.",
+      "tier": 7,
+      "element": "light",
+      "role": "petarung",
+      "sources": ["altar"],
+      "recipe": { "parentA": "ironclad-paladin", "parentB": "griffin" }
+    },
+    {
+      "id": "soul-devourer",
+      "name": "Soul Devourer",
+      "description": "Makhluk bertudung tanpa wajah, mulut bercahaya hampa di dada, menyerap roh musuh yang gugur.",
+      "tier": 7,
+      "element": "void",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "dullahan-reaper", "parentB": "arachne-matriarch" }
+    },
+
+    {
+      "id": "tiamat",
+      "name": "Tiamat",
+      "description": "Naga purba laut berkepala lima, tiap kepala bercorak warna berbeda, tubuh berombak seperti samudra.",
+      "tier": 8,
+      "element": "air",
+      "role": "penahan",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "nightmaw-the-black",
+      "name": "Nightmaw the Black",
+      "description": "Naga hitam kolosal bersisik obsidian, sayap menutupi langit, napas api hitam.",
+      "tier": 8,
+      "element": "magma",
+      "role": "petarung",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "typhon",
+      "name": "Typhon",
+      "description": "Raksasa badai bertubuh atas manusia dan bawah ular-ular, sayap petir, mata seperti pusaran angin.",
+      "tier": 8,
+      "element": "angin",
+      "role": "penembak",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "cthulhu",
+      "name": "Cthulhu",
+      "description": "Entitas kosmik berkepala gurita, sayap selaput kecil, tubuh hijau gelap berkilau; bisikannya membingungkan lawan.",
+      "tier": 8,
+      "element": "void",
+      "role": "penembak",
+      "sources": ["event"],
+      "recipe": null
+    },
+    {
+      "id": "world-eater-wyrm",
+      "name": "World Eater Wyrm",
+      "description": "Naga cacing raksasa sebesar pegunungan, mulut bulat bergigi berlapis, sisik batu.",
+      "tier": 8,
+      "element": "tanah",
+      "role": "penahan",
+      "sources": ["altar"],
+      "recipe": { "parentA": "behemoth", "parentB": "jormungandr" }
+    },
+    {
+      "id": "aetherion",
+      "name": "Aetherion",
+      "description": "Naga kristal bening dengan inti bintang di dada, sayap prisma yang membelokkan ruang.",
+      "tier": 8,
+      "element": "arcane",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "bahamut", "parentB": "sphinx-oracle" }
+    },
+    {
+      "id": "death-sovereign",
+      "name": "Death Sovereign",
+      "description": "Raja kerangka bermahkota hitam di atas singgasana tulang melayang, jubah kabut, tongkat penguasa jiwa.",
+      "tier": 8,
+      "element": "dark",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "eclipse-dragon", "parentB": "soul-devourer" }
+    },
+    {
+      "id": "astral-behemoth",
+      "name": "Astral Behemoth",
+      "description": "Binatang kosmik bertubuh langit malam, rasi bintang di kulitnya, meteor kecil mengorbit tubuhnya.",
+      "tier": 8,
+      "element": "light",
+      "role": "penahan",
+      "sources": ["event"],
+      "recipe": null
+    },
+    {
+      "id": "primordial-titan",
+      "name": "Primordial Titan",
+      "description": "Titan purba dari es dan batu zaman awal, janggut gletser, langkahnya meretakkan tanah.",
+      "tier": 8,
+      "element": "ice",
+      "role": "penahan",
+      "sources": ["boss"],
+      "recipe": null
+    },
+    {
+      "id": "void-hydra-emperor",
+      "name": "Void Hydra Emperor",
+      "description": "Hydra bermahkota dengan kepala yang tiap-tiapnya berpendar warna elemen berbeda, tubuh hampa berbintang.",
+      "tier": 8,
+      "element": "void",
+      "role": "penembak",
+      "sources": ["altar"],
+      "recipe": { "parentA": "hydra", "parentB": "leviathan" }
+    },
+    {
+      "id": "godslayer-knight",
+      "name": "Godslayer Knight",
+      "description": "Ksatria berzirah hitam bergaris emas, pedang raksasa yang menyambarkan petir, jubah robek.",
+      "tier": 8,
+      "element": "lightning",
+      "role": "petarung",
+      "sources": ["quest"],
+      "recipe": null
+    },
+    {
+      "id": "the-first-chimera",
+      "name": "The First Chimera",
+      "description": "Makhluk puncak gabungan banyak spesies: kepala singa, naga dan elang, sayap kristal, ekor ular berbulu.",
+      "tier": 8,
+      "element": "normal",
+      "role": "petarung",
+      "sources": ["achievement", "altar"],
+      "recipe": { "parentA": "sphinx-oracle", "parentB": "leviathan" }
+    }
+  ]
+}
