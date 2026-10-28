@@ -1010,22 +1010,52 @@ const DESIGNS: Record<string, Design> = {
     },
   },
   guild: {
-    top: 90,
+    top: 96,
     draw(p, level) {
       p.flat(0.02, 0.02, 0.98, 0.98, 0xc2b38e);
-      const h = 32 + level * 4;
+      const h = 32 + level * 5;
       const wall = p.box(0.15, 0.15, 0.85, 0.85, h, 0x9c9caa);
-      wall.right(0.4, 0.6, 0, h * 0.5, 0x4a3520);
-      wall.left(0.2, 0.3, h * 0.6, h * 0.8, 0x2c2c38);
-      wall.left(0.7, 0.8, h * 0.6, h * 0.8, 0x2c2c38);
-      wall.right(0.12, 0.28, h * 0.25, h * 0.9, 0xc0392b);
-      wall.right(0.72, 0.88, h * 0.25, h * 0.9, 0xc0392b);
+      // Double wooden gate
+      wall.right(0.4, 0.6, 0, h * 0.52, 0x4a3520);
+      // Slit arrow windows
+      wall.left(0.2, 0.3, h * 0.55, h * 0.78, 0x2c2c38);
+      wall.left(0.7, 0.8, h * 0.55, h * 0.78, 0x2c2c38);
+      // Guild banners flanking gate
+      wall.right(0.12, 0.28, h * 0.2, h * 0.88, 0xc0392b);
+      wall.right(0.72, 0.88, h * 0.2, h * 0.88, 0xc0392b);
+
+      // Mission notice board on the front right courtyard wall
+      const board = p.box(0.2, 0.86, 0.36, 0.91, 14, 0x6d4c41);
+      board.right(0.1, 0.9, 0.2, 0.85, 0xe0d6b5);
+
+      // Battlements
       for (let i = 0; i < 4; i++) {
         const t = 0.15 + i * 0.2;
         p.box(t, 0.77, t + 0.1, 0.85, 8, 0x9c9caa, h);
         p.box(0.77, t, 0.85, t + 0.1, 8, 0x9c9caa, h);
       }
-      flag(p, p.fp(0.2, 0.2, h), 30, 0xc0392b);
+
+      // Torches beside entrance (Lv 2+)
+      if (level >= 2) {
+        p.line(p.fp(0.38, 0.86, h * 0.35), p.fp(0.38, 0.86, h * 0.45), 0x3e2723, 1.8);
+        p.ellipse(p.fp(0.38, 0.86, h * 0.47), 3, 2, 0xff9800);
+        p.line(p.fp(0.62, 0.86, h * 0.35), p.fp(0.62, 0.86, h * 0.45), 0x3e2723, 1.8);
+        p.ellipse(p.fp(0.62, 0.86, h * 0.47), 3, 2, 0xff9800);
+      }
+
+      // Crossed gold swords / warrior crest above gate (Lv 3+)
+      if (level >= 3) {
+        p.ellipse(p.fp(0.5, 0.86, h * 0.65), 5, 3, 0xf5c542, 0xa87b14);
+      }
+
+      // Corner watchtower / strategy balcony (Lv 4+)
+      if (level >= 4) {
+        p.box(0.7, 0.7, 0.88, 0.88, 14, 0x8a8a98, h);
+        flag(p, p.fp(0.79, 0.79, h + 14), 22, 0xf5c542);
+      }
+
+      // Main guild flag
+      flag(p, p.fp(0.2, 0.2, h), 32, 0xc0392b);
     },
   },
   barak: {

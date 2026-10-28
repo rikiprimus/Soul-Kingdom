@@ -63,6 +63,8 @@ import {
   unitHp,
   unitMaxHp,
   researchRemaining,
+  guildMaxMembers,
+  guildSerbuRewardBonus,
   techDef,
   trainingRemaining,
   townHallLevel,
@@ -676,9 +678,21 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
         }
         break;
       }
-      case 'serbu':
+      case 'serbu': {
         content.lines.push(t('info.powerCap', { cap: serbuPowerCap(state) }));
+        const lvl = b.level;
+        const maxMem = guildMaxMembers(lvl);
+        const bonusPct = Math.round(guildSerbuRewardBonus(lvl) * 100);
+        content.lines.push(t('info.guildMembers', { n: maxMem }));
+        if (bonusPct > 0) {
+          content.lines.push(t('info.guildSerbuBonus', { pct: bonusPct }));
+        }
         if (b.level >= 1) {
+          buttons.push({
+            label: t('info.openGuild'),
+            color: COLORS.accent,
+            onClick: () => a.openPanel('guild'),
+          });
           buttons.push({
             label: t('info.openSerbu'),
             color: COLORS.danger,
@@ -686,6 +700,7 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
           });
         }
         break;
+      }
       case 'adventure':
         content.lines.push(
           t('info.adventureProgress', {

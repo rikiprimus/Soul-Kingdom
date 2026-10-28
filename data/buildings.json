@@ -723,27 +723,27 @@
       "feature": "serbu",
       "category": "militer",
       "size": 3,
-      "maxCount": [1, 1, 1, 1, 1, 1, 1, 1],
+      "maxCount": [0, 0, 1, 1, 1, 1, 1, 1],
       "levels": [
-        { "cost": { "gold": 600, "wood": 300 }, "seconds": 300, "requiresTownHall": 1 },
+        { "cost": { "gold": 600, "wood": 300 }, "seconds": 300, "requiresTownHall": 3 },
         {
           "cost": { "gold": 2000, "food": 300, "wood": 600, "stone": 200 },
-          "seconds": 900,
+          "seconds": 1200,
           "requiresTownHall": 3
         },
         {
           "cost": { "gold": 6000, "food": 800, "wood": 1200, "stone": 600 },
-          "seconds": 1800,
+          "seconds": 3600,
           "requiresTownHall": 4
         },
         {
           "cost": { "gold": 15000, "food": 2000, "wood": 2500, "stone": 1500 },
-          "seconds": 3600,
+          "seconds": 7200,
           "requiresTownHall": 5
         },
         {
           "cost": { "gold": 40000, "food": 5000, "wood": 5000, "stone": 3000 },
-          "seconds": 7200,
+          "seconds": 21600,
           "requiresTownHall": 6
         }
       ]

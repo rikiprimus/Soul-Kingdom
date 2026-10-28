@@ -1163,9 +1163,19 @@ Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) 
 > - **Client:** Seni buatan kode untuk `perpustakaan` Lv 1–5 (gedung batu kubah, jendela lengkung rak buku, tangga batu, spanduk, kubah observatorium dengan teleskop kuningan Lv 3+, lentera kristal Lv 5). Kartu info gedung: progres riset selesai, info aktif, timer hitung mundur, tombol Buka & Percepat. Panel `ResearchView`: tab 3 cabang, kartu teknologi 5 tingkat dengan status/biaya/syarat, bilah progres & tombol percepat aktif, petunjuk resep rahasia Altar.
 > - **Tes:** `research.test.ts` (12 tes baru: level & antrean, syarat buka, potong biaya, antrean Lv 5, penyelesaian & antrean berjalan, percepat permata, integrasi settleVillage, efek pasif di semua sistem, petunjuk resep rahasia, migrasi simpanan v31, aksi server). Semua 436 tes lulus (`pnpm test`), `pnpm typecheck`, `pnpm lint`.
 
-### - [ ] Tugas 1C.12 — Guild komunitas
+### - [x] Tugas 1C.12 — Guild komunitas
 
 - Setelah Tugas 2.1: buat / gabung guild, misi guild yang menambah pengalaman guild, perang guild. Level bangunan Guild menaikkan anggota maksimal (10–30) dan hadiah Serbu & misi guild. Guild terbuka di Balai 3 dan tetap menjadi pintu masuk Serbu.
+
+> **Ringkasan (selesai 2026-10-28):**
+>
+> - **Data:** Bangunan **Guild** (`guild`, feature `serbu`, Militer 3×3, Balai 3, maks 1, 5 level dengan biaya dan waktu dari `docs/OBJEK.md`, `maxCount` `[0, 0, 1, 1, 1, 1, 1, 1]`). `rules.guild`: `maxMembersByLevel: [10, 15, 20, 25, 30]`, `serbuRewardBonusByLevel: [0, 0.05, 0.10, 0.15, 0.20]`. Teks UI lengkap di `data/text.json`. Validasi silang skema zod di `schema.ts` dan `load.ts`.
+> - **Shared (`guild.ts`, baru):** `guildLevel` (level tertinggi yang selesai dibangun di desa), `guildMaxMembers` (kapasitas anggota guild 10–30), `guildSerbuRewardBonus` (bonus perolehan hadiah Serbu +0% s.d. +20%). Diintegrasikan ke `serbu.ts` (`attackBase`): kemenangan Serbu melipatgandakan perolehan sumber daya (emas, makanan, kayu, batu) dengan faktor bonus `1 + guildSerbuRewardBonus`.
+> - **Client:**
+>   - Seni buatan kode untuk `guild` Lv 1–5 di `buildingArt.ts` diperkaya dengan papan misi kayu di dinding depan, gerbang kayu ganda, spanduk guild merah, obor dinding menyala (Lv 2+), lambang pedang/perisai emas di atas gerbang (Lv 3+), balkon strategi/menara pengawas dan bendera emas tambahan (Lv 4+).
+>   - Kartu info gedung (`case 'serbu'`) menampilkan kapasitas anggota pejuang, bonus hadiah Serbu, tombol **Buka Guild** dan **Buka Serbu**.
+>   - Panel baru `GuildView` (`PanelKind = 'guild'`) menampilkan ringkasan status markas pejuang, metrik kapasitas anggota dan bonus hadiah, tombol cepat Serbu Markas Musuh, rincian level 1–5 dengan syarat Balai, serta pratinjau fitur komunitas online untuk Fase 2.
+> - **Tes:** `guild.test.ts` (5 tes: level terdeteksi, kapasitas anggota, bonus hadiah Serbu per level, integrasi bonus hadiah `attackBase` saat menang Serbu, syarat Balai 3) dan validasi di `data.test.ts`. Total 442 tes lulus (`pnpm test`), `pnpm typecheck`, `pnpm lint`, dan `pnpm build:server`.
 
 **Gerbang Fase 1C:** semua objek di `docs/OBJEK.md` ada di game (atau sengaja ditunda dengan catatan), simulasi ekonomi 14 hari tetap masuk akal.
 

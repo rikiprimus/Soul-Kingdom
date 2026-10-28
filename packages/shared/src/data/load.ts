@@ -544,6 +544,24 @@ export function loadGameData(raw: RawGameData): GameData {
     }
   }
 
+  const guildBldg = buildingInfo.buildingById.get(rules.guild.building);
+  if (!guildBldg) {
+    issues.push(`rules.json: guild.building "${rules.guild.building}" tidak ada di buildings.json`);
+  } else if (guildBldg.feature !== 'serbu') {
+    issues.push(`rules.json: guild.building "${rules.guild.building}" harus punya feature "serbu"`);
+  } else {
+    if (rules.guild.maxMembersByLevel.length !== guildBldg.levels.length) {
+      issues.push(
+        `rules.json: guild.maxMembersByLevel harus berisi ${guildBldg.levels.length} angka (satu per level Guild)`,
+      );
+    }
+    if (rules.guild.serbuRewardBonusByLevel.length !== guildBldg.levels.length) {
+      issues.push(
+        `rules.json: guild.serbuRewardBonusByLevel harus berisi ${guildBldg.levels.length} angka (satu per level Guild)`,
+      );
+    }
+  }
+
   if (issues.length > 0) throw new DataValidationError(issues);
 
   return {

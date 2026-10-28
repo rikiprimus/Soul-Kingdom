@@ -17,6 +17,7 @@ import type { ActionError, ActionResult, PlayerState } from './state';
 import { townHallLevel } from './village';
 import { machineFighter, machinePower, workshopLevel } from './workshop';
 import { getResearchBonus } from './research';
+import { guildLevel, guildSerbuRewardBonus } from './guild';
 
 /** An NPC base to attack in Serbu (`rules.serbu.bases`). */
 export type SerbuBase = GameData['rules']['serbu']['bases'][number];
@@ -308,7 +309,17 @@ export function attackBase(
     params.cells,
     base.defenders,
     (next) => {
-      const reward = { ...(first ? base.firstReward : base.repeatReward) };
+      const baseReward = first ? base.firstReward : base.repeatReward;
+      const gBonus = guildSerbuRewardBonus(guildLevel(next, data), data);
+      const mult = 1 + gBonus;
+      const reward: BattleReward = {
+        gold: Math.round(baseReward.gold * mult),
+        food: Math.round(baseReward.food * mult),
+        wood: Math.round((baseReward.wood ?? 0) * mult),
+        stone: Math.round((baseReward.stone ?? 0) * mult),
+        soulCrystal: baseReward.soulCrystal ?? 0,
+        gems: baseReward.gems ?? 0,
+      };
       payReward(next, reward);
       if (first) next.serbu.cleared.push(base.id);
       return reward;

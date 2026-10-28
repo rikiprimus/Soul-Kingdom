@@ -31,5 +31,6 @@ export * from './workshop';
 export * from './healing';
 export * from './social';
 export * from './research';
+export * from './guild';
 export * from './server/actions';
 export * from './server/handler';

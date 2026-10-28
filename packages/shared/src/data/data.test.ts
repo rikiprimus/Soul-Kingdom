@@ -252,4 +252,25 @@ describe('game data', () => {
       /healPercentPerMinute/,
     );
   });
+
+  it('validates rules.guild configuration against guild building levels', () => {
+    expectRejected(
+      corrupt((raw) => {
+        raw.rules.guild.building = 'unknown-guild';
+      }),
+      /guild\.building.*tidak ada/,
+    );
+    expectRejected(
+      corrupt((raw) => {
+        raw.rules.guild.maxMembersByLevel = [10, 20];
+      }),
+      /guild\.maxMembersByLevel/,
+    );
+    expectRejected(
+      corrupt((raw) => {
+        raw.rules.guild.serbuRewardBonusByLevel = [0, 0.05];
+      }),
+      /guild\.serbuRewardBonusByLevel/,
+    );
+  });
 });

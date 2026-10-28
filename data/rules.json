@@ -596,6 +596,12 @@
       }
     ]
   },
+  "guild": {
+    "_note": "Tugas 1C.12: Guild komunitas. Level bangunan menaikkan kapasitas anggota guild dan bonus hadiah Serbu & misi guild.",
+    "building": "guild",
+    "maxMembersByLevel": [10, 15, 20, 25, 30],
+    "serbuRewardBonusByLevel": [0, 0.05, 0.1, 0.15, 0.2]
+  },
   "population": {
     "_note": "Populasi dari Balai Utama dan Rumah (buildings.json). Pekerja memakai workerSlots; monster memakai battle.powerPoints sesuai tingkat wujud (bayi dan dewasa sama); prajurit memakai poin kekuatannya. Populasi dari dekorasi dibatasi per level Balai: decorationCapByTownHall[level Balai - 1] (keputusan pemilik 2026-10-26, Tugas 1C.4).",
     "workerSlots": 1,

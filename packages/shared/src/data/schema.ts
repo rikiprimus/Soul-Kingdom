@@ -416,6 +416,12 @@ export const rulesFileSchema = z.object({
     branches: z.array(researchTechBranchSchema).min(1),
     techs: z.array(researchTechSchema).min(1),
   }),
+  /** Guild komunitas & pintu Serbu (Tugas 1C.12). */
+  guild: z.object({
+    building: z.string().min(1),
+    maxMembersByLevel: z.array(z.number().int().positive()).min(1),
+    serbuRewardBonusByLevel: z.array(z.number().min(0)).min(1),
+  }),
   workers: z.object({
     trainFood: nonNegInt,
     /** Seconds to train one worker, one entry per Balai Utama level. */
