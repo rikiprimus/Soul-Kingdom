@@ -19,6 +19,7 @@ export * from './aggro';
 export * from './encounters';
 export * from './raids';
 export * from './serbu';
+export * from './serbuPvp';
 export * from './adventure';
 export * from './player';
 export * from './quests';

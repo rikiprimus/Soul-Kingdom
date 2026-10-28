@@ -292,6 +292,17 @@ export const rulesFileSchema = z.object({
     /** Columns each side may start in, from its own edge. */
     placeColumns: z.number().int().min(1),
     trackEveryTicks: z.number().int().min(1),
+    pvp: z
+      .object({
+        minTownHall: z.number().int().min(1),
+        matchmakingCostGold: nonNegInt,
+        trophiesStarting: z.number().int().min(0),
+        trophiesPerWin: z.number().int().min(1),
+        trophiesPerLoss: z.number().int().min(1),
+        lootStealRatio: probability,
+        maxHistory: z.number().int().min(1),
+      })
+      .optional(),
     bases: z
       .array(
         z.object({

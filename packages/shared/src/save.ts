@@ -17,7 +17,7 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 32;
+export const SAVE_SCHEMA_VERSION = 33;
 
 const int = z.number().int();
 const villageAmountSchema = z.object({
@@ -106,6 +106,40 @@ const villageSchema = z.object({
   ),
   encountersAt: z.number(),
   raidClock: z.number().min(0),
+});
+
+import type { SerbuResult } from './serbu';
+
+const pvpDefenseCellSchema = z.object({
+  id: z.string(),
+  x: int.min(0),
+  y: int.min(0),
+});
+
+const pvpDefenseLogEntrySchema = z.object({
+  id: z.string(),
+  attackerId: z.string(),
+  attackerName: z.string(),
+  attackerLevel: int.min(1),
+  attackerPower: int.min(0),
+  won: z.boolean(),
+  trophyChange: int,
+  stolen: z.object({
+    gold: int.min(0),
+    food: int.min(0),
+    wood: int.min(0),
+    stone: int.min(0),
+    soulCrystal: int.min(0),
+    gems: int.min(0),
+  }),
+  timestamp: z.number(),
+  replay: z.custom<SerbuResult>((val) => val !== undefined),
+});
+
+const pvpStateSchema = z.object({
+  defenseCells: z.array(pvpDefenseCellSchema),
+  trophies: int.min(0),
+  history: z.array(pvpDefenseLogEntrySchema),
 });
 
 const playerStateSchema = z.object({
@@ -238,6 +272,7 @@ const playerStateSchema = z.object({
   pedia: z.object({ monsters: z.array(z.string()), recipes: z.array(z.string()) }),
   pityStreak: int.min(0),
   serbu: z.object({ cleared: z.array(z.string()) }),
+  pvp: pvpStateSchema,
   adventure: z.object({
     cleared: z.array(z.string()),
     refillAt: z.record(z.string(), z.number()),
@@ -649,6 +684,12 @@ const migrations: Record<number, (state: unknown) => unknown> = {
   31: (raw) => {
     const state = raw as PlayerState;
     state.research = { completed: [], active: null, queue: [] };
+    return state;
+  },
+  // v32 (Tugas 2.2) added Serbu PvP markas pemain lain & log pertahanan.
+  32: (raw) => {
+    const state = raw as PlayerState;
+    state.pvp = { defenseCells: [], trophies: 1000, history: [] };
     return state;
   },
 };

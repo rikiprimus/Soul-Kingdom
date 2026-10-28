@@ -33,6 +33,7 @@ import type { AdventureProgress } from './adventure';
 import type { SerbuProgress } from './serbu';
 import type { DailyBonus, QuestProgress } from './quests';
 import type { Healing } from './healing';
+import type { PvpState } from './serbuPvp';
 import type { MarketDraw } from './market';
 import type { Machine, WorkshopBuild } from './workshop';
 import type { SoulEgg } from './nest';
@@ -139,6 +140,8 @@ export interface PlayerState {
   pityStreak: number;
   /** Serbu against NPC bases: which ones have been beaten. */
   serbu: SerbuProgress;
+  /** Serbu against other player bases (Tugas 2.2). */
+  pvp: PvpState;
   /** Petualangan: nodes beaten, and when taken resource nodes come back. */
   adventure: AdventureProgress;
   rngState: RngState;
@@ -306,6 +309,7 @@ export function createInitialState(
     pedia: { monsters: [], recipes: [] },
     pityStreak: 0,
     serbu: { cleared: [] },
+    pvp: { defenseCells: [], trophies: 1000, history: [] },
     adventure: { cleared: [], refillAt: {} },
     rngState: seed >>> 0,
     nextId: 1,

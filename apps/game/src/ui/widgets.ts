@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { cssSize, dpr } from './dpr';
 import { contentBottom, uiLayout } from './layout';
-import { COLORS, hex, textStyle } from './theme';
+import { COLORS, FONT, hex, textStyle } from './theme';
 import { t } from '../text';
 import { playSfx } from '../audio/sound';
 import type { SoundId } from '../audio/synth';
@@ -586,6 +586,108 @@ export function confirmDialog(scene: Phaser.Scene, message: string, onYes: () =>
         modal.close();
         onYes();
       },
+    }),
+  );
+}
+
+export interface InputDialogOptions {
+  title: string;
+  placeholder?: string;
+  initialValue?: string;
+  maxLength?: number;
+  submitLabel?: string;
+  onSubmit: (value: string) => void;
+}
+
+/** In-game input dialog with an HTML text input overlay. Replaces window.prompt. */
+export function inputDialog(scene: Phaser.Scene, opts: InputDialogOptions): void {
+  const { width } = scene.scale;
+  const mw = Math.min(width - 32, 360);
+  const mh = 175;
+  const modal = new Modal(scene, { width: mw, height: mh, title: opts.title, dismissible: true });
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = opts.initialValue ?? '';
+  input.placeholder = opts.placeholder ?? '';
+  if (opts.maxLength) input.maxLength = opts.maxLength;
+
+  input.style.position = 'fixed';
+  input.style.zIndex = '1000';
+  input.style.fontFamily = FONT;
+  input.style.fontSize = '14px';
+  input.style.color = '#f4f0ff';
+  input.style.backgroundColor = '#1d1736';
+  input.style.border = '1.5px solid #8a6cff';
+  input.style.borderRadius = '8px';
+  input.style.padding = '8px 12px';
+  input.style.boxSizing = 'border-box';
+  input.style.outline = 'none';
+
+  const updatePos = () => {
+    const canvas = scene.game.canvas;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width / scene.scale.width;
+    const scaleY = rect.height / scene.scale.height;
+
+    const modalScreenX = rect.left + modal.panel.x * scaleX;
+    const modalScreenY = rect.top + modal.panel.y * scaleY;
+    const inputW = (mw - 40) * scaleX;
+    const inputH = 38 * scaleY;
+
+    input.style.left = `${modalScreenX + 20 * scaleX}px`;
+    input.style.top = `${modalScreenY + 54 * scaleY}px`;
+    input.style.width = `${inputW}px`;
+    input.style.height = `${inputH}px`;
+  };
+
+  updatePos();
+  document.body.appendChild(input);
+  setTimeout(() => input.focus(), 60);
+
+  let cleaned = false;
+  const cleanUp = () => {
+    if (cleaned) return;
+    cleaned = true;
+    if (input.parentNode) input.parentNode.removeChild(input);
+    window.removeEventListener('resize', updatePos);
+  };
+  window.addEventListener('resize', updatePos);
+
+  const originalClose = modal.close.bind(modal);
+  modal.close = () => {
+    cleanUp();
+    originalClose();
+  };
+
+  const submit = () => {
+    const val = input.value.trim();
+    modal.close();
+    if (val) opts.onSubmit(val);
+  };
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submit();
+    if (e.key === 'Escape') modal.close();
+  });
+
+  const bw = (mw - 40 - 10) / 2;
+  modal.panel.add(
+    new Button(scene, 20 + bw / 2, 132, {
+      width: bw,
+      height: 36,
+      label: t('dialog.no'),
+      color: COLORS.panelLight,
+      onClick: () => modal.close(),
+    }),
+  );
+  modal.panel.add(
+    new Button(scene, 20 + bw * 1.5 + 10, 132, {
+      width: bw,
+      height: 36,
+      label: opts.submitLabel ?? t('dialog.yes'),
+      color: COLORS.good,
+      onClick: submit,
     }),
   );
 }

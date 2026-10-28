@@ -1,9 +1,15 @@
 import Phaser from 'phaser';
 import {
   adventureNode,
+  attackPlayerBase,
+  calculateDefensePower,
+  createDefenseSnapshot,
+  createRng,
+  defaultDefenseCells,
   defendersPower,
   gameData,
   maxFormTier,
+  matchmakeOpponents,
   nodeStatus,
   regionStatus,
   getForm,
@@ -17,10 +23,13 @@ import {
   soldierName,
   machineDef,
   machineName,
+  townHallLevel,
   workshopLevel,
   type AdventureNode,
   type BattleEvent,
   type Defender,
+  type PvpDefenseLogEntry,
+  type PvpDefenseSnapshot,
   type SerbuBase,
   type SerbuResult,
 } from '@soul-monster/shared';
@@ -35,7 +44,7 @@ import { errorText, formatDuration, formatNumber, t } from '../text';
 import { rewardLabel } from '../ui/cost';
 import { cssSize, dpr } from '../ui/dpr';
 import { COLORS, textStyle } from '../ui/theme';
-import { Button, roundedPanel, ScrollArea, toast } from '../ui/widgets';
+import { Button, Modal, roundedPanel, ScrollArea, toast } from '../ui/widgets';
 
 /** What a fighter on the Serbu field looks like. */
 type UnitLook =
@@ -85,7 +94,10 @@ interface Target {
   node?: AdventureNode;
 }
 
-function targetOf(id: string): Target | null {
+function targetOf(id: string, pvpOpponent?: PvpDefenseSnapshot | null): Target | null {
+  if (pvpOpponent && pvpOpponent.id === id) {
+    return { name: pvpOpponent.name, defenders: [] };
+  }
   const base = serbuBase(id);
   if (base) return { name: base.name, defenders: base.defenders };
   const found = adventureNode(id);
@@ -138,6 +150,12 @@ export class SerbuScene extends Phaser.Scene {
   private mode: 'list' | 'place' | 'replay' = 'list';
   /** Serbu bases, or the Petualangan map. */
   private source: 'serbu' | 'adventure' = 'serbu';
+  /** Current tab in Serbu: 'npc' or 'pvp' */
+  private serbuTab: 'npc' | 'pvp' = 'npc';
+  /** Matched PvP opponent */
+  private pvpOpponent: PvpDefenseSnapshot | null = null;
+  /** Whether we are currently in defense layout editing mode */
+  private isSettingDefense = false;
   /** The base or node being attacked. */
   private targetId = '';
   /** Petualangan: the region shown and the node picked on its map. */
@@ -158,6 +176,10 @@ export class SerbuScene extends Phaser.Scene {
   };
   private replay?: Replay;
   private resultPanel?: Phaser.GameObjects.Container;
+
+  private targetOf(id: string): Target | null {
+    return targetOf(id, this.pvpOpponent);
+  }
 
   constructor(private readonly store: GameStore) {
     super('serbu');
@@ -204,6 +226,9 @@ export class SerbuScene extends Phaser.Scene {
   private back() {
     if (this.mode === 'replay') return;
     if (this.mode === 'place') {
+      if (this.isSettingDefense) {
+        this.isSettingDefense = false;
+      }
       this.mode = 'list';
       this.render();
     } else {
@@ -263,8 +288,42 @@ export class SerbuScene extends Phaser.Scene {
   private renderList() {
     const { width, height } = this.size;
     const cap = serbuPowerCap(this.store.state);
+    const topSubTabs = 50;
+    const subTabW = Math.min(160, Math.floor((width - 32) / 2));
+    this.layer!.add([
+      new Button(this, width / 2 - subTabW / 2 - 4, topSubTabs, {
+        width: subTabW,
+        height: 28,
+        fontSize: 12,
+        label: t('serbu.tabNpc'),
+        color: this.serbuTab === 'npc' ? COLORS.accent : COLORS.panelLight,
+        onClick: () => {
+          this.serbuTab = 'npc';
+          this.render();
+        },
+      }),
+      new Button(this, width / 2 + subTabW / 2 + 4, topSubTabs, {
+        width: subTabW,
+        height: 28,
+        fontSize: 12,
+        label: t('serbu.tabPvp'),
+        color: this.serbuTab === 'pvp' ? COLORS.accent : COLORS.panelLight,
+        onClick: () => {
+          this.serbuTab = 'pvp';
+          this.render();
+        },
+      }),
+    ]);
+
+    const top = 72;
+    if (this.serbuTab === 'pvp') {
+      const trophies = this.store.state.pvp?.trophies ?? 1000;
+      this.header(t('serbu.title'), t('serbu.pvpTrophies', { n: trophies }));
+      this.renderPvp(top);
+      return;
+    }
+
     this.header(t('serbu.title'), t('serbu.cap', { cap }));
-    const top = 44;
     const area = new ScrollArea(this, new Phaser.Geom.Rectangle(0, top, width, height - top), 1);
     this.scroll = area;
     const cardW = Math.min(width - 24, 760);
@@ -276,6 +335,372 @@ export class SerbuScene extends Phaser.Scene {
       y += cardH + 8;
     }
     area.setContentHeight(y + 8);
+  }
+
+  private renderPvp(top: number) {
+    const { width, height } = this.size;
+    const state = this.store.state;
+    const minTh = gameData.rules.serbu.pvp?.minTownHall ?? 2;
+    const unlocked = townHallLevel(state) >= minTh;
+
+    const area = new ScrollArea(this, new Phaser.Geom.Rectangle(0, top, width, height - top), 1);
+    this.scroll = area;
+    const cardW = Math.min(width - 24, 760);
+    const x = Math.round((width - cardW) / 2);
+    let y = 4;
+
+    if (!unlocked) {
+      const lockedCard = this.add.container(x, y);
+      lockedCard.add(roundedPanel(this, 0, 0, cardW, 100, COLORS.panelDark));
+      lockedCard.add([
+        this.add
+          .text(
+            cardW / 2,
+            35,
+            t('adventure.region.townHall', { level: minTh }),
+            textStyle(14, COLORS.danger, { fontStyle: 'bold' }),
+          )
+          .setOrigin(0.5),
+        this.add
+          .text(
+            cardW / 2,
+            65,
+            'Tingkatkan Balai Desa untuk membuka Serbu Pemain (PvP).',
+            textStyle(12, COLORS.textDim),
+          )
+          .setOrigin(0.5),
+      ]);
+      area.content.add(lockedCard);
+      area.setContentHeight(120);
+      return;
+    }
+
+    // Player Status Card
+    const statusH = 120;
+    const statusCard = this.add.container(x, y);
+    statusCard.add(roundedPanel(this, 0, 0, cardW, statusH, COLORS.panel));
+
+    const trophies = state.pvp?.trophies ?? 1000;
+    const defCells = state.pvp?.defenseCells?.length
+      ? state.pvp.defenseCells
+      : defaultDefenseCells(state);
+    const defPower = calculateDefensePower(state, defCells);
+
+    statusCard.add([
+      this.add.text(16, 14, t('serbu.tabPvp'), textStyle(16, COLORS.gold, { fontStyle: 'bold' })),
+      this.add.text(
+        16,
+        40,
+        `🏆 ${t('serbu.pvpTrophies', { n: trophies })} · ⚡ Kekuatan Bertahan: ${defPower.toFixed(1)}`,
+        textStyle(13, COLORS.text),
+      ),
+      this.add.text(
+        16,
+        64,
+        `Susunan Bertahan: ${defCells.length} unit ditempatkan`,
+        textStyle(11, COLORS.textDim),
+      ),
+    ]);
+
+    const btnW = Math.min(180, (cardW - 32 - 16) / 3);
+    const costGold = gameData.rules.serbu.pvp?.matchmakingCostGold ?? 50;
+
+    // Button: Cari Lawan
+    statusCard.add(
+      new Button(this, 16 + btnW / 2, statusH - 24, {
+        width: btnW,
+        height: 32,
+        fontSize: 11,
+        label: `${t('serbu.pvpMatchmake')} (${costGold} 🪙)`,
+        color: COLORS.accent,
+        onClick: () => void this.findOpponent(),
+      }),
+    );
+
+    // Button: Atur Pertahanan
+    statusCard.add(
+      new Button(this, 16 + btnW + 8 + btnW / 2, statusH - 24, {
+        width: btnW,
+        height: 32,
+        fontSize: 11,
+        label: t('serbu.pvpDefense'),
+        color: COLORS.accentDark,
+        onClick: () => this.startSetDefense(),
+      }),
+    );
+
+    // Button: Log Pertahanan
+    const historyCount = state.pvp?.history?.length ?? 0;
+    statusCard.add(
+      new Button(this, 16 + (btnW + 8) * 2 + btnW / 2, statusH - 24, {
+        width: btnW,
+        height: 32,
+        fontSize: 11,
+        label: `${t('serbu.pvpHistory')} (${historyCount})`,
+        color: COLORS.panelLight,
+        onClick: () => this.openHistory(),
+      }),
+    );
+
+    area.content.add(statusCard);
+    y += statusH + 12;
+
+    // Opponent Card (if matched)
+    if (this.pvpOpponent) {
+      const opp = this.pvpOpponent;
+      const oppH = 140;
+      const oppCard = this.add.container(x, y);
+      oppCard.add(roundedPanel(this, 0, 0, cardW, oppH, COLORS.panelDark, COLORS.accentDark, 10));
+
+      const ratio = gameData.rules.serbu.pvp?.lootStealRatio ?? 0.15;
+      const estGold = Math.max(50, Math.floor((opp.resources.gold ?? 0) * ratio));
+      const estFood = Math.max(30, Math.floor((opp.resources.food ?? 0) * ratio));
+
+      oppCard.add([
+        this.add.text(16, 14, opp.name, textStyle(16, COLORS.text, { fontStyle: 'bold' })),
+        this.add
+          .text(
+            cardW - 16,
+            16,
+            `🏆 ${opp.trophies} Trofi`,
+            textStyle(13, COLORS.gold, { fontStyle: 'bold' }),
+          )
+          .setOrigin(1, 0),
+        this.add.text(
+          16,
+          40,
+          `Lv ${opp.level} · Balai Desa Lv ${opp.townHall} · ⚡ Kekuatan: ${opp.power.toFixed(1)}`,
+          textStyle(12, COLORS.textDim),
+        ),
+        this.add.text(
+          16,
+          64,
+          `Estimasi Jarahan: 🪙 ${formatNumber(estGold)} Emas · 🍖 ${formatNumber(estFood)} Makanan`,
+          textStyle(12, COLORS.good),
+        ),
+        this.add.text(
+          16,
+          86,
+          `Pertahanan Lawan: ${opp.cells.length} unit di markas`,
+          textStyle(11, COLORS.textDim),
+        ),
+      ]);
+
+      oppCard.add(
+        new Button(this, cardW - 70, oppH - 28, {
+          width: 110,
+          height: 36,
+          label: t('serbu.attack'),
+          color: COLORS.danger,
+          onClick: () => this.startAttackPvp(),
+        }),
+      );
+
+      oppCard.add(
+        new Button(this, cardW - 190, oppH - 28, {
+          width: 110,
+          height: 36,
+          label: 'Cari Lain',
+          color: COLORS.panelLight,
+          onClick: () => void this.findOpponent(),
+        }),
+      );
+
+      area.content.add(oppCard);
+      y += oppH + 12;
+    }
+
+    area.setContentHeight(y + 8);
+  }
+
+  private async findOpponent(): Promise<void> {
+    const state = this.store.state;
+    const cost = gameData.rules.serbu.pvp?.matchmakingCostGold ?? 50;
+    if (state.resources.gold < cost) {
+      toast(this, errorText('notEnoughResources'));
+      return;
+    }
+
+    const defCells =
+      state.pvp.defenseCells.length > 0 ? state.pvp.defenseCells : defaultDefenseCells(state);
+    const myPower = calculateDefensePower(state, defCells);
+    const myTrophies = state.pvp?.trophies ?? 1000;
+
+    // Deduct matchmaking fee
+    this.store.set({
+      ...state,
+      resources: { ...state.resources, gold: state.resources.gold - cost },
+    });
+
+    toast(this, t('serbu.pvpSearching'));
+
+    try {
+      const res = await this.store.pvp({
+        kind: 'matchmake',
+        power: myPower,
+        trophies: myTrophies,
+      });
+      if (res && res.opponents && (res.opponents as PvpDefenseSnapshot[]).length > 0) {
+        this.pvpOpponent = (res.opponents as PvpDefenseSnapshot[])[0]!;
+      } else {
+        const bots = matchmakeOpponents(
+          myPower,
+          myTrophies,
+          [],
+          createRng(this.store.state.rngState),
+        );
+        this.pvpOpponent = bots[0] ?? null;
+      }
+    } catch {
+      const bots = matchmakeOpponents(
+        myPower,
+        myTrophies,
+        [],
+        createRng(this.store.state.rngState),
+      );
+      this.pvpOpponent = bots[0] ?? null;
+    }
+
+    this.render();
+  }
+
+  private startSetDefense(): void {
+    this.isSettingDefense = true;
+    this.mode = 'place';
+    this.cells.clear();
+    const existing = this.store.state.pvp?.defenseCells?.length
+      ? this.store.state.pvp.defenseCells
+      : defaultDefenseCells(this.store.state);
+    for (const c of existing) {
+      this.cells.set(c.id, { x: c.x, y: c.y });
+    }
+    this.picked = null;
+    this.render();
+  }
+
+  private saveDefenseLayout(): void {
+    const cells = [...this.cells].map(([id, c]) => ({ id, ...c }));
+    const res = this.store.act('setDefenseLayout', { cells });
+    if (!res.ok) {
+      toast(this, errorText(res.error));
+      return;
+    }
+    const snapshot = createDefenseSnapshot(this.store.state, 'player', 'Pemain', this.store.now());
+    void this.store.pvp({ kind: 'saveSnapshot', snapshot });
+    toast(this, t('serbu.pvpDefenseSaved'));
+    this.isSettingDefense = false;
+    this.mode = 'list';
+    this.render();
+  }
+
+  private startAttackPvp(): void {
+    if (!this.pvpOpponent) return;
+    this.choose(this.pvpOpponent.id);
+  }
+
+  private openHistory(): void {
+    const history = this.store.state.pvp?.history ?? [];
+    const { width, height } = this.size;
+    const modalW = Math.min(520, width - 30);
+    const modalH = Math.min(480, height - 60);
+
+    const modal = new Modal(this, {
+      title: t('serbu.pvpHistoryTitle'),
+      width: modalW,
+      height: modalH,
+    });
+
+    const bodyW = modalW - 24;
+    const bodyH = modalH - 70;
+    const rect = new Phaser.Geom.Rectangle(modal.x + 12, modal.y + 48, bodyW, bodyH);
+    const area = modal.own(new ScrollArea(this, rect, modal.depth + 2));
+
+    if (history.length === 0) {
+      area.content.add(
+        this.add
+          .text(bodyW / 2, bodyH / 2, t('serbu.pvpNoHistory'), textStyle(13, COLORS.textDim))
+          .setOrigin(0.5),
+      );
+      area.setContentHeight(bodyH);
+      return;
+    }
+
+    let y = 4;
+    const rowH = 72;
+    for (const entry of history) {
+      const row = this.add.container(4, y);
+      const won = entry.won;
+      row.add(
+        roundedPanel(
+          this,
+          0,
+          0,
+          bodyW - 8,
+          rowH,
+          won ? 0x223624 : 0x362224,
+          won ? COLORS.good : COLORS.danger,
+          8,
+        ),
+      );
+
+      const title = won ? t('serbu.pvpDefended') : t('serbu.pvpBreached');
+      const trophyText =
+        entry.trophyChange >= 0 ? `+${entry.trophyChange}` : `${entry.trophyChange}`;
+      const color = won ? COLORS.good : COLORS.danger;
+
+      row.add([
+        this.add.text(12, 10, title, textStyle(13, color, { fontStyle: 'bold' })),
+        this.add.text(
+          12,
+          30,
+          `${t('serbu.pvpAttackedBy', { name: entry.attackerName })} (⚡ ${entry.attackerPower.toFixed(1)})`,
+          textStyle(11, COLORS.text),
+        ),
+        this.add.text(
+          12,
+          50,
+          `Trofi: ${trophyText} · ${t('serbu.pvpStolen', { reward: rewardLabel(entry.stolen) })}`,
+          textStyle(10, COLORS.textDim),
+        ),
+      ]);
+
+      row.add(
+        new Button(this, bodyW - 64, rowH / 2, {
+          width: 92,
+          height: 30,
+          fontSize: 11,
+          label: t('serbu.pvpWatchReplay'),
+          color: COLORS.accentDark,
+          onClick: () => {
+            modal.close();
+            this.watchDefenseReplay(entry);
+          },
+        }),
+      );
+
+      area.content.add(row);
+      y += rowH + 6;
+    }
+
+    area.setContentHeight(y + 8);
+  }
+
+  private watchDefenseReplay(entry: PvpDefenseLogEntry): void {
+    this.targetId = entry.replay.targetId;
+    this.mode = 'replay';
+    this.render();
+    const looks = new Map<string, UnitLook>();
+    const names = new Map<string, string>();
+    for (const a of entry.replay.attackers) {
+      const look: UnitLook = a.element
+        ? { type: 'monster', form: 'rubah-merah', element: a.element, stage: 'anak' }
+        : a.stats.range > 1
+          ? { type: 'soldier', kind: 'pemanah', rank: 1 }
+          : { type: 'bandit' };
+      looks.set(a.id, look);
+      names.set(a.id, a.id);
+    }
+    this.startReplay(entry.replay, looks, names);
   }
 
   private baseCard(base: SerbuBase, x: number, y: number, w: number, h: number) {
@@ -679,18 +1104,24 @@ export class SerbuScene extends Phaser.Scene {
     const { placeColumns, grid } = gameData.rules.serbu;
     const x = Math.floor((px - f.x) / f.cell);
     const y = Math.floor((py - f.y) / f.cell);
+    if (this.isSettingDefense) {
+      const minX = grid.columns - placeColumns;
+      if (x < minX || x >= grid.columns || y < 0 || y >= grid.rows) return null;
+      return { x, y };
+    }
     if (x < 0 || y < 0 || x >= placeColumns || y >= grid.rows) return null;
     return { x, y };
   }
 
   private renderPlace() {
     const { width, height } = this.size;
-    const target = targetOf(this.targetId)!;
+    const target = this.targetOf(this.targetId);
+    const targetName = this.isSettingDefense ? t('serbu.pvpDefense') : (target?.name ?? 'Markas');
     const state = this.store.state;
     const cap = serbuPowerCap(state);
     const { maxUnits } = gameData.rules.battle;
     const { grid, placeColumns } = gameData.rules.serbu;
-    this.header(target.name);
+    this.header(targetName);
     const right = Math.min(260, Math.max(180, Math.round(width * 0.3)));
     const top = 44;
     const f = this.layoutField(width, height, top, right);
@@ -698,40 +1129,70 @@ export class SerbuScene extends Phaser.Scene {
     this.drawField(f, true);
     const layer = this.layer!;
 
-    // Preview of the defenders in their zone (the real cells are rolled at the attack).
-    const looks = defenderLooks(target.defenders);
-    // Centred down the column, so a big boss on top does not stick out of the field.
-    const offset = Math.floor((grid.rows - Math.min(looks.length, grid.rows)) / 2);
-    looks.forEach((look, i) => {
-      const col = grid.columns - 1 - Math.floor(i / grid.rows);
-      const row = (i + offset) % grid.rows;
-      const v = this.unitView(look, f.cell * 0.9);
-      v.setPosition(f.x + (col + 0.5) * f.cell, f.y + (row + 0.85) * f.cell).setAlpha(0.55);
-      v.setScale(-1, 1);
-      layer.add(v);
-    });
-    layer.add(
-      this.add
-        .text(
-          f.x + grid.columns * f.cell,
-          f.y + grid.rows * f.cell + 10,
-          t('serbu.enemyHint'),
-          textStyle(10, COLORS.textDim),
-        )
-        .setOrigin(1, 0),
-    );
-    layer.add(
-      this.add
-        .text(
-          f.x,
-          f.y + grid.rows * f.cell + 10,
-          t('serbu.placeHint'),
-          textStyle(10, COLORS.textDim, {
-            wordWrap: { width: f.cell * (grid.columns - 4) },
-          }),
-        )
-        .setOrigin(0, 0),
-    );
+    // Preview of the defenders in their zone
+    if (!this.isSettingDefense) {
+      if (this.pvpOpponent && this.targetId === this.pvpOpponent.id) {
+        for (const c of this.pvpOpponent.cells) {
+          const fighter = this.pvpOpponent.fighters.find((x) => x.id === c.id);
+          const look: UnitLook = fighter?.element
+            ? { type: 'monster', form: 'rubah-merah', element: fighter.element, stage: 'anak' }
+            : fighter?.stats.range && fighter.stats.range > 1
+              ? { type: 'soldier', kind: 'pemanah', rank: 1 }
+              : { type: 'bandit' };
+          const v = this.unitView(look, f.cell * 0.9);
+          v.setPosition(f.x + (c.x + 0.5) * f.cell, f.y + (c.y + 0.85) * f.cell).setAlpha(0.6);
+          v.setScale(-1, 1);
+          layer.add(v);
+        }
+      } else if (target) {
+        const looks = defenderLooks(target.defenders);
+        const offset = Math.floor((grid.rows - Math.min(looks.length, grid.rows)) / 2);
+        looks.forEach((look, i) => {
+          const col = grid.columns - 1 - Math.floor(i / grid.rows);
+          const row = (i + offset) % grid.rows;
+          const v = this.unitView(look, f.cell * 0.9);
+          v.setPosition(f.x + (col + 0.5) * f.cell, f.y + (row + 0.85) * f.cell).setAlpha(0.55);
+          v.setScale(-1, 1);
+          layer.add(v);
+        });
+      }
+    }
+
+    if (this.isSettingDefense) {
+      layer.add(
+        this.add
+          .text(
+            f.x + grid.columns * f.cell,
+            f.y + grid.rows * f.cell + 10,
+            t('serbu.pvpDefenseHint'),
+            textStyle(10, COLORS.textDim),
+          )
+          .setOrigin(1, 0),
+      );
+    } else {
+      layer.add(
+        this.add
+          .text(
+            f.x + grid.columns * f.cell,
+            f.y + grid.rows * f.cell + 10,
+            t('serbu.enemyHint'),
+            textStyle(10, COLORS.textDim),
+          )
+          .setOrigin(1, 0),
+      );
+      layer.add(
+        this.add
+          .text(
+            f.x,
+            f.y + grid.rows * f.cell + 10,
+            t('serbu.placeHint'),
+            textStyle(10, COLORS.textDim, {
+              wordWrap: { width: f.cell * (grid.columns - 4) },
+            }),
+          )
+          .setOrigin(0, 0),
+      );
+    }
 
     // Placed units (tap: back to the list; drag: move).
     for (const [id, c] of this.cells) {
@@ -746,9 +1207,11 @@ export class SerbuScene extends Phaser.Scene {
       hit.on('pointerdown', (p: Phaser.Input.Pointer) => this.startDrag(id, true, p));
       layer.add([v, hit]);
     }
+
     // The placement zone takes taps for the picked unit.
+    const zoneX = this.isSettingDefense ? f.x + (grid.columns - placeColumns) * f.cell : f.x;
     const zone = this.add
-      .zone(f.x, f.y, f.cell * placeColumns, f.cell * grid.rows)
+      .zone(zoneX, f.y, f.cell * placeColumns, f.cell * grid.rows)
       .setOrigin(0)
       .setInteractive();
     zone.on('pointerup', (p: Phaser.Input.Pointer) => {
@@ -863,16 +1326,30 @@ export class SerbuScene extends Phaser.Scene {
       y += 44;
     }
     area.setContentHeight(y + 4);
-    layer.add(
-      new Button(this, rx + right / 2, height - 38, {
-        width: right - 20,
-        height: 40,
-        label: t('serbu.go'),
-        color: COLORS.danger,
-        disabled: this.cells.size === 0 || power > cap,
-        onClick: () => this.attack(),
-      }),
-    );
+
+    if (this.isSettingDefense) {
+      layer.add(
+        new Button(this, rx + right / 2, height - 38, {
+          width: right - 20,
+          height: 40,
+          label: t('serbu.pvpSaveDefense'),
+          color: COLORS.good,
+          disabled: this.cells.size === 0,
+          onClick: () => this.saveDefenseLayout(),
+        }),
+      );
+    } else {
+      layer.add(
+        new Button(this, rx + right / 2, height - 38, {
+          width: right - 20,
+          height: 40,
+          label: t('serbu.go'),
+          color: COLORS.danger,
+          disabled: this.cells.size === 0 || power > cap,
+          onClick: () => this.attack(),
+        }),
+      );
+    }
   }
 
   private startDrag(id: string, fromField: boolean, p: Phaser.Input.Pointer) {
@@ -930,7 +1407,7 @@ export class SerbuScene extends Phaser.Scene {
     if (!this.cells.has(id)) {
       const cap = serbuPowerCap(state);
       const freed = other ? serbuUnitPower(state, other) : 0;
-      if (this.power() - freed + serbuUnitPower(state, id) > cap) {
+      if (!this.isSettingDefense && this.power() - freed + serbuUnitPower(state, id) > cap) {
         toast(this, t('serbu.overCap'));
         return;
       }
@@ -951,6 +1428,14 @@ export class SerbuScene extends Phaser.Scene {
 
   /** Strongest units that fit the cap, tanks in front and archers at the back. */
   private autoFill() {
+    if (this.isSettingDefense) {
+      const def = defaultDefenseCells(this.store.state);
+      this.cells.clear();
+      for (const c of def) this.cells.set(c.id, { x: c.x, y: c.y });
+      this.picked = null;
+      this.render();
+      return;
+    }
     const state = this.store.state;
     const cap = serbuPowerCap(state);
     const { maxUnits } = gameData.rules.battle;
@@ -992,6 +1477,34 @@ export class SerbuScene extends Phaser.Scene {
     const names = new Map([...this.cells.keys()].map((id) => [id, this.unitLabel(id)]));
     const cells = [...this.cells].map(([id, c]) => ({ id, ...c }));
     const targetId = this.targetId;
+
+    if (this.pvpOpponent && targetId === this.pvpOpponent.id) {
+      const res = attackPlayerBase(
+        this.store.state,
+        { defender: this.pvpOpponent, cells },
+        this.store.now(),
+      );
+      if (!res.ok) {
+        toast(this, errorText(res.error));
+        return;
+      }
+      this.store.set(res.state);
+      void this.store.pvp({
+        kind: 'attack',
+        defenderId: this.pvpOpponent.id,
+        won: res.result.won,
+        trophyChange: res.result.trophiesWon,
+        stolen: res.result.stolen,
+        cells,
+        replay: res.result.replay,
+      });
+      playSfx(this, 'march');
+      this.mode = 'replay';
+      this.render();
+      this.startReplay(res.result.replay, looks, names);
+      return;
+    }
+
     const r =
       this.source === 'adventure'
         ? this.store.act('attackNode', { nodeId: targetId, cells })
@@ -1009,7 +1522,8 @@ export class SerbuScene extends Phaser.Scene {
   // ---------- Replay ----------
 
   private renderReplay() {
-    this.header(targetOf(this.targetId)!.name);
+    const target = this.targetOf(this.targetId);
+    this.header(target?.name ?? this.pvpOpponent?.name ?? t('serbu.tabPvp'));
     const { width, height } = this.size;
     this.field = this.layoutField(width, height, 44, 0);
     this.drawField(this.field, false);
@@ -1022,7 +1536,28 @@ export class SerbuScene extends Phaser.Scene {
   ) {
     const f = this.field!;
     const layer = this.layer!;
-    const enemyLooks = defenderLooks(targetOf(result.targetId)!.defenders);
+    const target = this.targetOf(result.targetId);
+    const enemyLooks: UnitLook[] =
+      target && target.defenders.length > 0
+        ? defenderLooks(target.defenders)
+        : result.defenders.map((d): UnitLook => {
+            if (d.id.startsWith('tower') || (d as unknown as { fixed?: boolean }).fixed) {
+              return { type: 'tower', level: 1 };
+            }
+            if (d.element) {
+              return { type: 'monster', form: 'rubah-merah', element: d.element, stage: 'anak' };
+            }
+            if (d.stats.range > 1) {
+              return { type: 'soldier', kind: 'pemanah', rank: 1 };
+            }
+            if (d.id.startsWith('soldier')) {
+              return { type: 'soldier', kind: 'pendekar', rank: 1 };
+            }
+            if (d.id.startsWith('machine')) {
+              return { type: 'machine', kind: 'ketapel', level: 1 };
+            }
+            return { type: 'bandit' };
+          });
     const units = new Map<string, ReplayUnit>();
     const add = (
       id: string,
@@ -1036,8 +1571,13 @@ export class SerbuScene extends Phaser.Scene {
       layer.add(view);
       units.set(id, { view, side, maxHp, hp: maxHp, attacks: 0, skill, dead: false });
     };
-    for (const a of result.attackers) add(a.id, 'attackers', looks.get(a.id)!, a.stats.hp, a.skill);
-    result.defenders.forEach((d, i) => add(d.id, 'defenders', enemyLooks[i]!, d.stats.hp, d.skill));
+    for (const a of result.attackers) {
+      const look = looks.get(a.id) ?? { type: 'bandit' };
+      add(a.id, 'attackers', look, a.stats.hp, a.skill);
+    }
+    result.defenders.forEach((d, i) =>
+      add(d.id, 'defenders', enemyLooks[i] ?? { type: 'bandit' }, d.stats.hp, d.skill),
+    );
     const bars = this.add.graphics().setDepth(5);
     layer.add(bars);
     const { width } = this.size;
@@ -1206,14 +1746,15 @@ export class SerbuScene extends Phaser.Scene {
     const r = this.replay;
     if (!r) return;
     const { result } = r;
-    const target = targetOf(result.targetId)!;
+    const target = this.targetOf(result.targetId);
+    const targetName = target?.name ?? this.pvpOpponent?.name ?? t('serbu.tabPvp');
     playSfx(this, result.won ? 'win' : 'lose');
     const { width, height } = this.size;
     const w = Math.min(420, width - 40);
     const lines: string[] = [];
     if (result.won) {
       lines.push(t('serbu.reward', { reward: rewardLabel(result.reward) }));
-      if (result.first && target.node?.kind === 'boss') {
+      if (result.first && target?.node?.kind === 'boss') {
         lines.push(t('adventure.bossWin', { tier: maxFormTier(this.store.state.bossesDefeated) }));
       } else if (result.first && this.source === 'serbu') {
         lines.push(t('serbu.firstWin'));
@@ -1246,7 +1787,7 @@ export class SerbuScene extends Phaser.Scene {
         )
         .setOrigin(0.5),
     );
-    panel.add(this.add.text(w / 2, 52, target.name, textStyle(12, COLORS.textDim)).setOrigin(0.5));
+    panel.add(this.add.text(w / 2, 52, targetName, textStyle(12, COLORS.textDim)).setOrigin(0.5));
     lines.forEach((line, i) =>
       panel.add(
         this.add

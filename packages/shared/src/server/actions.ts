@@ -12,6 +12,7 @@ import { travelTo, unlockIsland } from '../islands';
 import { reviveMonster } from '../missions';
 import { attackNode } from '../adventure';
 import { attackBase } from '../serbu';
+import { setDefenseLayout } from '../serbuPvp';
 import {
   buyMixerSlot,
   cancelMix,
@@ -167,6 +168,9 @@ export const ACTIONS = {
   travelTo: action(byId, (s, p) => travelTo(s, p.id)),
   startResearch: action(z.object({ techId: id }), (s, p, now) => startResearch(s, p.techId, now)),
   speedUpResearch: action(z.object({}), (s, _p, now) => speedUpResearch(s, now)),
+  setDefenseLayout: action(z.object({ cells: z.array(byId.merge(point)).max(50) }), (s, p) =>
+    setDefenseLayout(s, p.cells),
+  ),
 };
 
 export type ActionName = keyof typeof ACTIONS;

@@ -75,7 +75,26 @@ export class ServerLink {
     );
   }
 
-  private async post(fn: 'action' | 'social', body: object): Promise<ServerAnswer> {
+  /**
+   * Calls the `pvp` function (player vs player base raids), after pending actions.
+   * An answer carrying the player's save is applied like an action's.
+   */
+  pvp(request: object): Promise<ServerAnswer> {
+    const run = this.queue.then(() => this.post('pvp', { request }));
+    this.queue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run.then(
+      (answer) => {
+        if (this.waiting === 0 && answer.save && answer.now) this.onSave(answer.save, answer.now);
+        return answer;
+      },
+      () => ({ ok: false, error: 'offline' }),
+    );
+  }
+
+  private async post(fn: 'action' | 'social' | 'pvp', body: object): Promise<ServerAnswer> {
     const call = async (session: Session) =>
       fetch(`${this.config.url}/functions/v1/${fn}`, {
         method: 'POST',
@@ -98,11 +117,61 @@ export class ServerLink {
     return `soul-monster:session:${this.config.url}`;
   }
 
+  /** Redirects to Supabase Google OAuth sign-in. */
+  signInWithGoogle(): void {
+    const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
+    window.location.href = `${this.config.url}/auth/v1/authorize?provider=google&redirect_to=${redirect}`;
+  }
+
+  /** Gets user profile from Supabase auth (to check email / provider). */
+  async getUser(): Promise<{ email?: string; provider?: string } | null> {
+    try {
+      const sess = await this.session();
+      const res = await fetch(`${this.config.url}/auth/v1/user`, {
+        headers: {
+          apikey: this.config.key,
+          Authorization: `Bearer ${sess.access_token}`,
+        },
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as {
+        email?: string;
+        app_metadata?: { provider?: string };
+      };
+      return {
+        email: data.email,
+        provider: data.app_metadata?.provider ?? 'anonymous',
+      };
+    } catch {
+      return null;
+    }
+  }
+
   /**
    * The saved anonymous session, refreshed when close to expiring (or when `renew`);
    * a new anonymous account only when there is none or it cannot be refreshed.
    */
   private async session(renew = false): Promise<Session> {
+    if (typeof window !== 'undefined' && window.location.hash.includes('access_token=')) {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const at = hashParams.get('access_token');
+      const rt = hashParams.get('refresh_token');
+      const exp = Number(hashParams.get('expires_in') ?? 3600);
+      if (at && rt) {
+        const session: Session = {
+          access_token: at,
+          refresh_token: rt,
+          expires_at: Math.floor(Date.now() / 1000) + exp,
+        };
+        try {
+          localStorage.setItem(this.sessionKey, JSON.stringify(session));
+          window.history.replaceState({}, '', window.location.pathname);
+        } catch {
+          // ignore
+        }
+        return session;
+      }
+    }
     let saved: Session | null = null;
     try {
       saved = JSON.parse(localStorage.getItem(this.sessionKey) ?? 'null') as Session | null;

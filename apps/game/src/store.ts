@@ -109,6 +109,19 @@ export class GameStore {
     return this.link?.social(request) ?? Promise.resolve({ ok: false, error: 'offline' });
   }
 
+  /** A PvP request to the server (Tugas 2.2); offline it answers `offline`. */
+  pvp(request: object): Promise<{ ok: boolean; error?: string; [key: string]: unknown }> {
+    return this.link?.pvp(request) ?? Promise.resolve({ ok: false, error: 'offline' });
+  }
+
+  signInWithGoogle(): void {
+    this.link?.signInWithGoogle();
+  }
+
+  getUser(): Promise<{ email?: string; provider?: string } | null> {
+    return this.link?.getUser() ?? Promise.resolve(null);
+  }
+
   get state(): PlayerState {
     return this._state;
   }

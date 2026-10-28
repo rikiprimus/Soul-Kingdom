@@ -8,7 +8,7 @@ import {
 } from '@soul-monster/shared';
 import { errorText, t } from '../text';
 import { COLORS, textStyle } from '../ui/theme';
-import { Button, Modal, roundedPanel, toast } from '../ui/widgets';
+import { Button, Modal, roundedPanel, toast, inputDialog } from '../ui/widgets';
 import { View } from './View';
 
 interface Profile {
@@ -27,6 +27,7 @@ interface Friends {
 interface Visit {
   townHall: number;
   level: number;
+  island?: string;
   buildings: { type: string; level: number; building: boolean }[];
   monsters: Monster[];
 }
@@ -41,6 +42,7 @@ export const playerName = (p: Profile) =>
  */
 export class FriendsView extends View {
   private data: Friends | null = null;
+  private user: { email?: string; provider?: string } | null = null;
   private status: 'loading' | 'ready' | 'offline' = 'loading';
 
   override render(): void {
@@ -49,7 +51,11 @@ export class FriendsView extends View {
   }
 
   private async reload(): Promise<void> {
-    const answer = await this.ctx.store.social({ kind: 'me' });
+    const [answer, user] = await Promise.all([
+      this.ctx.store.social({ kind: 'me' }),
+      this.ctx.store.getUser(),
+    ]);
+    this.user = user;
     if (answer.ok) {
       this.data = answer as unknown as Friends;
       this.status = 'ready';
@@ -91,36 +97,118 @@ export class FriendsView extends View {
     }
     const { me, friends, incoming, outgoing } = this.data;
 
-    line(t('friends.me', { name: playerName(me), code: me.code }), 15, COLORS.gold);
-    const bw = Math.min(180, (width - 8) / 2);
+    // Me card with profile and code
+    const cardH = 86;
+    content.add(roundedPanel(scene, left, y, width, cardH, COLORS.panelDark, COLORS.stroke, 10));
+    content.add(
+      scene.add.text(
+        left + 12,
+        y + 10,
+        t('friends.me', { name: playerName(me), code: me.code }),
+        textStyle(14, COLORS.gold, { fontStyle: 'bold' }),
+      ),
+    );
+
+    // Profile action buttons: Rename, Copy Code, Add Friend
+    const btnW = Math.max(90, Math.floor((width - 32) / 3));
     content.add([
-      new Button(scene, left + bw / 2, y + 17, {
-        width: bw,
-        height: 34,
+      new Button(scene, left + 12 + btnW / 2, y + 54, {
+        width: btnW,
+        height: 32,
         label: t('friends.rename'),
         fontSize: 12,
         color: COLORS.panelLight,
         onClick: () => {
-          const name = window.prompt(t('friends.namePrompt'), me.name ?? '');
-          if (name !== null) void this.ask({ kind: 'setName', name });
+          inputDialog(scene, {
+            title: t('friends.rename'),
+            placeholder: t('friends.enterName'),
+            initialValue: me.name ?? '',
+            maxLength: 16,
+            onSubmit: (name) => {
+              const trimmed = name.trim();
+              if (trimmed) void this.ask({ kind: 'setName', name: trimmed });
+            },
+          });
         },
       }),
-      new Button(scene, left + bw * 1.5 + 8, y + 17, {
-        width: bw,
-        height: 34,
+      new Button(scene, left + 16 + btnW + btnW / 2, y + 54, {
+        width: btnW,
+        height: 32,
+        label: t('friends.copyCode'),
+        fontSize: 12,
+        color: COLORS.panelLight,
+        onClick: () => {
+          try {
+            void navigator.clipboard?.writeText(me.code);
+          } catch {
+            // ignore
+          }
+          toast(scene, t('friends.codeCopied'), COLORS.good);
+        },
+      }),
+      new Button(scene, left + 20 + btnW * 2 + btnW / 2, y + 54, {
+        width: btnW,
+        height: 32,
         label: t('friends.add'),
         fontSize: 12,
         color: 0x3c9a5f,
         onClick: () => {
-          const code = window.prompt(t('friends.codePrompt'));
-          if (!code) return;
-          void this.ask({ kind: 'request', code }, (a) =>
-            toast(scene, a.befriended ? t('friends.befriended') : t('friends.sent'), COLORS.good),
-          );
+          inputDialog(scene, {
+            title: t('friends.add'),
+            placeholder: t('friends.enterCode'),
+            maxLength: 12,
+            onSubmit: (rawCode) => {
+              const code = rawCode.trim().toUpperCase();
+              if (!code) return;
+              void this.ask({ kind: 'request', code }, (a) =>
+                toast(
+                  scene,
+                  a.befriended ? t('friends.befriended') : t('friends.sent'),
+                  COLORS.good,
+                ),
+              );
+            },
+          });
         },
       }),
     ]);
-    y += 50;
+    y += cardH + 10;
+
+    // Google Account status / link card
+    const accH = 46;
+    content.add(roundedPanel(scene, left, y, width, accH, COLORS.panel, COLORS.stroke, 10));
+    if (this.user?.email) {
+      content.add(
+        scene.add
+          .text(
+            left + 12,
+            y + accH / 2,
+            t('friends.googleLinked', { email: this.user.email }),
+            textStyle(13, COLORS.good),
+          )
+          .setOrigin(0, 0.5),
+      );
+    } else {
+      content.add(
+        scene.add
+          .text(left + 12, y + accH / 2, t('friends.accountAnon'), textStyle(12, COLORS.textDim))
+          .setOrigin(0, 0.5),
+      );
+      const googleBtnW = 140;
+      content.add(
+        new Button(scene, left + width - googleBtnW / 2 - 8, y + accH / 2, {
+          width: googleBtnW,
+          height: 30,
+          label: t('friends.googleSignIn'),
+          fontSize: 11,
+          color: 0x4285f4,
+          onClick: () => {
+            this.ctx.store.signInWithGoogle();
+          },
+        }),
+      );
+    }
+    y += accH + 14;
 
     const row = (p: Profile, buttons: [string, number, () => void][]) => {
       const h = 46;
@@ -188,7 +276,7 @@ export class FriendsView extends View {
     const mw = Math.min(scene.scale.width - 32, 460);
     const modal = new Modal(scene, {
       width: mw,
-      height: 330,
+      height: 340,
       title: playerName(friend),
       dismissible: true,
     });

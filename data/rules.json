@@ -113,6 +113,15 @@
     "grid": { "columns": 12, "rows": 8 },
     "placeColumns": 4,
     "trackEveryTicks": 4,
+    "pvp": {
+      "minTownHall": 2,
+      "matchmakingCostGold": 50,
+      "trophiesStarting": 1000,
+      "trophiesPerWin": 25,
+      "trophiesPerLoss": 15,
+      "lootStealRatio": 0.15,
+      "maxHistory": 20
+    },
     "bases": [
       {
         "id": "pos-bandit",
