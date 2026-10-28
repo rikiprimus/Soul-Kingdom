@@ -25,6 +25,8 @@ export interface Fighter {
   /** War machine (Bengkel): `multiplier` × damage against buildings (fighters that never
    * move); with `buildingsOnly` it attacks nothing else. */
   siege?: { multiplier: number; buildingsOnly: boolean };
+  /** HP it starts with when wounded (Pohon Jiwa, Tugas 1C.10); `stats.hp` when not given. */
+  startHp?: number;
 }
 
 export type Side = 'attackers' | 'defenders';
@@ -124,7 +126,7 @@ export function simulateBattle(
         side,
         x: cell.x + 0.5,
         y: cell.y + 0.5 + nudge,
-        hp: f.stats.hp,
+        hp: Math.min(f.startHp ?? f.stats.hp, f.stats.hp),
         cooldown: 0,
         attacks: 0,
       };

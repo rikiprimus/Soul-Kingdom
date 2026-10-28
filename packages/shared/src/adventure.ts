@@ -123,6 +123,7 @@ export function attackNode(
       payReward(next, reward);
       return reward;
     },
+    now,
     data,
   );
   if (!r.ok) return r;

@@ -991,6 +991,47 @@
       ]
     },
     {
+      "id": "pohon-jiwa",
+      "name": "Pohon Jiwa",
+      "description": "Pohon bercahaya yang menyembuhkan luka pasukan.",
+      "category": "militer",
+      "feature": "healing",
+      "size": 2,
+      "maxCount": [0, 1, 1, 1, 1, 1, 1, 1],
+      "levels": [
+        {
+          "cost": { "gold": 2000, "wood": 800, "stone": 500 },
+          "seconds": 900,
+          "requiresTownHall": 2,
+          "healPercentPerMinute": 2
+        },
+        {
+          "cost": { "gold": 6000, "wood": 2000, "stone": 1500 },
+          "seconds": 3600,
+          "requiresTownHall": 3,
+          "healPercentPerMinute": 3
+        },
+        {
+          "cost": { "gold": 15000, "wood": 5000, "stone": 4000 },
+          "seconds": 10800,
+          "requiresTownHall": 4,
+          "healPercentPerMinute": 4
+        },
+        {
+          "cost": { "gold": 40000, "wood": 12000, "stone": 10000 },
+          "seconds": 28800,
+          "requiresTownHall": 5,
+          "healPercentPerMinute": 5
+        },
+        {
+          "cost": { "gold": 100000, "wood": 30000, "stone": 25000 },
+          "seconds": 57600,
+          "requiresTownHall": 6,
+          "healPercentPerMinute": 6
+        }
+      ]
+    },
+    {
       "id": "tembok",
       "sellable": true,
       "lineBuild": true,

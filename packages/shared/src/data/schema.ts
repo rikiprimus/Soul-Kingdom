@@ -359,6 +359,14 @@ export const rulesFileSchema = z.object({
       )
       .min(1),
   }),
+  /** Pohon Jiwa (Tugas 1C.10): wounded monsters and soldiers heal by the minute. */
+  healing: z.object({
+    /** % of max HP healed per minute without a Pohon Jiwa (with one: its level's rate). */
+    basePercentPerMinute: z.number().positive(),
+    /** Instant heal: food and gold per HP restored. */
+    foodPerHp: z.number().min(0),
+    goldPerHp: z.number().min(0),
+  }),
   /** Bengkel (Tugas 1C.7): war machines whose version follows the Bengkel level. */
   workshop: z.object({
     building: z.string().min(1),
@@ -485,6 +493,7 @@ export const buildingFeatures = [
   'defense',
   'gate',
   'workshop',
+  'healing',
   'serbu',
   'nest',
   'wonder',
@@ -520,6 +529,8 @@ export const buildingLevelSchema = z.object({
   ranchCapacity: z.number().int().positive().optional(),
   /** Barracks: extra training queue slots from this level on (added to rules.barracks.queueMax). */
   queueBonus: z.number().int().positive().optional(),
+  /** Pohon Jiwa: % of max HP its wounded units heal per minute. */
+  healPercentPerMinute: z.number().positive().optional(),
 });
 
 export const buildingDefSchema = z.object({

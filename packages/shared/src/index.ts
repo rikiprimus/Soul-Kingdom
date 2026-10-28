@@ -28,6 +28,7 @@ export * from './storage';
 export * from './islands';
 export * from './market';
 export * from './workshop';
+export * from './healing';
 export * from './social';
 export * from './server/actions';
 export * from './server/handler';

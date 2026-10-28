@@ -10,6 +10,7 @@ import {
 } from './data';
 import { isOnMission, monsterPower } from './missions';
 import { monsterStats, powerPointsOf } from './monster';
+import { setWounds, withWounds } from './healing';
 import { recordAction } from './player';
 import { createRng, type Rng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
@@ -183,6 +184,7 @@ export function fightPlaced(
   cells: readonly SerbuCell[],
   defenders: readonly Defender[],
   onWin: (next: PlayerState, rng: Rng) => BattleReward,
+  now: number,
   data: GameData = gameData,
 ): ActionResult<
   { won: boolean; reward: BattleReward } & Omit<
@@ -216,9 +218,20 @@ export function fightPlaced(
   const rng = createRng(next.rngState);
   const attackers = cells.map((c): Fighter => {
     const m = next.monsters.find((x) => x.id === c.id);
-    if (m) return { id: c.id, stats: monsterStats(m, data), element: m.element, skill: true };
+    if (m) {
+      const f: Fighter = {
+        id: c.id,
+        stats: monsterStats(m, data),
+        element: m.element,
+        skill: true,
+      };
+      return withWounds(next, f);
+    }
     const s = next.soldiers.find((x) => x.id === c.id);
-    if (s) return { id: c.id, stats: soldierStats(s, data), element: null, skill: false };
+    if (s) {
+      const f: Fighter = { id: c.id, stats: soldierStats(s, data), element: null, skill: false };
+      return withWounds(next, f);
+    }
     const w = next.machines.find((x) => x.id === c.id)!;
     return machineFighter(w, workshopLevel(next, data), data);
   });
@@ -234,6 +247,12 @@ export function fightPlaced(
   if (won) recordAction(next, 'defeatEnemy', 1, data);
   next.rngState = rng.getState();
   const dead = cells.map((c) => c.id).filter((id) => (battle.hp[id] ?? 0) <= 0);
+  // Survivors come home with the HP they have left.
+  setWounds(
+    next,
+    Object.fromEntries(attackers.map((f) => [f.id, (battle.hp[f.id] ?? 0) / f.stats.hp])),
+    now,
+  );
   for (const id of dead) {
     next.soldiers = next.soldiers.filter((x) => x.id !== id);
     next.machines = next.machines.filter((x) => x.id !== id);
@@ -263,6 +282,7 @@ export function fightResult(
 export function attackBase(
   state: PlayerState,
   params: { baseId: string; cells: SerbuCell[] },
+  now: number,
   data: GameData = gameData,
 ): ActionResult<{ result: SerbuResult }> {
   const base = serbuBase(params.baseId, data);
@@ -281,6 +301,7 @@ export function attackBase(
       if (first) next.serbu.cleared.push(base.id);
       return reward;
     },
+    now,
     data,
   );
   if (!r.ok) return r;

@@ -54,6 +54,14 @@ import {
   workshopLevel,
   workshopQueue,
   workshopQueueMax,
+  healAllGems,
+  healCost,
+  healPercentPerMinute,
+  healSeconds,
+  healableIds,
+  soldierName,
+  unitHp,
+  unitMaxHp,
   trainingRemaining,
   townHallLevel,
   towerReach,
@@ -783,6 +791,65 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
           color: 0x3c9a5f,
           onClick: () => a.openPanel('barracks', b.id),
         });
+        // Wounded soldiers of this barracks can be healed here, Pohon Jiwa or not.
+        const wounded = healableIds(state).filter((id) =>
+          state.soldiers.some((x) => x.id === id && x.kind === kind),
+        );
+        if (wounded.length > 0) {
+          content.lines.push(t('barracks.wounded', { n: wounded.length }));
+          const cost = healCost(state, wounded);
+          buttons.push({
+            label: t('healing.healFood', { cost: costLabel({ ...cost, wood: 0, stone: 0 }) }),
+            color: 0x2f9e8f,
+            onClick: () => {
+              const r = a.run('healWithFood', { ids: wounded });
+              if (r) a.toast(t('healing.healed', { n: r.healed.length }), COLORS.good);
+            },
+          });
+        }
+        break;
+      }
+      case 'healing': {
+        // Pohon Jiwa: how fast wounds heal, who is healing, and healing at once.
+        content.lines.push(t('healing.rate', { percent: healPercentPerMinute(state) }));
+        const wounded = healableIds(state);
+        const shown = wounded.slice(0, 4).map((id) => {
+          const m = state.monsters.find((x) => x.id === id);
+          const s = state.soldiers.find((x) => x.id === id);
+          const name = m ? monsterName(m) : s ? soldierName(s) : id;
+          return t('healing.unit', { name, hp: unitHp(state, id), max: unitMaxHp(state, id) ?? 0 });
+        });
+        content.lines.push(...shown);
+        if (wounded.length > shown.length) {
+          content.lines.push(t('healing.more', { n: wounded.length - shown.length }));
+        }
+        statuses.push(() => {
+          if (currentRaid(state)) return t('healing.paused');
+          if (wounded.length === 0) return t('healing.none');
+          const longest = Math.max(...wounded.map((id) => healSeconds(state, id, a.now())));
+          return t('healing.healing', { n: wounded.length, time: formatDuration(longest) });
+        });
+        if (wounded.length > 0 && b.level >= 1) {
+          const cost = healCost(state, wounded);
+          buttons.push({
+            label: t('healing.healFood', { cost: costLabel({ ...cost, wood: 0, stone: 0 }) }),
+            color: 0x2f9e8f,
+            onClick: () => {
+              const r = a.run('healWithFood', {});
+              if (r) a.toast(t('healing.healed', { n: r.healed.length }), COLORS.good);
+            },
+          });
+          const gems = healAllGems(state, a.now());
+          buttons.push({
+            label: t('healing.healGems', { gems }),
+            color: COLORS.accentDark,
+            onClick: () =>
+              a.confirm(t('healing.healGemsConfirm', { gems }), () => {
+                const r = a.run('healAllWithGems', {});
+                if (r) a.toast(t('healing.healed', { n: r.healed.length }), COLORS.good);
+              }),
+          });
+        }
         break;
       }
       case 'workshop': {

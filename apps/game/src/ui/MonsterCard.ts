@@ -73,6 +73,35 @@ export interface CollectionCardOptions {
   onFeed: (monster: Monster) => void;
   /** Shown as a small corner button; monsters in the Soul Mixer cannot be released. */
   onRelease?: (monster: Monster) => void;
+  /** HP right now when wounded (Tugas 1C.10); the stats then show it against the max. */
+  hp?: number;
+  /** Wounded: a small corner button heals it at once with food and gold. */
+  onHeal?: (monster: Monster) => void;
+}
+
+/** "HP 120/300" while wounded, the plain stats otherwise. */
+function statsLine(monster: Monster, hp: number | undefined): string {
+  const stats = monsterStats(monster);
+  const hpText = hp !== undefined && hp < stats.hp ? `${hp}/${stats.hp}` : stats.hp;
+  return `${t('monster.stats', { ...stats, hp: hpText })}\n${t('monster.stats2', stats)}`;
+}
+
+function healButton(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  opts: CollectionCardOptions,
+): Button | null {
+  const onHeal = opts.onHeal;
+  if (!onHeal || opts.busy || opts.hp === undefined) return null;
+  return new Button(scene, x, y, {
+    width: 64,
+    height: 22,
+    label: t('healing.healOne'),
+    fontSize: 10,
+    color: 0x2f9e8f,
+    onClick: () => onHeal(opts.monster),
+  });
 }
 
 function releaseButton(
@@ -114,6 +143,8 @@ export function collectionCard(
   card.add(new MonsterView(scene, w / 2, 10 + art / 2, monster, art));
   const release = releaseButton(scene, w - 32, 18, opts);
   if (release) card.add(release);
+  const heal = healButton(scene, 38, 18, opts);
+  if (heal) card.add(heal);
 
   let cy = 14 + art;
   const name = scene.add
@@ -153,13 +184,12 @@ export function collectionCard(
       .setOrigin(0.5, 0),
   );
   cy += 17;
-  const stats = monsterStats(monster);
   card.add(
     scene.add
       .text(
         w / 2,
         cy,
-        `${t('monster.stats', stats)}\n${t('monster.stats2', stats)}`,
+        statsLine(monster, opts.hp),
         textStyle(10.5, COLORS.text, { align: 'center', lineSpacing: 2 }),
       )
       .setOrigin(0.5, 0),
@@ -224,7 +254,6 @@ export function compactCollectionCard(
   const tx = art + 18;
   const tw = w - tx - 10;
   const tier = getForm(monster.form).tier;
-  const stats = monsterStats(monster);
   const name = scene.add.text(
     tx,
     10,
@@ -248,10 +277,12 @@ export function compactCollectionCard(
   const statText = scene.add.text(
     tx,
     rare.y + 16,
-    `${t('monster.stats', stats)}\n${t('monster.stats2', stats)}`,
+    statsLine(monster, opts.hp),
     textStyle(10.5, COLORS.text, { lineSpacing: 1 }),
   );
   card.add([name, info, rare, statText]);
+  const heal = healButton(scene, 10 + art / 2, 18, opts);
+  if (heal) card.add(heal);
 
   const bottom = h - 20;
   if (opts.busy) {

@@ -1223,6 +1223,79 @@ const DESIGNS: Record<string, Design> = {
       }
     },
   },
+  'pohon-jiwa': {
+    top: 150,
+    draw(p, level) {
+      p.flat(0.06, 0.06, 0.94, 0.94, 0x5aa83a, 0, 0x3c7a2a);
+      // A small glowing teal tree, its roots hugging a little spring; leaves like soul drops.
+      const spring = p.fp(0.62, 0.66);
+      p.ellipse(spring, 26, 13, 0x4fb3ff, 0x2f6f9e);
+      p.ellipse({ x: spring.x - 6, y: spring.y - 3 }, 10, 4, 0xbfe9ff, null, 0.7);
+      const base = p.fp(0.42, 0.46);
+      const s = 0.9 + level * 0.12;
+      for (const dx of [-16, -6, 8, 18]) {
+        p.line(
+          { x: base.x + dx * 0.3 * s, y: base.y - 4 },
+          { x: base.x + dx * s, y: base.y + 8 + Math.abs(dx) * 0.3 },
+          0x6b4026,
+          3,
+        );
+      }
+      p.poly(
+        [
+          { x: base.x - 6 * s, y: base.y },
+          { x: base.x + 6 * s, y: base.y },
+          { x: base.x + 4 * s, y: base.y - 30 * s },
+          { x: base.x - 4 * s, y: base.y - 30 * s },
+        ],
+        0x8a5a32,
+        0x4a2e18,
+      );
+      const crown = { x: base.x, y: base.y - 46 * s };
+      const leaf = 0x3fbfa6;
+      p.ellipse(crown, 34 * s + 10, 30 * s + 8, 0x9ff5e0, null, 0.25);
+      p.ellipse(
+        { x: crown.x - 14 * s, y: crown.y + 6 * s },
+        18 * s,
+        15 * s,
+        darken(leaf, 0.15),
+        darken(leaf, 0.5),
+      );
+      p.ellipse(
+        { x: crown.x + 14 * s, y: crown.y + 5 * s },
+        18 * s,
+        15 * s,
+        darken(leaf, 0.25),
+        darken(leaf, 0.5),
+      );
+      p.ellipse({ x: crown.x, y: crown.y - 8 * s }, 21 * s, 17 * s, leaf, darken(leaf, 0.5));
+      p.ellipse(
+        { x: crown.x - 7 * s, y: crown.y - 14 * s },
+        7 * s,
+        5 * s,
+        lighten(leaf, 0.35),
+        null,
+        0.8,
+      );
+      // Soul-drop leaves hanging from the crown; more of them as the tree grows.
+      for (let i = 0; i < 2 + level; i++) {
+        const a = Math.PI * (0.15 + (i * 0.7) / (1 + level));
+        const pt = { x: crown.x + Math.cos(a) * 26 * s, y: crown.y + 4 + Math.sin(a) * 14 * s };
+        p.poly(
+          [
+            { x: pt.x, y: pt.y - 6 },
+            { x: pt.x + 3.5, y: pt.y + 1 },
+            { x: pt.x, y: pt.y + 4 },
+            { x: pt.x - 3.5, y: pt.y + 1 },
+          ],
+          0xc8fff2,
+          0x2f9e8f,
+        );
+      }
+      if (level >= 5)
+        p.ellipse({ x: crown.x, y: crown.y - 30 * s }, 5, 5, C.gold, darken(C.gold, 0.5));
+    },
+  },
   tembok: {
     top: 44,
     draw(p, level, variant) {

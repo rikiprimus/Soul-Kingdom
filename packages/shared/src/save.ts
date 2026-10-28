@@ -17,7 +17,7 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 30;
+export const SAVE_SCHEMA_VERSION = 31;
 
 const int = z.number().int();
 const villageAmountSchema = z.object({
@@ -184,6 +184,10 @@ const playerStateSchema = z.object({
         .nullable(),
     }),
   ),
+  healing: z.object({
+    at: z.number(),
+    wounds: z.record(z.string(), z.number().gt(0).max(1)),
+  }),
   graveyard: z.array(monsterSchema),
   bossesDefeated: int.min(0),
   xp: int.min(0),
@@ -628,6 +632,12 @@ const migrations: Record<number, (state: unknown) => unknown> = {
         a.work = 0;
       }
     }
+    return state;
+  },
+  // v30 (Tugas 1C.10) kept no HP after fights: everyone starts unhurt.
+  30: (raw) => {
+    const state = raw as PlayerState;
+    state.healing = { at: 0, wounds: {} };
     return state;
   },
 };

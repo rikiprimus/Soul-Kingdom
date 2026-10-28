@@ -372,6 +372,11 @@
       }
     ]
   },
+  "healing": {
+    "basePercentPerMinute": 1,
+    "foodPerHp": 0.5,
+    "goldPerHp": 1
+  },
   "workshop": {
     "_note": "Bengkel (Tugas 1C.7) membuat mesin perang untuk Serbu dan Petualangan: Ketapel (jauh, kuat melawan bangunan) dan Pendobrak (dekat, hanya menyerang bangunan seperti menara). Mesin bukan monster (aman untuk aturan 7), tidak tinggal di desa, tidak ikut bertahan atau melawan musuh liar. Versi mesin = level Bengkel tertinggi: nama dari names[level-1], hp/atk/def dikali versionMultiplier[level-1]; mesin yang sudah dibuat ikut naik versi. buildingMultiplier = pengali kerusakan ke bangunan (sasaran yang tidak bergerak); buildingsOnly = hanya menyerang bangunan. Slot populasi = powerPoints. Antrean = queueMax + queueBonus level Bengkel.",
     "building": "bengkel",

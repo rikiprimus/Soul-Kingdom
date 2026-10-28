@@ -12,6 +12,7 @@ import {
 } from './data';
 import type { Rng } from './rng';
 import type { RanchAnimal, WildAnimal } from './animals';
+import { settleHealing } from './healing';
 import { settleMissions, type WildEncounter } from './missions';
 import { aggroEncounters } from './aggro';
 import { settleUnits } from './units';
@@ -346,7 +347,10 @@ export function settleVillage(state: PlayerState, now: number): PlayerState {
   // Enemies wake after units have moved (they chase whoever came close).
   const trained = aggroEncounters(
     settleUnits(
-      settleMissions(settleWorkshop(settleBarracks(settleTraining(state, now), now), now), now),
+      settleMissions(
+        settleHealing(settleWorkshop(settleBarracks(settleTraining(state, now), now), now), now),
+        now,
+      ),
       now,
     ),
     now,

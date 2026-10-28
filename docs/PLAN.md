@@ -1135,10 +1135,17 @@ Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) 
 > - **Bertahan:** pemburu adalah unit di peta, jadi ikut bertahan bila ≤ `raids.defendTiles` (4) petak dari penyerang, seperti unit lain. Selama serangan desa, pekerja yang mengumpulkan berlindung di Balai Utama (digambar masuk ke Balai), pengumpulan & perburuan berhenti sementara, dan musuh liar tidak bisa menyerang mereka.
 > - **Tes:** `animals.test.ts` (pekerja tidak bisa berburu, prajurit berburu lebih cepat bila lebih banyak lalu berhenti berjaga, galat & hewan sibuk, panggil pulang, aksi server, berhenti saat serangan desa, migrasi v29), `missions.test.ts` (goblin di baris Balai 1–2, statistik berskala seperti bandit, kekuatan).
 
-### - [ ] Tugas 1C.10 — Pohon Jiwa (penyembuhan)
+### - [x] Tugas 1C.10 — Pohon Jiwa (penyembuhan)
 
-- Unit menyimpan HP setelah bertarung (sekarang tidak), lalu pulih per menit di desa; Pohon Jiwa (5 level, Militer) mempercepat pemulihan, Lv 3+ menyembuhkan pembela saat serangan desa.
-- **Keputusan pemilik dibutuhkan:** "Sembuhkan semua" dengan permata (belum ada di aturan 7).
+- Unit menyimpan HP setelah bertarung (sekarang tidak), lalu pulih per menit di desa; Pohon Jiwa (5 level, Militer) mempercepat pemulihan.
+- **Keputusan pemilik (2026-10-27):** "Sembuhkan semua" dengan permata **boleh**, dihitung seperti percepat waktu (aturan 7 di `CLAUDE.md` diperbarui). Tanpa Pohon Jiwa unit tetap pulih **1 %/mnt**; kapan saja bisa langsung pulih penuh dengan **makanan + emas**. Unit yang terluka ikut bertarung dengan HP sisanya. **Saat desa diserang tidak ada penyembuhan sama sekali**, jadi efek "menyembuhkan pembela" Lv 3 dihapus (Lv 3 cukup 4 %/mnt).
+
+> **Ringkasan (selesai 2026-10-27):**
+>
+> - **Data:** **Pohon Jiwa** (`pohon-jiwa`, feature baru `healing`, Militer 2×2, Balai 2, maks 1, 5 level dengan biaya & waktu dari `docs/OBJEK.md`, `healPercentPerMinute` 2/3/4/5/6). `rules.healing`: pulih dasar 1 %/mnt, sembuh instan 0,5 makanan + 1 emas per HP. Validasi: `healPercentPerMinute` wajib di setiap level bangunan `healing` dan hanya di sana.
+> - **Shared (`healing.ts`, baru):** `PlayerState.healing` = `{ at, wounds }` (bagian HP maks yang hilang per monster/prajurit). `setWounds` menyimpan HP sisa setelah pertarungan liar & serangan desa (`settleMissions`) serta Serbu & Petualangan (`fightPlaced`, kini menerima `now`; `attackBase` juga); yang gugur dan yang tak terluka tidak punya luka. `Fighter.startHp`: unit masuk pertarungan dengan HP sisanya (juga di pratinjau peluang). `settleHealing` (di `settleVillage`) memulihkan per menit penuh dari waktu yang dioper, berhenti selama serangan desa dan untuk unit yang sedang bertarung. `healWithFood` (satu/beberapa/semua unit, tanpa perlu Pohon Jiwa) dan `healAllWithGems` (butuh Pohon Jiwa, harga = `speedUpCost` waktu tunggu terlama); keduanya ditolak saat desa diserang. Galat baru `underAttack`, `notWounded`, `noHealingTree`. Aksi server `healWithFood`, `healAllWithGems`. **Simpanan v31** (simpanan lama mulai tanpa luka).
+> - **Client:** kartu Pohon Jiwa: kecepatan pulih, daftar unit terluka (HP sekarang/maks), status (sisa waktu pulih penuh / berhenti saat diserang), tombol **Sembuhkan dengan makanan** dan **Sembuhkan semua (N permata)**. Kartu koleksi monster menampilkan HP sekarang/maks dan tombol **Sembuhkan**; kartu barak menampilkan prajurit terluka dengan tombol sembuh. Gambar buatan kode: pohon kecil toska bercahaya dengan daun tetesan jiwa (bertambah per level, mahkota emas di Lv 5), akar memeluk mata air.
+> - **Tes:** `healing.test.ts` (data & laju per level, HP tersimpan setelah pertarungan liar / serangan desa / Serbu / Petualangan, mulai bertarung dengan HP sisa, pulih per menit dari waktu yang dioper, tiap level lebih cepat, berhenti saat diserang & saat bertarung, sembuh dengan makanan+emas, sembuhkan semua dengan permata, aksi server, simpan & migrasi v30); validasi di `data.test.ts`; `adventure.test.ts` kini memulihkan pasukan di antara titik.
 
 ### - [ ] Tugas 1C.11 — Perpustakaan & riset
 

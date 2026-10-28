@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { careSoulEgg, hatchSoulEgg } from '../nest';
 import { claimSet } from '../collections';
+import { healAllWithGems, healWithFood } from '../healing';
 import { drawMarket } from '../market';
 import { buildMachine } from '../workshop';
 import { claimDaily, claimQuest } from '../quests';
@@ -142,8 +143,9 @@ export const ACTIONS = {
   speedUpMix: action(byId, (s, p, now) => speedUp(s, p.id, now)),
   collectMix: action(byId, (s, p, now) => collectMix(s, p.id, now)),
   buyMixerSlot: action(z.object({}), (s) => buyMixerSlot(s)),
-  attackBase: action(z.object({ baseId: id, cells: z.array(byId.merge(point)).max(50) }), (s, p) =>
-    attackBase(s, p),
+  attackBase: action(
+    z.object({ baseId: id, cells: z.array(byId.merge(point)).max(50) }),
+    (s, p, now) => attackBase(s, p, now),
   ),
   attackNode: action(
     z.object({ nodeId: id, cells: z.array(byId.merge(point)).max(50) }),
@@ -157,6 +159,8 @@ export const ACTIONS = {
   buildMachine: action(z.object({ buildingId: id, kind: id }), (s, p, now) =>
     buildMachine(s, p, now),
   ),
+  healWithFood: action(z.object({ ids: ids.optional() }), (s, p) => healWithFood(s, p)),
+  healAllWithGems: action(z.object({}), (s, _p, now) => healAllWithGems(s, now)),
   claimSet: action(byId, (s, p) => claimSet(s, p.id)),
   unlockIsland: action(byId, (s, p, now) => unlockIsland(s, p.id, now)),
   travelTo: action(byId, (s, p) => travelTo(s, p.id)),

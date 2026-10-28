@@ -31,6 +31,7 @@ import { createRng, type RngState } from './rng';
 import type { AdventureProgress } from './adventure';
 import type { SerbuProgress } from './serbu';
 import type { DailyBonus, QuestProgress } from './quests';
+import type { Healing } from './healing';
 import type { MarketDraw } from './market';
 import type { Machine, WorkshopBuild } from './workshop';
 import type { SoulEgg } from './nest';
@@ -102,6 +103,8 @@ export interface PlayerState {
   units: Record<string, UnitPlace>;
   /** Teams out fighting wild encounters. */
   missions: Mission[];
+  /** Wounds of monsters and soldiers after fights, healing by the minute (Tugas 1C.10). */
+  healing: Healing;
   /** Fallen monsters, waiting in the Kuburan to be revived (they take no population). */
   graveyard: Monster[];
   bossesDefeated: number;
@@ -197,6 +200,9 @@ export type ActionError =
   | 'notStorable'
   | 'cannotRotate'
   | 'teamsAway'
+  | 'underAttack'
+  | 'notWounded'
+  | 'noHealingTree'
   | 'badRequest';
 
 export type ActionResult<T extends object = object> =
@@ -263,6 +269,7 @@ export function createInitialState(
     storage: [],
     units: {},
     missions: [],
+    healing: { at: now, wounds: {} },
     graveyard: [],
     bossesDefeated: 0,
     xp: 0,

@@ -213,7 +213,10 @@ describe('petualangan nodes', () => {
     let s = army();
     setHall(s, gameData.maxTownHallLevel);
     for (const region of gameData.adventure.regions) {
-      for (const n of region.nodes) s = win(s, n.id).state;
+      for (const n of region.nodes) {
+        // Rested and healed before each fight (wounds carry over since Tugas 1C.10).
+        s = { ...win(s, n.id).state, healing: { at: T0, wounds: {} } };
+      }
     }
     expect(s.bossesDefeated).toBe(gameData.adventure.regions.length);
     expect(node(boss1.id).kind).toBe('boss');

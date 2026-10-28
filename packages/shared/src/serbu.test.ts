@@ -69,7 +69,7 @@ describe('attacking a base', () => {
   it('rejects bad placements, busy units, locked bases and armies over the cap', () => {
     const s = army();
     s.monsters.push({ id: 'm2', form: 'harimau', element: 'air', stage: adult, food: 0 });
-    const attack = (cells: SerbuCell[], baseId = first!.id) => attackBase(s, { baseId, cells });
+    const attack = (cells: SerbuCell[], baseId = first!.id) => attackBase(s, { baseId, cells }, 0);
     expect(attack([at('m1')], second!.id)).toEqual({ ok: false, error: 'notUnlocked' });
     expect(attack([])).toEqual({ ok: false, error: 'invalidAmount' });
     expect(attack([at('m1'), at('m1', 1)])).toEqual({ ok: false, error: 'invalidAmount' });
@@ -89,7 +89,7 @@ describe('attacking a base', () => {
 
   it('pays the first reward once and opens the next base; later wins pay the repeat reward', () => {
     const s = army();
-    const r = ok(attackBase(s, { baseId: first!.id, cells: [at('m1', 2, 3)] }));
+    const r = ok(attackBase(s, { baseId: first!.id, cells: [at('m1', 2, 3)] }, 0));
     expect(r.result.won).toBe(true);
     expect(r.result.first).toBe(true);
     for (const res of VILLAGE_RESOURCES) {
@@ -97,7 +97,7 @@ describe('attacking a base', () => {
     }
     expect(r.state.serbu.cleared).toEqual([first!.id]);
     expect(serbuBaseStatus(r.state, second!.id)).toBe('open');
-    const again = ok(attackBase(r.state, { baseId: first!.id, cells: [at('m1')] }));
+    const again = ok(attackBase(r.state, { baseId: first!.id, cells: [at('m1')] }, 0));
     expect(again.result.first).toBe(false);
     expect(again.state.resources.gold).toBe(r.state.resources.gold + first!.repeatReward.gold);
     expect(again.state.serbu.cleared).toEqual([first!.id]);
@@ -111,7 +111,7 @@ describe('attacking a base', () => {
     const last = serbu.bases.at(-1)!;
     s.serbu.cleared = serbu.bases.slice(0, -1).map((b) => b.id);
     s.village.buildings.find((b) => b.type === gameData.townHallId)!.level = last.requiresTownHall;
-    const r = ok(attackBase(s, { baseId: last.id, cells: [at('m1'), at('s1', 0, 1)] }));
+    const r = ok(attackBase(s, { baseId: last.id, cells: [at('m1'), at('s1', 0, 1)] }, 0));
     expect(r.result.won).toBe(false);
     expect(r.result.dead.sort()).toEqual(['m1', 's1']);
     expect(r.state.monsters).toEqual([]);
@@ -122,7 +122,7 @@ describe('attacking a base', () => {
   });
 
   it('starts our units on the chosen cells, the base on the right, within the time limit', () => {
-    const r = ok(attackBase(army(), { baseId: first!.id, cells: [at('m1', 3, 5)] }));
+    const r = ok(attackBase(army(), { baseId: first!.id, cells: [at('m1', 3, 5)] }, 0));
     const { battle: b } = r.result;
     const starts = b.events.filter((e) => e.kind === 'start');
     for (const e of starts) {
@@ -140,15 +140,15 @@ describe('attacking a base', () => {
     const s = army();
     s.soldiers.push({ id: 's1', kind: 'prajurit', rank: 0 });
     const cells = [at('m1', 1, 2), at('s1', 3, 4)];
-    expect(attackBase(s, { baseId: first!.id, cells })).toEqual(
-      attackBase(s, { baseId: first!.id, cells }),
+    expect(attackBase(s, { baseId: first!.id, cells }, 0)).toEqual(
+      attackBase(s, { baseId: first!.id, cells }, 0),
     );
   });
 });
 
 describe('serbu saves', () => {
   it('round-trips progress and migrates v16 saves with nothing beaten', () => {
-    const won = ok(attackBase(army(), { baseId: first!.id, cells: [at('m1')] })).state;
+    const won = ok(attackBase(army(), { baseId: first!.id, cells: [at('m1')] }, 0)).state;
     expect(deserializeState(serializeState(won))).toEqual(won);
     const v16 = JSON.parse(serializeState(won)).state;
     delete v16.serbu;

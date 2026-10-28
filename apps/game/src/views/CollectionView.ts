@@ -2,13 +2,17 @@ import type Phaser from 'phaser';
 import {
   compareMonsters,
   foodToNextStage,
+  healCost,
   isMonsterBusy,
   monsterName,
   populationCap,
   populationUsed,
+  unitHp,
+  woundOf,
   type Monster,
 } from '@soul-monster/shared';
 import { errorText, t } from '../text';
+import { costLabel } from '../ui/cost';
 import {
   COLLECTION_CARD_HEIGHT,
   COMPACT_CARD_HEIGHT,
@@ -68,6 +72,8 @@ export class CollectionView extends View {
           busy: isMonsterBusy(this.state, monster.id),
           onFeed: (m) => this.feed(m),
           onRelease: (m) => this.release(m),
+          hp: woundOf(this.state, monster.id) > 0 ? unitHp(this.state, monster.id) : undefined,
+          onHeal: (m) => this.heal(m),
         }),
       );
     });
@@ -81,6 +87,22 @@ export class CollectionView extends View {
         toast(this.scene, t('monster.released', { name: monsterName(monster) }), COLORS.good);
       }
     });
+  }
+
+  private heal(monster: Monster) {
+    const cost = healCost(this.state, [monster.id]);
+    confirmDialog(
+      this.scene,
+      t('healing.healOneConfirm', {
+        name: monsterName(monster),
+        cost: costLabel({ ...cost, wood: 0, stone: 0 }),
+      }),
+      () => {
+        if (this.run('healWithFood', { ids: [monster.id] })) {
+          toast(this.scene, t('healing.healed', { n: 1 }), COLORS.good);
+        }
+      },
+    );
   }
 
   private feed(monster: Monster) {

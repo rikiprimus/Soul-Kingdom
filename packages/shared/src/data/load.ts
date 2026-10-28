@@ -659,6 +659,12 @@ function validateVillage(
         `rules.json: workers.constructionMaxBySize tidak punya ukuran ${b.size} ("${b.id}")`,
       );
     }
+    const heals = b.levels.map((l) => l.healPercentPerMinute !== undefined);
+    if (b.feature === 'healing' ? heals.includes(false) : heals.includes(true)) {
+      issues.push(
+        `${where}: "${b.id}" healPercentPerMinute harus ada di setiap level bangunan feature "healing" dan hanya di sana`,
+      );
+    }
     if (b.feature === 'house' && b.levels.some((l) => l.population === undefined)) {
       issues.push(`${where}: "${b.id}" (house) butuh population di setiap level`);
     }

@@ -227,7 +227,7 @@ describe('Serbu army and power cap', () => {
     const s = withWorkshop();
     s.machines.push({ id: 'w1', kind: ketapel.id });
     const base = gameData.rules.serbu.bases[0]!;
-    const r = ok(attackBase(s, { baseId: base.id, cells: [{ id: 'w1', x: 0, y: 0 }] }));
+    const r = ok(attackBase(s, { baseId: base.id, cells: [{ id: 'w1', x: 0, y: 0 }] }, 0));
     const alive = (r.result.battle.hp['w1'] ?? 0) > 0;
     expect(r.result.dead.includes('w1')).toBe(!alive);
     expect(r.state.machines.some((m) => m.id === 'w1')).toBe(alive);

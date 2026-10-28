@@ -239,4 +239,17 @@ describe('game data', () => {
       /staffed/,
     );
   });
+
+  it('rejects a Pohon Jiwa level without a heal rate, and a heal rate elsewhere', () => {
+    const find = (raw: Record<string, any>, id: string) =>
+      raw.buildings.buildings.find((b: { id: string }) => b.id === id);
+    expectRejected(
+      corrupt((raw) => delete find(raw, 'pohon-jiwa').levels[2].healPercentPerMinute),
+      /healPercentPerMinute/,
+    );
+    expectRejected(
+      corrupt((raw) => (find(raw, 'kuburan').levels[0].healPercentPerMinute = 5)),
+      /healPercentPerMinute/,
+    );
+  });
 });

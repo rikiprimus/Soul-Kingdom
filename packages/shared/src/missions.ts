@@ -10,6 +10,7 @@ import {
 } from './data';
 import { elementAdvantage } from './elements';
 import { getStage, monsterStats, powerPointsOf, type Monster, type MonsterKind } from './monster';
+import { setWounds, withWounds } from './healing';
 import { recordAction } from './player';
 import { createRng } from './rng';
 import type { RaidMarch } from './raids';
@@ -160,7 +161,7 @@ export function teamFighters(
     const s = state.soldiers.find((x) => x.id === id);
     if (s) out.push({ id, stats: soldierStats(s, data), element: null, skill: false });
   }
-  return out;
+  return out.map((f) => withWounds(state, f));
 }
 
 /** The enemies of an encounter as fighters: bandits by head count, or its monsters. */
@@ -275,7 +276,13 @@ export function settleMissions(
       }
       next.village.encounters = next.village.encounters.filter((e) => e.id !== m.encounterId);
     }
-    // Members who fell (on either outcome): soldiers are gone, monsters go to the Kuburan.
+    // Survivors keep their wounds; members who fell (on either outcome): soldiers are
+    // gone, monsters go to the Kuburan.
+    setWounds(
+      next,
+      Object.fromEntries(m.monsterIds.map((id) => [id, f.hpLeft[id] ?? 0])),
+      Math.min(f.endsAt, now),
+    );
     for (const id of f.dead) {
       next.soldiers = next.soldiers.filter((x) => x.id !== id);
       const fallen = next.monsters.find((x) => x.id === id);

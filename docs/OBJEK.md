@@ -857,30 +857,30 @@ Tabel level di tiap bangunan sudah mengikuti rencana baru. Baris bertanda **\***
 > Pohon bercahaya yang menyembuhkan luka pasukan.
 
 - Kategori: Militer · ukuran 2×2 · 5 level · usul terbuka Balai Lv 2 · maks per Balai Lv1: 0, Lv2: 1, Lv3: 1, Lv4: 1, Lv5: 1, Lv6: 1, Lv7: 1, Lv8: 1
-- Sekarang: **belum ada** (objek baru, belum di `data/`).
+- Sekarang: **ada** (Tugas 1C.10).
 
-| Lv  | Biaya                                    | Waktu bangun | Butuh Balai | Efek                                                 |
-| --- | ---------------------------------------- | ------------ | ----------- | ---------------------------------------------------- |
-| 1*  | 2.000 emas + 800 kayu + 500 batu         | 15 mnt       | 2           | pulih 2% HP/mnt                                      |
-| 2*  | 6.000 emas + 2.000 kayu + 1.500 batu     | 1 jam        | 3           | pulih 3% HP/mnt                                      |
-| 3*  | 15.000 emas + 5.000 kayu + 4.000 batu    | 3 jam        | 4           | pulih 4% HP/mnt, menyembuhkan pembela radius 5 petak |
-| 4*  | 40.000 emas + 12.000 kayu + 10.000 batu  | 8 jam        | 5           | pulih 5% HP/mnt                                      |
-| 5*  | 100.000 emas + 30.000 kayu + 25.000 batu | 16 jam       | 6           | pulih 6% HP/mnt                                      |
+| Lv  | Biaya                                    | Waktu bangun | Butuh Balai | Efek            |
+| --- | ---------------------------------------- | ------------ | ----------- | --------------- |
+| 1*  | 2.000 emas + 800 kayu + 500 batu         | 15 mnt       | 2           | pulih 2% HP/mnt |
+| 2*  | 6.000 emas + 2.000 kayu + 1.500 batu     | 1 jam        | 3           | pulih 3% HP/mnt |
+| 3*  | 15.000 emas + 5.000 kayu + 4.000 batu    | 3 jam        | 4           | pulih 4% HP/mnt |
+| 4*  | 40.000 emas + 12.000 kayu + 10.000 batu  | 8 jam        | 5           | pulih 5% HP/mnt |
+| 5*  | 100.000 emas + 30.000 kayu + 25.000 batu | 16 jam       | 6           | pulih 6% HP/mnt |
 
 **Isian pemilik:**
 
 - Bentuk (rupa, ukuran petak, suasana): 2×2, pohon kecil bercahaya hijau-toska dengan daun berbentuk tetesan jiwa, akar memeluk mata air kecil.
 - Fungsi (apa yang dilakukan pemain dengan objek ini): Menyembuhkan monster dan prajurit yang terluka setelah bertarung (HP pulih per menit di desa).
 - Saat diketuk (apa yang muncul: kartu, panel, aksi langsung, tombol apa saja): Kartu: kecepatan penyembuhan, unit yang sedang disembuhkan, tombol **Sembuhkan semua** (bila boleh pakai permata).
-- Leveling (berapa level, apa yang bertambah tiap level): 5 level. Usulan pemulihan: 2% / 3% / 4% / 5% / 6% HP per menit. Lv3+: juga menyembuhkan unit pembela dalam radius 5 petak saat serangan desa.
+- Leveling (berapa level, apa yang bertambah tiap level): 5 level. Usulan pemulihan: 2% / 3% / 4% / 5% / 6% HP per menit. (Keputusan 2026-10-27: tidak ada penyembuhan saat desa diserang, efek pembela Lv 3+ dihapus.)
 - Percepat dengan permata saat dibangun / naik level (boleh atau tidak, harga): Boleh, harga umum 1 permata per menit sisa (minimal 1).
 - Deskripsi tiap level (teks yang dilihat pemain):
   - Lv 1: Tunas jiwa. Pasukan pulih perlahan.
   - Lv 2: Pohon tumbuh. Pemulihan lebih cepat.
-  - Lv 3: Daun bercahaya. Menyembuhkan pembela saat diserang.
+  - Lv 3: Daun bercahaya. Pemulihan makin cepat.
   - Lv 4: Pohon rindang. Pemulihan cepat.
   - Lv 5: Pohon Jiwa Agung. Pemulihan tercepat.
-- Catatan lain: Bedanya dengan Kuburan: Pohon Jiwa untuk yang terluka, Kuburan untuk yang gugur. "Sembuhkan semua" dengan permata tidak ada di daftar aturan 7, perlu keputusan.
+- Catatan lain: Bedanya dengan Kuburan: Pohon Jiwa untuk yang terluka, Kuburan untuk yang gugur. "Sembuhkan semua" dengan permata boleh (keputusan 2026-10-27, dihitung sebagai percepat waktu). Tanpa pohon pulih 1%/mnt; sembuh instan dengan makanan + emas.
 
 ### Perpustakaan (`perpustakaan`)
 
