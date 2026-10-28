@@ -62,6 +62,8 @@ import {
   soldierName,
   unitHp,
   unitMaxHp,
+  researchRemaining,
+  techDef,
   trainingRemaining,
   townHallLevel,
   towerReach,
@@ -849,6 +851,54 @@ function buildingInfo(state: PlayerState, b: Building, a: InfoActions): InfoCont
                 if (r) a.toast(t('healing.healed', { n: r.healed.length }), COLORS.good);
               }),
           });
+        }
+        break;
+      }
+      case 'research': {
+        // Perpustakaan: Riset teknologi, antrean, dan status aktif.
+        const doneCount = state.research.completed.length;
+        const totalCount = gameData.rules.research.techs.length;
+        content.lines.push(t('research.completedCount', { n: doneCount, total: totalCount }));
+
+        if (state.research.active) {
+          const activeTech = techDef(state.research.active.techId);
+          if (activeTech) {
+            content.lines.push(activeTech.name);
+          }
+        }
+
+        statuses.push(() => {
+          if (!state.research.active) return t('research.idle');
+          const left = researchRemaining(state, a.now());
+          const activeTech = techDef(state.research.active.techId);
+          return t('research.active', {
+            name: activeTech?.name ?? '',
+            time: formatDuration(left ?? 0),
+          });
+        });
+
+        if (b.level >= 1) {
+          buttons.push({
+            label: t('research.open'),
+            color: 0x3f6fb8,
+            onClick: () => a.openPanel('research'),
+          });
+
+          if (state.research.active) {
+            const left = researchRemaining(state, a.now()) ?? 0;
+            const gems = speedUpCost(left);
+            const activeTech = techDef(state.research.active.techId);
+            const techName = activeTech?.name ?? '';
+            buttons.push({
+              label: t('research.speedUp', { gems }),
+              color: COLORS.accentDark,
+              onClick: () =>
+                a.confirm(t('research.speedUpConfirm', { name: techName, gems }), () => {
+                  const r = a.run('speedUpResearch', {});
+                  if (r) a.toast(t('research.finished', { name: techName }), COLORS.good);
+                }),
+            });
+          }
         }
         break;
       }

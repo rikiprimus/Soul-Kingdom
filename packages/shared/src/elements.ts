@@ -107,8 +107,11 @@ export function elementAdvantage(
   attackerId: ElementId,
   defenderId: ElementId,
   data: GameData = gameData,
+  advantageBonus = 0,
 ): number {
   const { advantageStep, advantageMin, advantageMax } = data.rules.battle;
-  const raw = 1 + elementAdvantageScore(attackerId, defenderId, data) * advantageStep;
-  return Math.min(advantageMax, Math.max(advantageMin, raw));
+  const score = elementAdvantageScore(attackerId, defenderId, data);
+  const step = score > 0 ? advantageStep * (1 + advantageBonus) : advantageStep;
+  const raw = 1 + score * step;
+  return Math.min(advantageMax * (1 + advantageBonus), Math.max(advantageMin, raw));
 }

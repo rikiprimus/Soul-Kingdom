@@ -83,9 +83,14 @@ function clampTier(tier: number, context: MixContext, data: GameData): number {
  * Form tier odds after pity: every `pity.streak` mixes in the streak add
  * `mutationBonusPerStreak` to mutation, taken from "same" first, then up/down.
  */
-export function formTierOddsWithPity(pityStreak: number, data: GameData = gameData): FormTierOdds {
+export function formTierOddsWithPity(
+  pityStreak: number,
+  data: GameData = gameData,
+  bonusMutation = 0,
+): FormTierOdds {
   const { formTierOdds, pity } = data.rules.mixer;
-  const wanted = Math.floor(Math.max(0, pityStreak) / pity.streak) * pity.mutationBonusPerStreak;
+  const wanted =
+    Math.floor(Math.max(0, pityStreak) / pity.streak) * pity.mutationBonusPerStreak + bonusMutation;
   const odds = { ...formTierOdds };
   let left = Math.min(wanted, 1 - odds.mutation);
   odds.mutation += left;
@@ -147,6 +152,7 @@ export function rollMix(
   context: MixContext,
   rng: Rng,
   data: GameData = gameData,
+  mutationBonus = 0,
 ): MixResult {
   const recipe = findMonsterRecipe(parentA, parentB, data);
   if (recipe) {
@@ -168,7 +174,10 @@ export function rollMix(
   }
 
   const baseTier = Math.max(formTierOf(parentA, data), formTierOf(parentB, data));
-  const tierOutcome = rollTierOutcome(formTierOddsWithPity(context.pityStreak, data), rng);
+  const tierOutcome = rollTierOutcome(
+    formTierOddsWithPity(context.pityStreak, data, mutationBonus),
+    rng,
+  );
   const tier = clampTier(baseTier + TIER_DELTA[tierOutcome], context, data);
   const candidates = data.formsByTier.get(tier);
   if (!candidates || candidates.length === 0) throw new Error(`Tidak ada wujud tingkat ${tier}`);
@@ -244,12 +253,19 @@ export function mixCost(
   parentB: MonsterKind,
   context: Pick<MixContext, 'bossesDefeated'>,
   data: GameData = gameData,
+  altarTimeReduction = 0,
 ): MixCost {
   const baseTier = Math.max(formTierOf(parentA, data), formTierOf(parentB, data));
   const resultTier = clampTier(baseTier + 1, { pityStreak: 0, ...context }, data);
   const t = String(resultTier);
   const cost = data.rules.mixer.costByResultTier[t]!;
-  return { resultTier, ...cost, prophecyGems: data.rules.premium.soulProphecyGemsByResultTier[t]! };
+  const effSeconds = Math.max(1, Math.ceil(cost.seconds * Math.max(0.1, 1 - altarTimeReduction)));
+  return {
+    resultTier,
+    ...cost,
+    seconds: effSeconds,
+    prophecyGems: data.rules.premium.soulProphecyGemsByResultTier[t]!,
+  };
 }
 
 export function validateParents(

@@ -16,6 +16,7 @@ import { createRng, type Rng } from './rng';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { townHallLevel } from './village';
 import { machineFighter, machinePower, workshopLevel } from './workshop';
+import { getResearchBonus } from './research';
 
 /** An NPC base to attack in Serbu (`rules.serbu.bases`). */
 export type SerbuBase = GameData['rules']['serbu']['bases'][number];
@@ -217,23 +218,34 @@ export function fightPlaced(
   const next = deepClone(state);
   const rng = createRng(next.rngState);
   const attackers = cells.map((c): Fighter => {
+    const mStatsBonus = getResearchBonus(next, 'monsterStatsBonus', data);
+    const elementBonus = getResearchBonus(next, 'elementAdvantageBonus', data);
+    const soldierHpBonus = getResearchBonus(next, 'soldierHpBonus', data);
+    const soldierAtkBonus = getResearchBonus(next, 'soldierAtkBonus', data);
+    const machineAtkBonus = getResearchBonus(next, 'machineAtkBonus', data);
     const m = next.monsters.find((x) => x.id === c.id);
     if (m) {
       const f: Fighter = {
         id: c.id,
-        stats: monsterStats(m, data),
+        stats: monsterStats(m, data, mStatsBonus),
         element: m.element,
         skill: true,
+        elementBonus,
       };
       return withWounds(next, f);
     }
     const s = next.soldiers.find((x) => x.id === c.id);
     if (s) {
-      const f: Fighter = { id: c.id, stats: soldierStats(s, data), element: null, skill: false };
+      const f: Fighter = {
+        id: c.id,
+        stats: soldierStats(s, data, { hpBonus: soldierHpBonus, atkBonus: soldierAtkBonus }),
+        element: null,
+        skill: false,
+      };
       return withWounds(next, f);
     }
     const w = next.machines.find((x) => x.id === c.id)!;
-    return machineFighter(w, workshopLevel(next, data), data);
+    return machineFighter(w, workshopLevel(next, data), data, machineAtkBonus);
   });
   const enemies = defenderFighters(defenders, data);
   const battle = simulateBattle(attackers, enemies, rng.int(0, 0x7fffffff), data, {

@@ -167,6 +167,24 @@ const towerRulesSchema = z.object({
     .min(1),
 });
 
+export const researchTechBranchSchema = z.enum(['produksi', 'militer', 'monster']);
+export const researchTechSchema = z.object({
+  id: z.string().min(1),
+  branch: researchTechBranchSchema,
+  tier: z.number().int().min(1).max(5),
+  name: z.string().min(1),
+  description: z.string(),
+  cost: z.object({
+    gold: nonNegInt,
+    soulCrystal: nonNegInt,
+  }),
+  seconds: nonNegInt,
+  requiresTech: z.string().nullable(),
+  effects: z.record(z.string(), z.number()),
+});
+export type ResearchTechBranch = z.infer<typeof researchTechBranchSchema>;
+export type ResearchTech = z.infer<typeof researchTechSchema>;
+
 export const rulesFileSchema = z.object({
   rarity: z.object({
     byElementUnits: tierRecord(raritySchema),
@@ -391,6 +409,13 @@ export const rulesFileSchema = z.object({
       )
       .min(1),
   }),
+  /** Perpustakaan & Riset (Tugas 1C.11). */
+  research: z.object({
+    building: z.string().min(1),
+    queueMax: nonNegInt,
+    branches: z.array(researchTechBranchSchema).min(1),
+    techs: z.array(researchTechSchema).min(1),
+  }),
   workers: z.object({
     trainFood: nonNegInt,
     /** Seconds to train one worker, one entry per Balai Utama level. */
@@ -494,6 +519,7 @@ export const buildingFeatures = [
   'gate',
   'workshop',
   'healing',
+  'research',
   'serbu',
   'nest',
   'wonder',

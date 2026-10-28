@@ -17,6 +17,7 @@ import type { RaidMarch } from './raids';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { hasRoomFor } from './workers';
 import { hasFeature } from './village';
+import { getResearchBonus } from './research';
 
 /** A group of wild enemies waiting on the map (see encounters.ts for spawning). */
 export interface WildEncounter {
@@ -155,11 +156,30 @@ export function teamFighters(
   data: GameData = gameData,
 ): Fighter[] {
   const out: Fighter[] = [];
+  const mStatsBonus = getResearchBonus(state, 'monsterStatsBonus', data);
+  const elementBonus = getResearchBonus(state, 'elementAdvantageBonus', data);
+  const soldierHpBonus = getResearchBonus(state, 'soldierHpBonus', data);
+  const soldierAtkBonus = getResearchBonus(state, 'soldierAtkBonus', data);
   for (const id of ids) {
     const m = state.monsters.find((x) => x.id === id);
-    if (m) out.push({ id, stats: monsterStats(m, data), element: m.element, skill: true });
+    if (m) {
+      out.push({
+        id,
+        stats: monsterStats(m, data, mStatsBonus),
+        element: m.element,
+        skill: true,
+        elementBonus,
+      });
+    }
     const s = state.soldiers.find((x) => x.id === id);
-    if (s) out.push({ id, stats: soldierStats(s, data), element: null, skill: false });
+    if (s) {
+      out.push({
+        id,
+        stats: soldierStats(s, data, { hpBonus: soldierHpBonus, atkBonus: soldierAtkBonus }),
+        element: null,
+        skill: false,
+      });
+    }
   }
   return out.map((f) => withWounds(state, f));
 }

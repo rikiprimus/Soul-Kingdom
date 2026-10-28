@@ -4,6 +4,7 @@ import { ambushAt, type AmbushResult } from './aggro';
 import { advanceAnimals, huntersOf, releaseHunters, type AnimalDone } from './animals';
 import { recordAction } from './player';
 import { createRng } from './rng';
+import { getResearchBonus } from './research';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import {
   currentIsland,
@@ -106,7 +107,8 @@ export function advanceWilds(
     const def = obstacleDef(o.type, data);
     o.work = Math.min(def.work.workSeconds, o.work + seconds * crew);
     if (o.work < def.work.workSeconds) continue;
-    const soulCrystal = rng.chance(def.soulCrystalChance) ? 1 : 0;
+    const crystalBonus = getResearchBonus(next, 'soulCrystalChanceBonus', data);
+    const soulCrystal = rng.chance(Math.min(1, def.soulCrystalChance + crystalBonus)) ? 1 : 0;
     for (const r of VILLAGE_RESOURCES) next.resources[r] += def.yield[r];
     next.resources.soulCrystal += soulCrystal;
     const crewIds = next.workers.filter((w) => gathering(o.id)(w.task)).map((w) => w.id);

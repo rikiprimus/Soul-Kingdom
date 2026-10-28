@@ -27,6 +27,8 @@ export interface Fighter {
   siege?: { multiplier: number; buildingsOnly: boolean };
   /** HP it starts with when wounded (Pohon Jiwa, Tugas 1C.10); `stats.hp` when not given. */
   startHp?: number;
+  /** Extra element advantage bonus from research (Tugas 1C.11). */
+  elementBonus?: number;
 }
 
 export type Side = 'attackers' | 'defenders';
@@ -190,7 +192,9 @@ export function simulateBattle(
       u.attacks += 1;
       const skill = u.f.skill && u.attacks % sim.skillEvery === 0;
       const edge =
-        u.f.element && target.f.element ? elementAdvantage(u.f.element, target.f.element, data) : 1;
+        u.f.element && target.f.element
+          ? elementAdvantage(u.f.element, target.f.element, data, u.f.elementBonus ?? 0)
+          : 1;
       const roll = 1 + sim.damageVariance * (rng.next() * 2 - 1);
       const siege = u.f.siege && target.f.fixed ? u.f.siege.multiplier : 1;
       const raw =

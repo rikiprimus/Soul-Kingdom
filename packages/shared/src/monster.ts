@@ -92,16 +92,23 @@ export function powerPointsOf(kind: MonsterKind, data: GameData = gameData): num
 }
 
 /** Food needed to grow from the current stage to the next; 0 at the final stage. */
-export function foodToNextStage(monster: Monster, data: GameData = gameData): number {
+export function foodToNextStage(
+  monster: Monster,
+  data: GameData = gameData,
+  feedCostReduction = 0,
+): number {
   const { stage } = getStage(monster.stage, data);
   if (stage.foodToNextPerPowerPoint === undefined || isFinalStage(monster.stage, data)) return 0;
-  return stage.foodToNextPerPowerPoint * powerPointsOf(monster, data);
+  const base = stage.foodToNextPerPowerPoint * powerPointsOf(monster, data);
+  const eff = Math.max(0.1, 1 - feedCostReduction);
+  return Math.max(1, Math.round(base * eff));
 }
 
 /** hp/atk/def scale with form tier and growth stage; spd and range do not. */
 export function monsterStats(
   monster: Pick<Monster, 'form' | 'stage'>,
   data: GameData = gameData,
+  statsBonus = 0,
 ): MonsterStats {
   const form = getForm(monster.form, data);
   const base = data.rules.stats.roleBase[form.role];
@@ -109,9 +116,10 @@ export function monsterStats(
   const scale =
     data.rules.stats.tierMultiplier[String(form.tier)]! *
     getStage(monster.stage, data).stage.statMultiplier;
+  const mult = 1 + statsBonus;
   return {
-    hp: Math.round(base.hp * scale),
-    atk: Math.round(base.atk * scale),
+    hp: Math.round(base.hp * scale * mult),
+    atk: Math.round(base.atk * scale * mult),
     def: Math.round(base.def * scale),
     spd: base.spd,
     range: base.range,

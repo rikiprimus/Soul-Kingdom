@@ -523,6 +523,27 @@ export function loadGameData(raw: RawGameData): GameData {
     issues.push('buildings.json: butuh satu bangunan dengan feature "nest"');
   }
 
+  const researchBldg = buildingInfo.buildingById.get(rules.research.building);
+  if (!researchBldg) {
+    issues.push(
+      `rules.json: research.building "${rules.research.building}" tidak ada di buildings.json`,
+    );
+  } else if (researchBldg.feature !== 'research') {
+    issues.push(
+      `rules.json: research.building "${rules.research.building}" harus punya feature "research"`,
+    );
+  }
+  const techIds = new Set<string>();
+  for (const tech of rules.research.techs) {
+    if (techIds.has(tech.id)) issues.push(`rules.json: riset "${tech.id}" ganda`);
+    techIds.add(tech.id);
+  }
+  for (const tech of rules.research.techs) {
+    if (tech.requiresTech && !techIds.has(tech.requiresTech)) {
+      issues.push(`rules.json: riset "${tech.id}" butuh "${tech.requiresTech}" yang tidak ada`);
+    }
+  }
+
   if (issues.length > 0) throw new DataValidationError(issues);
 
   return {
@@ -638,9 +659,12 @@ function validateVillage(
     if (
       b.feature !== 'barracks' &&
       b.feature !== 'workshop' &&
+      b.feature !== 'research' &&
       b.levels.some((l) => l.queueBonus !== undefined)
     ) {
-      issues.push(`${where}: "${b.id}" bukan barak/bengkel, tidak boleh punya queueBonus`);
+      issues.push(
+        `${where}: "${b.id}" bukan barak/bengkel/perpustakaan, tidak boleh punya queueBonus`,
+      );
     }
     if (b.maxCount.length !== maxTownHallLevel) {
       issues.push(

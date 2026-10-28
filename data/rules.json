@@ -423,6 +423,179 @@
     "_note": "Monster dan prajurit berdiri di petak desa (Tugas 1A.15). Perintah pindah/kawal: berjalan di jalur petak bebas dengan walkTilesPerSecond. Kawal = berjaga di sekitar pohon/batu/semak tempat pekerja mengumpulkan.",
     "walkTilesPerSecond": 1.5
   },
+  "research": {
+    "_note": "Perpustakaan & Riset (Tugas 1C.11). 3 cabang: Produksi, Militer, Monster. Masing-masing 5 tingkat riset. Riset butuh Perpustakaan level setingkat, biaya emas + Kristal Jiwa, dan waktu. Satu riset berjalan sekaligus (Perpustakaan Lv 5 membuka antrean +1).",
+    "building": "perpustakaan",
+    "queueMax": 0,
+    "branches": ["produksi", "militer", "monster"],
+    "techs": [
+      {
+        "id": "manajemen-lumbung",
+        "branch": "produksi",
+        "tier": 1,
+        "name": "Manajemen Lumbung",
+        "description": "Hasil panen Ladang & Peternakan +10%.",
+        "cost": { "gold": 800, "soulCrystal": 1 },
+        "seconds": 1800,
+        "requiresTech": null,
+        "effects": { "farmYieldBonus": 0.1, "ranchYieldBonus": 0.1 }
+      },
+      {
+        "id": "efisiensi-tambang",
+        "branch": "produksi",
+        "tier": 2,
+        "name": "Efisiensi Tambang",
+        "description": "Hasil Tambang Emas, Tambang Batu, & Tukang Kayu +10%.",
+        "cost": { "gold": 2500, "soulCrystal": 2 },
+        "seconds": 3600,
+        "requiresTech": "manajemen-lumbung",
+        "effects": { "staffedYieldBonus": 0.1 }
+      },
+      {
+        "id": "keahlian-tukang",
+        "branch": "produksi",
+        "tier": 3,
+        "name": "Keahlian Tukang",
+        "description": "Waktu konstruksi & upgrade semua bangunan −10%.",
+        "cost": { "gold": 6000, "soulCrystal": 4 },
+        "seconds": 7200,
+        "requiresTech": "efisiensi-tambang",
+        "effects": { "buildTimeReduction": 0.1 }
+      },
+      {
+        "id": "ekstraksi-jiwa",
+        "branch": "produksi",
+        "tier": 4,
+        "name": "Ekstraksi Jiwa",
+        "description": "Peluang mendapatkan Kristal Jiwa saat mengambil alam liar naik +25%.",
+        "cost": { "gold": 15000, "soulCrystal": 6 },
+        "seconds": 14400,
+        "requiresTech": "keahlian-tukang",
+        "effects": { "soulCrystalChanceBonus": 0.25 }
+      },
+      {
+        "id": "kemakmuran-raya",
+        "branch": "produksi",
+        "tier": 5,
+        "name": "Kemakmuran Raya",
+        "description": "Hasil semua bangunan produksi +15%, bonus emas Pasar +20%.",
+        "cost": { "gold": 35000, "soulCrystal": 10 },
+        "seconds": 28800,
+        "requiresTech": "ekstraksi-jiwa",
+        "effects": { "allProductionBonus": 0.15, "marketGoldBonus": 0.2 }
+      },
+      {
+        "id": "formasi-ketat",
+        "branch": "militer",
+        "tier": 1,
+        "name": "Formasi Ketat",
+        "description": "HP semua jenis prajurit (Prajurit, Pemanah, Berkuda) +10%.",
+        "cost": { "gold": 800, "soulCrystal": 1 },
+        "seconds": 1800,
+        "requiresTech": null,
+        "effects": { "soldierHpBonus": 0.1 }
+      },
+      {
+        "id": "senjata-tempa",
+        "branch": "militer",
+        "tier": 2,
+        "name": "Senjata Tempa",
+        "description": "Serangan prajurit & mesin perang +10%.",
+        "cost": { "gold": 2500, "soulCrystal": 2 },
+        "seconds": 3600,
+        "requiresTech": "formasi-ketat",
+        "effects": { "soldierAtkBonus": 0.1, "machineAtkBonus": 0.1 }
+      },
+      {
+        "id": "pertahanan-kokoh",
+        "branch": "militer",
+        "tier": 3,
+        "name": "Pertahanan Kokoh",
+        "description": "HP Tembok, Gerbang, dan Menara +15%.",
+        "cost": { "gold": 6000, "soulCrystal": 4 },
+        "seconds": 7200,
+        "requiresTech": "senjata-tempa",
+        "effects": { "defenseHpBonus": 0.15 }
+      },
+      {
+        "id": "disiplin-militer",
+        "branch": "militer",
+        "tier": 4,
+        "name": "Disiplin Militer",
+        "description": "Waktu latih prajurit & buat mesin perang −15%.",
+        "cost": { "gold": 15000, "soulCrystal": 6 },
+        "seconds": 14400,
+        "requiresTech": "pertahanan-kokoh",
+        "effects": { "militaryTrainTimeReduction": 0.15 }
+      },
+      {
+        "id": "panglima-perang",
+        "branch": "militer",
+        "tier": 5,
+        "name": "Panglima Perang",
+        "description": "Batas poin kekuatan Serbu +3 poin, pertahanan desa +10% saat diserang.",
+        "cost": { "gold": 35000, "soulCrystal": 10 },
+        "seconds": 28800,
+        "requiresTech": "disiplin-militer",
+        "effects": { "serbuPowerCapBonus": 3, "raidDefenseBonus": 0.1 }
+      },
+      {
+        "id": "nutrisi-jiwa",
+        "branch": "monster",
+        "tier": 1,
+        "name": "Nutrisi Jiwa",
+        "description": "Biaya makanan untuk menumbuhkan monster −10%.",
+        "cost": { "gold": 800, "soulCrystal": 1 },
+        "seconds": 1800,
+        "requiresTech": null,
+        "effects": { "feedCostReduction": 0.1 }
+      },
+      {
+        "id": "rahasia-kuno-1",
+        "branch": "monster",
+        "tier": 2,
+        "name": "Rahasia Kuno I",
+        "description": "Membuka petunjuk resep rahasia Altar 1 & 2 di Monsterpedia (Naga Uap & Siluman Roh), waktu campur Altar −10%.",
+        "cost": { "gold": 2500, "soulCrystal": 2 },
+        "seconds": 3600,
+        "requiresTech": "nutrisi-jiwa",
+        "effects": { "altarTimeReduction": 0.1, "secretRecipeClues": 1 }
+      },
+      {
+        "id": "resonansi-unsur",
+        "branch": "monster",
+        "tier": 3,
+        "name": "Resonansi Unsur",
+        "description": "Efek keunggulan elemen monster dalam pertarungan +10%.",
+        "cost": { "gold": 6000, "soulCrystal": 4 },
+        "seconds": 7200,
+        "requiresTech": "rahasia-kuno-1",
+        "effects": { "elementAdvantageBonus": 0.1 }
+      },
+      {
+        "id": "rahasia-kuno-2",
+        "branch": "monster",
+        "tier": 4,
+        "name": "Rahasia Kuno II",
+        "description": "Membuka petunjuk resep rahasia Altar 3 & 4 (Raksasa Kristal & Naga Purba Langit), peluang mutasi Altar +2%.",
+        "cost": { "gold": 15000, "soulCrystal": 6 },
+        "seconds": 14400,
+        "requiresTech": "resonansi-unsur",
+        "effects": { "mutationBonus": 0.02, "secretRecipeClues": 2 }
+      },
+      {
+        "id": "harmoni-jiwa",
+        "branch": "monster",
+        "tier": 5,
+        "name": "Harmoni Jiwa",
+        "description": "Semua statistik monster +10%, pemulihan alami Pohon Jiwa +1%/mnt.",
+        "cost": { "gold": 35000, "soulCrystal": 10 },
+        "seconds": 28800,
+        "requiresTech": "rahasia-kuno-2",
+        "effects": { "monsterStatsBonus": 0.1, "healingRateBonus": 1 }
+      }
+    ]
+  },
   "population": {
     "_note": "Populasi dari Balai Utama dan Rumah (buildings.json). Pekerja memakai workerSlots; monster memakai battle.powerPoints sesuai tingkat wujud (bayi dan dewasa sama); prajurit memakai poin kekuatannya. Populasi dari dekorasi dibatasi per level Balai: decorationCapByTownHall[level Balai - 1] (keputusan pemilik 2026-10-26, Tugas 1C.4).",
     "workerSlots": 1,

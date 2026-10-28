@@ -22,6 +22,7 @@ import {
   type Building,
   type Tile,
 } from './village';
+import { getResearchBonus } from './research';
 
 /**
  * How a raid on the village is going (Tugas 1.7). It only moves with active play: first
@@ -94,9 +95,15 @@ export function raidDps(e: WildEncounter, data: GameData = gameData): number {
 }
 
 /** Seconds a group with `dps` needs to break one wall segment or gate. */
-export function wallBreakSeconds(wall: Building, dps: number, data: GameData = gameData): number {
+export function wallBreakSeconds(
+  wall: Building,
+  dps: number,
+  data: GameData = gameData,
+  hpBonus = 0,
+): number {
   const { hpByLevel } = barrierRules(wall.type, data) ?? data.rules.raids.wall;
-  const hp = hpByLevel[Math.min(Math.max(1, wall.level), hpByLevel.length) - 1]!;
+  const baseHp = hpByLevel[Math.min(Math.max(1, wall.level), hpByLevel.length) - 1]!;
+  const hp = baseHp * (1 + hpBonus);
   return hp / dps;
 }
 
@@ -113,7 +120,12 @@ export function towerReach(b: Building, data: GameData = gameData): number {
 }
 
 /** A tower as a fighter that never moves, with the stats of its level (Menara Sihir splashes). */
-export function towerFighter(b: Building, data: GameData = gameData): Fighter {
+export function towerFighter(
+  b: Building,
+  data: GameData = gameData,
+  hpBonus = 0,
+  atkBonus = 0,
+): Fighter {
   const stats = towerStats(b, data);
   const { magicTower } = data.rules.raids;
   const splash =
@@ -122,7 +134,11 @@ export function towerFighter(b: Building, data: GameData = gameData): Fighter {
       : undefined;
   return {
     id: `tower:${b.id}`,
-    stats: { ...stats },
+    stats: {
+      ...stats,
+      hp: Math.round(stats.hp * (1 + hpBonus)),
+      atk: Math.round(stats.atk * (1 + atkBonus)),
+    },
     element: null,
     skill: false,
     fixed: true,
@@ -177,7 +193,10 @@ export function raidRoute(state: PlayerState, e: WildEncounter, data: GameData =
     const id = tiles.get(`${x},${y}`);
     if (id === undefined) return step;
     const b = byId.get(id);
-    if (b && isWall(b, data)) return wallBreakSeconds(b, dps, data) + step;
+    if (b && isWall(b, data)) {
+      const hpBonus = getResearchBonus(state, 'defenseHpBonus', data);
+      return wallBreakSeconds(b, dps, data, hpBonus) + step;
+    }
     return slip ? step : Infinity;
   };
   for (const slip of [false, true]) {
@@ -307,10 +326,12 @@ export function startRaidFight(
   data: GameData = gameData,
 ): Mission {
   const rng = createRng(next.rngState);
+  const hpBonus = getResearchBonus(next, 'defenseHpBonus', data);
+  const atkBonus = getResearchBonus(next, 'raidDefenseBonus', data);
   const towers = towerIds
     .map((id) => next.village.buildings.find((b) => b.id === id))
     .filter((b): b is Building => b !== undefined)
-    .map((b) => towerFighter(b, data));
+    .map((b) => towerFighter(b, data, hpBonus, atkBonus));
   const defenders = [...teamFighters(next, unitIds, data), ...towers];
   const raiders = encounterFighters(e, data);
   const battle = simulateBattle(raiders, defenders, rng.int(0, 0x7fffffff), data, {
@@ -473,7 +494,8 @@ function marchRaid(
       );
       march.next = to;
       march.breaking = wall?.id ?? null;
-      march.stepSeconds = wall ? wallBreakSeconds(wall, raidDps(e, data), data) : step;
+      const hpBonus = getResearchBonus(next, 'defenseHpBonus', data);
+      march.stepSeconds = wall ? wallBreakSeconds(wall, raidDps(e, data), data, hpBonus) : step;
       march.stepLeft = march.stepSeconds;
     }
     const use = Math.min(left, march.stepLeft);

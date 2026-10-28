@@ -1147,9 +1147,21 @@ Tujuan: menerapkan daftar objek yang diisi pemilik di [docs/OBJEK.md](OBJEK.md) 
 > - **Client:** kartu Pohon Jiwa: kecepatan pulih, daftar unit terluka (HP sekarang/maks), status (sisa waktu pulih penuh / berhenti saat diserang), tombol **Sembuhkan dengan makanan** dan **Sembuhkan semua (N permata)**. Kartu koleksi monster menampilkan HP sekarang/maks dan tombol **Sembuhkan**; kartu barak menampilkan prajurit terluka dengan tombol sembuh. Gambar buatan kode: pohon kecil toska bercahaya dengan daun tetesan jiwa (bertambah per level, mahkota emas di Lv 5), akar memeluk mata air.
 > - **Tes:** `healing.test.ts` (data & laju per level, HP tersimpan setelah pertarungan liar / serangan desa / Serbu / Petualangan, mulai bertarung dengan HP sisa, pulih per menit dari waktu yang dioper, tiap level lebih cepat, berhenti saat diserang & saat bertarung, sembuh dengan makanan+emas, sembuhkan semua dengan permata, aksi server, simpan & migrasi v30); validasi di `data.test.ts`; `adventure.test.ts` kini memulihkan pasukan di antara titik.
 
-### - [ ] Tugas 1C.11 — Perpustakaan & riset
+### - [x] Tugas 1C.11 — Perpustakaan & riset
 
 - Rancang pohon riset bersama pemilik dulu (cabang Produksi, Militer, Monster; termasuk petunjuk resep rahasia Altar). Satu riset berjalan sekaligus, biaya emas + Kristal Jiwa + waktu, efek dihitung server. Perpustakaan 5 level (Utama, Balai 3).
+
+> **Ringkasan (selesai 2026-10-28):**
+>
+> - **Data:** **Perpustakaan** (`perpustakaan`, feature baru `research`, Utama 2×2, Balai 3, maks 1, 5 level dengan biaya & waktu dari `docs/OBJEK.md`, Lv 5 memberi `queueBonus: 1`). `rules.research`: 3 cabang (`produksi`, `militer`, `monster`) × 5 tier = 15 teknologi deterministik dengan biaya emas + Kristal Jiwa + waktu, efek pasif terhitung server. Teks UI di `data/text.json`. Validasi zod di `schema.ts` dan validasi silang prasyarat di `load.ts`.
+> - **Shared (`research.ts`, baru):** `libraryLevel`, `researchQueueCapacity`, `hasTech`, `getResearchBonus`, `techStatus`, `startResearch` (cek syarat, kurangi emas + kristal, masukkan aktif atau antrean), `settleResearch` (selesaikan aktif, majukan antrean; di-chain lewat `settleVillage`), `speedUpResearch` (selesaikan instan dengan permata), `knownSecretClues` (petunjuk resep rahasia Altar dari riset `rahasia-kuno-1` & `rahasia-kuno-2`).
+> - **Integrasi efek pasif:**
+>   - Produksi: `farmYieldBonus` & `ranchYieldBonus` (`plantCrop`, `productionOf`), `staffedYieldBonus` (`productionOf`), `buildTimeReduction` (`constructionTime`, `startBuild`, `upgradeBuilding`), `soulCrystalChanceBonus` (`advanceWilds`), `allProductionBonus` & `marketGoldBonus` (`productionOf`).
+>   - Militer: `soldierHpBonus` & `soldierAtkBonus` (`soldierStats`), `machineAtkBonus` (`machineStats`, `machineFighter`), `defenseHpBonus` & `raidDefenseBonus` (`wallBreakSeconds`, `towerFighter`, `startRaidFight`), `militaryTrainTimeReduction` (`trainSoldier`, `buildMachine`), `serbuPowerCapBonus` (`serbuPowerCap`).
+>   - Monster: `feedCostReduction` (`foodToNextStage`, `feedMonster`), `altarTimeReduction` & `mutationBonus` (`mixCost`, `rollMix`), `elementAdvantageBonus` (`elementAdvantage`, `Fighter.elementBonus`), `healingRateBonus` (`healPercentPerMinute`), `monsterStatsBonus` (`monsterStats`).
+> - **Simpanan & Server:** **Simpanan v32** (`PlayerState.research = { completed, active, queue }`, migrasi v31). Aksi server `startResearch` dan `speedUpResearch`. `build:server` memperbarui bundle server.
+> - **Client:** Seni buatan kode untuk `perpustakaan` Lv 1–5 (gedung batu kubah, jendela lengkung rak buku, tangga batu, spanduk, kubah observatorium dengan teleskop kuningan Lv 3+, lentera kristal Lv 5). Kartu info gedung: progres riset selesai, info aktif, timer hitung mundur, tombol Buka & Percepat. Panel `ResearchView`: tab 3 cabang, kartu teknologi 5 tingkat dengan status/biaya/syarat, bilah progres & tombol percepat aktif, petunjuk resep rahasia Altar.
+> - **Tes:** `research.test.ts` (12 tes baru: level & antrean, syarat buka, potong biaya, antrean Lv 5, penyelesaian & antrean berjalan, percepat permata, integrasi settleVillage, efek pasif di semua sistem, petunjuk resep rahasia, migrasi simpanan v31, aksi server). Semua 436 tes lulus (`pnpm test`), `pnpm typecheck`, `pnpm lint`.
 
 ### - [ ] Tugas 1C.12 — Guild komunitas
 

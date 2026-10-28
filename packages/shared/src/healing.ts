@@ -7,6 +7,7 @@ import { monsterStats } from './monster';
 import { currentRaid } from './raids';
 import { speedUpCost, type ActionError, type ActionResult, type PlayerState } from './state';
 import { allBuildings, levelDef } from './village';
+import { getResearchBonus } from './research';
 
 // Pohon Jiwa and healing (Tugas 1C.10).
 
@@ -38,7 +39,9 @@ export function healPercentPerMinute(state: PlayerState, data: GameData = gameDa
     (b) => b.level === level && data.buildingById.get(b.type)?.feature === 'healing',
   );
   const rate = tree ? levelDef(tree.type, level, data)?.healPercentPerMinute : undefined;
-  return rate ?? data.rules.healing.basePercentPerMinute;
+  const baseRate = rate ?? data.rules.healing.basePercentPerMinute;
+  const bonus = getResearchBonus(state, 'healingRateBonus', data);
+  return baseRate * (1 + bonus);
 }
 
 /** Max HP of a monster or soldier (undefined for any other id). */
@@ -48,9 +51,15 @@ export function unitMaxHp(
   data: GameData = gameData,
 ): number | undefined {
   const m = state.monsters.find((x) => x.id === id);
-  if (m) return monsterStats(m, data).hp;
+  if (m) {
+    const bonus = getResearchBonus(state, 'monsterStatsBonus', data);
+    return monsterStats(m, data, bonus).hp;
+  }
   const s = state.soldiers.find((x) => x.id === id);
-  if (s) return soldierStats(s, data).hp;
+  if (s) {
+    const hpBonus = getResearchBonus(state, 'soldierHpBonus', data);
+    return soldierStats(s, data, { hpBonus }).hp;
+  }
   return undefined;
 }
 

@@ -13,6 +13,7 @@ import {
 import type { Rng } from './rng';
 import type { RanchAnimal, WildAnimal } from './animals';
 import { settleHealing } from './healing';
+import { settleResearch, getResearchBonus } from './research';
 import { settleMissions, type WildEncounter } from './missions';
 import { aggroEncounters } from './aggro';
 import { settleUnits } from './units';
@@ -159,8 +160,14 @@ export function maxConstructionWorkers(type: string, data: GameData = gameData):
 }
 
 /** Seconds a construction takes with `workers` builders: base time / workers. */
-export function constructionTime(baseSeconds: number, workers: number): number {
-  return Math.ceil(baseSeconds / Math.max(1, workers));
+export function constructionTime(
+  baseSeconds: number,
+  workers: number,
+  buildTimeReduction = 0,
+): number {
+  if (baseSeconds <= 0) return 0;
+  const eff = Math.max(0.1, 1 - buildTimeReduction);
+  return Math.max(1, Math.ceil((baseSeconds * eff) / Math.max(1, workers)));
 }
 
 /** Workers currently building this building. */
@@ -348,7 +355,10 @@ export function settleVillage(state: PlayerState, now: number): PlayerState {
   const trained = aggroEncounters(
     settleUnits(
       settleMissions(
-        settleHealing(settleWorkshop(settleBarracks(settleTraining(state, now), now), now), now),
+        settleHealing(
+          settleWorkshop(settleBarracks(settleResearch(settleTraining(state, now), now), now), now),
+          now,
+        ),
         now,
       ),
       now,
@@ -454,7 +464,16 @@ export function buildBuilding(
       level: instant ? 1 : 0,
       construction: instant
         ? null
-        : { toLevel: 1, endsAt: now + constructionTime(first.seconds, workers) },
+        : {
+            toLevel: 1,
+            endsAt:
+              now +
+              constructionTime(
+                first.seconds,
+                workers,
+                getResearchBonus(s, 'buildTimeReduction', data),
+              ),
+          },
       lastCollectAt: now,
       crop: null,
     };
@@ -496,7 +515,13 @@ export function upgradeBuilding(
     } else {
       nb.construction = {
         toLevel: nb.level + 1,
-        endsAt: now + constructionTime(target.seconds, workers),
+        endsAt:
+          now +
+          constructionTime(
+            target.seconds,
+            workers,
+            getResearchBonus(s, 'buildTimeReduction', data),
+          ),
       };
       assignWorkers(next, workers, { kind: 'building', buildingId: nb.id });
     }
@@ -803,23 +828,41 @@ export function productionOf(
 ): ProductionRate | null {
   if (b.level < 1) return null;
   const level = levelDef(b.type, b.level, data);
-  if (level?.production) return level.production;
+  const allProd = getResearchBonus(state, 'allProductionBonus', data);
+  if (level?.production) {
+    const goldBonus =
+      level.production.resource === 'gold' ? getResearchBonus(state, 'marketGoldBonus', data) : 0;
+    const mult = 1 + allProd + goldBonus;
+    return {
+      resource: level.production.resource,
+      perHour: Math.floor(level.production.perHour * mult),
+      capacity: level.production.capacity,
+    };
+  }
   if (level?.ranchCapacity !== undefined) {
     // Peternakan: food from every animal living there.
-    const perHour = state.village.ranchAnimals
+    const ranchBonus = getResearchBonus(state, 'ranchYieldBonus', data);
+    const mult = 1 + allProd + ranchBonus;
+    const basePerHour = state.village.ranchAnimals
       .filter((a) => a.buildingId === b.id)
       .reduce(
         (sum, a) =>
           sum + (data.wilds.animals.types.find((t) => t.id === a.type)?.ranchFoodPerHour ?? 0),
         0,
       );
-    return { resource: 'food', perHour, capacity: level.ranchCapacity };
+    return {
+      resource: 'food',
+      perHour: Math.floor(basePerHour * mult),
+      capacity: level.ranchCapacity,
+    };
   }
   const staffed = level?.staffedProduction;
   if (!staffed) return null;
+  const staffedBonus = getResearchBonus(state, 'staffedYieldBonus', data);
+  const mult = 1 + allProd + staffedBonus;
   return {
     resource: staffed.resource,
-    perHour: staffed.perWorkerPerHour * staffWorkers(state, b.id),
+    perHour: Math.floor(staffed.perWorkerPerHour * staffWorkers(state, b.id) * mult),
     capacity: staffed.capacity,
   };
 }
@@ -949,11 +992,15 @@ export function plantCrop(
     if (b.construction) return fail('underConstruction');
     const crop = levelDef(b.type, b.level, data)!.crop!;
     if (s.resources.gold < crop.plantGold) return fail('notEnoughGold');
+    const yieldMult =
+      1 +
+      getResearchBonus(s, 'farmYieldBonus', data) +
+      getResearchBonus(s, 'allProductionBonus', data);
     const next = deepClone(s);
     next.resources.gold -= crop.plantGold;
     next.village.buildings.find((x) => x.id === buildingId)!.crop = {
       endsAt: now + crop.seconds,
-      food: crop.food,
+      food: Math.floor(crop.food * yieldMult),
     };
     return { ok: true, state: next, gold: crop.plantGold };
   });

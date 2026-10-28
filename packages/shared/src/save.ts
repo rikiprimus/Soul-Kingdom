@@ -17,7 +17,7 @@ import {
 } from './village';
 
 /** Bump when `PlayerState` changes shape, and add a migration below. */
-export const SAVE_SCHEMA_VERSION = 31;
+export const SAVE_SCHEMA_VERSION = 32;
 
 const int = z.number().int();
 const villageAmountSchema = z.object({
@@ -187,6 +187,11 @@ const playerStateSchema = z.object({
   healing: z.object({
     at: z.number(),
     wounds: z.record(z.string(), z.number().gt(0).max(1)),
+  }),
+  research: z.object({
+    completed: z.array(z.string()),
+    active: z.object({ techId: z.string(), endsAt: z.number() }).nullable(),
+    queue: z.array(z.string()),
   }),
   graveyard: z.array(monsterSchema),
   bossesDefeated: int.min(0),
@@ -638,6 +643,12 @@ const migrations: Record<number, (state: unknown) => unknown> = {
   30: (raw) => {
     const state = raw as PlayerState;
     state.healing = { at: 0, wounds: {} };
+    return state;
+  },
+  // v31 (Tugas 1C.11) added Perpustakaan & riset.
+  31: (raw) => {
+    const state = raw as PlayerState;
+    state.research = { completed: [], active: null, queue: [] };
     return state;
   },
 };

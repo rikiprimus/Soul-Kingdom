@@ -1296,6 +1296,117 @@ const DESIGNS: Record<string, Design> = {
         p.ellipse({ x: crown.x, y: crown.y - 30 * s }, 5, 5, C.gold, darken(C.gold, 0.5));
     },
   },
+  perpustakaan: {
+    top: 135,
+    draw(p, level) {
+      // Warm stone paved foundation
+      p.flat(0.04, 0.04, 0.96, 0.96, 0xb8b0a2, 0, 0x8c8274);
+      // Front garden/plaza tiles
+      p.flat(0.08, 0.72, 0.92, 0.92, 0x9e9587);
+
+      const h = 42 + level * 5;
+      // Main octagonal/square library hall
+      const hall = p.box(0.14, 0.14, 0.86, 0.86, h, 0xd0c8b8);
+
+      // Bookshelves visible in arched windows on left and right walls
+      hall.left(0.25, 0.45, h * 0.35, h * 0.75, 0x3d2c1e);
+      hall.left(0.28, 0.42, h * 0.4, h * 0.7, 0x8a5532);
+      // Colorful book spines inside window
+      hall.left(0.3, 0.4, h * 0.42, h * 0.52, 0x4a7eb5);
+      hall.left(0.3, 0.4, h * 0.55, h * 0.65, 0xc24a3a);
+
+      hall.right(0.55, 0.75, h * 0.35, h * 0.75, 0x3d2c1e);
+      hall.right(0.58, 0.72, h * 0.4, h * 0.7, 0x8a5532);
+      hall.right(0.6, 0.7, h * 0.42, h * 0.52, 0xd4af37);
+      hall.right(0.6, 0.7, h * 0.55, h * 0.65, 0x5a9a5a);
+
+      // Grand arched doorway with dark wood and stone pillars
+      hall.right(0.18, 0.42, 0, h * 0.65, 0x2e2016);
+      hall.right(0.22, 0.38, 0, h * 0.6, 0x61412b);
+      // Golden door handles
+      const doorFp = p.fp(0.86, 0.3, h * 0.3);
+      p.ellipse(doorFp, 2, 2, C.gold);
+
+      // Stone steps leading to entrance
+      p.box(0.72, 0.22, 0.94, 0.38, 4, 0xa39a8c);
+      p.box(0.78, 0.24, 0.98, 0.36, 2, 0x91887a);
+
+      // Domed roof (stepped pyramid/cylinder leading to dome)
+      const roofColor = level >= 4 ? 0x2b547e : 0x3a4f66;
+      const roofTrim = level >= 4 ? C.gold : 0xc0b096;
+      p.pyramid(0.1, 0.1, 0.9, 0.9, h, 14, roofColor);
+
+      // Upper dome / observatory rotunda
+      const domeH = h + 14;
+      p.cylinder(0.5, 0.5, 0.44, 12, roofColor, lighten(roofColor, 0.2), domeH);
+      p.cylinder(0.5, 0.5, 0.48, 3, roofTrim, lighten(roofTrim, 0.2), domeH + 12);
+
+      // Central dome sphere
+      const domeTop = p.fp(0.5, 0.5, domeH + 15);
+      const domeR = 16 + level * 2;
+      p.ellipse(
+        { x: domeTop.x, y: domeTop.y - domeR * 0.5 },
+        domeR,
+        domeR * 0.85,
+        roofColor,
+        darken(roofColor, 0.4),
+      );
+      // Dome shine
+      p.ellipse(
+        { x: domeTop.x - domeR * 0.3, y: domeTop.y - domeR * 0.75 },
+        domeR * 0.3,
+        domeR * 0.2,
+        0xffffff,
+        null,
+        0.5,
+      );
+
+      // Spire or Observatory Telescope on top
+      if (level >= 3) {
+        // Brass/bronze telescope
+        const scopeBase = { x: domeTop.x + 2, y: domeTop.y - domeR * 0.85 };
+        // Scope stand
+        p.line(scopeBase, { x: scopeBase.x, y: scopeBase.y - 8 }, 0x5a4a32, 3);
+        // Angled telescope tube
+        const tubeStart = { x: scopeBase.x - 7, y: scopeBase.y - 6 };
+        const tubeEnd = { x: scopeBase.x + 10, y: scopeBase.y - 18 };
+        p.line(tubeStart, tubeEnd, C.gold, 4);
+        p.ellipse(tubeEnd, 4, 2.5, 0x55ccff, 0x2277aa); // Lens
+      } else {
+        // Scholar spire with golden orb
+        const spireBase = { x: domeTop.x, y: domeTop.y - domeR * 0.85 };
+        p.line(spireBase, { x: spireBase.x, y: spireBase.y - 14 }, roofTrim, 2.5);
+        p.ellipse({ x: spireBase.x, y: spireBase.y - 15 }, 4, 4, C.gold, darken(C.gold, 0.4));
+      }
+
+      // Exterior props: Book pedestal & stack of tomes in front courtyard
+      p.box(0.28, 0.8, 0.42, 0.9, 6, 0x7a6f62);
+      // Stack of books
+      p.box(0.31, 0.82, 0.39, 0.88, 8, 0x8a2b2b);
+      p.box(0.32, 0.83, 0.38, 0.87, 10, 0x2d5a88);
+
+      // Hanging banner over the entrance
+      const bannerPt = p.fp(0.86, 0.32, h * 0.8);
+      p.poly(
+        [
+          { x: bannerPt.x - 7, y: bannerPt.y - 6 },
+          { x: bannerPt.x + 7, y: bannerPt.y - 6 },
+          { x: bannerPt.x + 7, y: bannerPt.y + 10 },
+          { x: bannerPt.x, y: bannerPt.y + 6 },
+          { x: bannerPt.x - 7, y: bannerPt.y + 10 },
+        ],
+        level >= 4 ? 0x8a5cd6 : 0x2e6b9e,
+        C.gold,
+      );
+
+      // Magical floating rune / crystal lamp at Level 5
+      if (level >= 5) {
+        const lamp = p.fp(0.5, 0.5, domeH + 34);
+        p.ellipse(lamp, 7, 7, 0x80dfff, null, 0.4);
+        p.ellipse(lamp, 4, 4, 0xffffff, 0x40b0ff);
+      }
+    },
+  },
   tembok: {
     top: 44,
     draw(p, level, variant) {

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { careSoulEgg, hatchSoulEgg } from '../nest';
 import { claimSet } from '../collections';
 import { healAllWithGems, healWithFood } from '../healing';
+import { startResearch, speedUpResearch } from '../research';
 import { drawMarket } from '../market';
 import { buildMachine } from '../workshop';
 import { claimDaily, claimQuest } from '../quests';
@@ -164,6 +165,8 @@ export const ACTIONS = {
   claimSet: action(byId, (s, p) => claimSet(s, p.id)),
   unlockIsland: action(byId, (s, p, now) => unlockIsland(s, p.id, now)),
   travelTo: action(byId, (s, p) => travelTo(s, p.id)),
+  startResearch: action(z.object({ techId: id }), (s, p, now) => startResearch(s, p.techId, now)),
+  speedUpResearch: action(z.object({}), (s, _p, now) => speedUpResearch(s, now)),
 };
 
 export type ActionName = keyof typeof ACTIONS;

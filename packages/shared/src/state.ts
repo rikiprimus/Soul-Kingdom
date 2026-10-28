@@ -23,6 +23,7 @@ import { animalRespawnSeconds, spawnAnimals } from './animals';
 import { rollEgg, type BarracksTraining, type Egg, type Soldier } from './barracks';
 import { encounterRespawnSeconds, spawnEncounters } from './encounters';
 import { isOnMission, type Mission } from './missions';
+import { getResearchBonus } from './research';
 import { deepClone } from './clone';
 import { recordAction, type XpAction } from './player';
 import { dayNumber } from './quests';
@@ -73,6 +74,17 @@ export interface Monsterpedia {
   recipes: string[];
 }
 
+export interface ResearchInProgress {
+  techId: string;
+  endsAt: number;
+}
+
+export interface ResearchState {
+  completed: string[];
+  active: ResearchInProgress | null;
+  queue: string[];
+}
+
 export interface PlayerState {
   resources: Resources;
   /** The island being played. */
@@ -105,6 +117,8 @@ export interface PlayerState {
   missions: Mission[];
   /** Wounds of monsters and soldiers after fights, healing by the minute (Tugas 1C.10). */
   healing: Healing;
+  /** Research progress at the Perpustakaan (Tugas 1C.11). */
+  research: ResearchState;
   /** Fallen monsters, waiting in the Kuburan to be revived (they take no population). */
   graveyard: Monster[];
   bossesDefeated: number;
@@ -203,6 +217,13 @@ export type ActionError =
   | 'underAttack'
   | 'notWounded'
   | 'noHealingTree'
+  | 'noLibrary'
+  | 'libraryConstructing'
+  | 'techLocked'
+  | 'techAlreadyResearched'
+  | 'techAlreadyQueued'
+  | 'researchSlotsFull'
+  | 'notResearching'
   | 'badRequest';
 
 export type ActionResult<T extends object = object> =
@@ -270,6 +291,7 @@ export function createInitialState(
     units: {},
     missions: [],
     healing: { at: now, wounds: {} },
+    research: { completed: [], active: null, queue: [] },
     graveyard: [],
     bossesDefeated: 0,
     xp: 0,
@@ -356,13 +378,15 @@ export function startMix(
   if (isMonsterBusy(state, a.id) || isMonsterBusy(state, b.id)) return fail('parentBusy');
 
   const context = { bossesDefeated: state.bossesDefeated, pityStreak: state.pityStreak };
-  const cost = mixCost(a, b, context, data);
+  const altarReduction = getResearchBonus(state, 'altarTimeReduction', data);
+  const cost = mixCost(a, b, context, data, altarReduction);
   if (state.resources.gold < cost.gold) return fail('notEnoughGold');
   if (state.resources.soulCrystal < cost.soulCrystal) return fail('notEnoughSoulCrystal');
 
   const next = clone(state);
   const rng = createRng(next.rngState);
-  const result = rollMix(a, b, context, rng, data);
+  const mutationBonus = getResearchBonus(state, 'mutationBonus', data);
+  const result = rollMix(a, b, context, rng, data, mutationBonus);
   next.rngState = rng.getState();
   next.resources.gold -= cost.gold;
   next.resources.soulCrystal -= cost.soulCrystal;
@@ -497,7 +521,8 @@ export function feedMonster(
   const monster = state.monsters.find((m) => m.id === params.monsterId);
   if (!monster) return fail('monsterNotFound');
   if (isFinalStage(monster.stage, data)) return fail('alreadyAdult');
-  const needed = foodToNextStage(monster, data) - monster.food;
+  const discount = getResearchBonus(state, 'feedCostReduction', data);
+  const needed = foodToNextStage(monster, data, discount) - monster.food;
   const amount = Math.min(params.amount, needed);
   if (!Number.isInteger(params.amount) || amount <= 0) return fail('invalidAmount');
   if (state.resources.food < amount) return fail('notEnoughFood');
@@ -505,7 +530,7 @@ export function feedMonster(
   const m = next.monsters.find((x) => x.id === params.monsterId)!;
   next.resources.food -= amount;
   m.food += amount;
-  const grew = m.food >= foodToNextStage(m, data);
+  const grew = m.food >= foodToNextStage(m, data, discount);
   if (grew) {
     m.stage = data.rules.growth.stages[getStage(m.stage, data).index + 1]!.id;
     m.food = 0;

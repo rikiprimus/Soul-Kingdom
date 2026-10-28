@@ -1032,6 +1032,43 @@
       ]
     },
     {
+      "id": "perpustakaan",
+      "name": "Perpustakaan",
+      "description": "Tempat para cendekiawan meneliti teknologi dan rahasia jiwa.",
+      "category": "utama",
+      "feature": "research",
+      "size": 2,
+      "maxCount": [0, 0, 1, 1, 1, 1, 1, 1],
+      "levels": [
+        {
+          "cost": { "gold": 5000, "wood": 2000, "stone": 2000 },
+          "seconds": 3600,
+          "requiresTownHall": 3
+        },
+        {
+          "cost": { "gold": 15000, "wood": 5000, "stone": 5000 },
+          "seconds": 10800,
+          "requiresTownHall": 4
+        },
+        {
+          "cost": { "gold": 40000, "wood": 12000, "stone": 12000 },
+          "seconds": 28800,
+          "requiresTownHall": 5
+        },
+        {
+          "cost": { "gold": 100000, "wood": 30000, "stone": 30000 },
+          "seconds": 57600,
+          "requiresTownHall": 6
+        },
+        {
+          "cost": { "gold": 250000, "wood": 70000, "stone": 70000 },
+          "seconds": 115200,
+          "requiresTownHall": 7,
+          "queueBonus": 1
+        }
+      ]
+    },
+    {
       "id": "tembok",
       "sellable": true,
       "lineBuild": true,

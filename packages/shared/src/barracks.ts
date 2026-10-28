@@ -6,6 +6,7 @@ import type { ActionError, ActionResult, PlayerState } from './state';
 import { recordAction } from './player';
 import { populationFree } from './workers';
 import { allBuildings, hasFeature } from './village';
+import { getResearchBonus } from './research';
 
 /** A human soldier from one of the three barracks (Tugas 1A.13). `rank` is 0-based. */
 export interface Soldier {
@@ -64,12 +65,18 @@ export function soldierPower(s: SoldierKind, data: GameData = gameData): number 
 }
 
 /** Battle stats: hp/atk/def grow with rank; speed and range do not. */
-export function soldierStats(s: SoldierKind, data: GameData = gameData) {
+export function soldierStats(
+  s: SoldierKind,
+  data: GameData = gameData,
+  bonuses: { hpBonus?: number; atkBonus?: number } = {},
+) {
   const { stats } = soldierDef(s.kind, data);
   const k = rankDef(s.rank, data).statMultiplier;
+  const hpMult = 1 + (bonuses.hpBonus ?? 0);
+  const atkMult = 1 + (bonuses.atkBonus ?? 0);
   return {
-    hp: Math.round(stats.hp * k),
-    atk: Math.round(stats.atk * k),
+    hp: Math.round(stats.hp * k * hpMult),
+    atk: Math.round(stats.atk * k * atkMult),
     def: Math.round(stats.def * k),
     spd: stats.spd,
     range: stats.range,
@@ -159,7 +166,9 @@ export function trainSoldier(
   const next = s === state ? deepClone(s) : s;
   next.resources.gold -= cost.gold;
   next.resources.food -= cost.food;
-  const endsAt = Math.max(now, queue[queue.length - 1]?.endsAt ?? now) + cost.seconds;
+  const timeReduction = getResearchBonus(s, 'militaryTrainTimeReduction', data);
+  const seconds = Math.max(1, Math.ceil(cost.seconds * Math.max(0.1, 1 - timeReduction)));
+  const endsAt = Math.max(now, queue[queue.length - 1]?.endsAt ?? now) + seconds;
   next.barracksQueue.push({ ...kind, buildingId: b.id, endsAt });
   return { ok: true, state: next, endsAt };
 }
@@ -177,7 +186,8 @@ export function combinedBarracksLevel(state: PlayerState, data: GameData = gameD
 /** Power points a Serbu army may field: grows with the combined barracks level (Tugas 1.4). */
 export function serbuPowerCap(state: PlayerState, data: GameData = gameData): number {
   const table = data.rules.battle.powerCapByCombinedBarracksLevel;
-  return table[Math.min(combinedBarracksLevel(state, data), table.length - 1)]!;
+  const baseCap = table[Math.min(combinedBarracksLevel(state, data), table.length - 1)]!;
+  return baseCap + getResearchBonus(state, 'serbuPowerCapBonus', data);
 }
 
 // ---------- Eggs ----------

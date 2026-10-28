@@ -4,6 +4,7 @@ import { gameData, type GameData } from './data';
 import type { ActionError, ActionResult, PlayerState } from './state';
 import { allBuildings } from './village';
 import { populationFree } from './workers';
+import { getResearchBonus } from './research';
 
 // Bengkel and its war machines (Tugas 1C.7).
 
@@ -50,12 +51,13 @@ export function machineName(kind: string, level: number, data: GameData = gameDa
 }
 
 /** Battle stats at a Bengkel level: hp, atk and def grow with the version; speed and range do not. */
-export function machineStats(kind: string, level: number, data: GameData = gameData) {
+export function machineStats(kind: string, level: number, data: GameData = gameData, atkBonus = 0) {
   const { stats } = machineDef(kind, data);
   const k = data.rules.workshop.versionMultiplier[versionIndex(level, data)]!;
+  const atkMult = 1 + atkBonus;
   return {
     hp: Math.round(stats.hp * k),
-    atk: Math.round(stats.atk * k),
+    atk: Math.round(stats.atk * k * atkMult),
     def: Math.round(stats.def * k),
     spd: stats.spd,
     range: stats.range,
@@ -68,11 +70,16 @@ export function machinePower(kind: string, data: GameData = gameData): number {
 }
 
 /** A machine as a fighter: strong against buildings, the Pendobrak hits nothing else. */
-export function machineFighter(m: Machine, level: number, data: GameData = gameData): Fighter {
+export function machineFighter(
+  m: Machine,
+  level: number,
+  data: GameData = gameData,
+  atkBonus = 0,
+): Fighter {
   const def = machineDef(m.kind, data);
   return {
     id: m.id,
-    stats: machineStats(m.kind, level, data),
+    stats: machineStats(m.kind, level, data, atkBonus),
     element: null,
     skill: false,
     siege: { multiplier: def.buildingMultiplier, buildingsOnly: def.buildingsOnly },
@@ -133,7 +140,9 @@ export function buildMachine(
   next.resources.food -= build.food;
   next.resources.wood -= build.wood;
   next.resources.stone -= build.stone;
-  const endsAt = Math.max(now, queue[queue.length - 1]?.endsAt ?? now) + build.seconds;
+  const timeReduction = getResearchBonus(s, 'militaryTrainTimeReduction', data);
+  const seconds = Math.max(1, Math.ceil(build.seconds * Math.max(0.1, 1 - timeReduction)));
+  const endsAt = Math.max(now, queue[queue.length - 1]?.endsAt ?? now) + seconds;
   next.workshopQueue.push({ kind: def.id, buildingId: b.id, endsAt });
   return { ok: true, state: next, endsAt };
 }
