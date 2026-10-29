@@ -1,6 +1,5 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [{ "source": "/berita/:slug", "destination": "/artikel/index.html" }],
-  "redirects": [{ "source": "/artikel", "destination": "/berita", "permanent": true }]
+  "rewrites": [{ "source": "/berita/:slug", "destination": "/artikel" }]
 }

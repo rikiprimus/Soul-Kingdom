@@ -18,14 +18,13 @@ export async function callWebFunction<T = Record<string, unknown>>(
   }
 
   const session = await getSession();
+  // A visitor who is not signed in sends the public anon key, which the function gateway
+  // accepts as a token; the function then treats the request as a guest's.
   const headers: Record<string, string> = {
     apikey: cfg.key,
+    Authorization: `Bearer ${session?.access_token ?? cfg.key}`,
     'Content-Type': 'application/json',
   };
-
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
-  }
 
   try {
     const res = await fetch(`${cfg.url}/functions/v1/web`, {
