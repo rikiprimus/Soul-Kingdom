@@ -1,0 +1,7 @@
+# Cloudflare Pages / Netlify. Addresses carry no ".html"; see src/routes.ts.
+
+# An article: /berita/<slug> shows the article page.
+/berita/:slug   /artikel/index.html   200
+
+# The article page has no address of its own.
+/artikel   /berita   301

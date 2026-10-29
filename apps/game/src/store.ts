@@ -67,7 +67,7 @@ export class GameStore {
   /** Set when the main save was unusable: 'restored' from the backup, or 'reset' to a new game. */
   readonly loadNotice: 'restored' | 'reset' | null = null;
   /** The Supabase server when configured (Tugas 1.6); null plays offline. */
-  private readonly link: ServerLink | null = null;
+  private link: ServerLink | null = null;
   /** Play seconds not yet reported to the server. */
   private beatSeconds = 0;
   /** Shows a server error (set by the UI). */
@@ -94,14 +94,31 @@ export class GameStore {
         (save, now) => this.fromServer(save, now),
         (error) => this.onServerError?.(error),
       );
-      // The local save moves to the server the first time (ignored once it has one).
-      this.link.send({ kind: 'load' }, serializeState(this._state));
-      setInterval(() => this.sendBeat(), gameData.rules.server.beatEverySeconds * 1000);
     }
+  }
+
+  private syncStarted = false;
+
+  startServerSync(): void {
+    if (!this.link || this.syncStarted) return;
+    this.syncStarted = true;
+    this.link.send({ kind: 'load' }, serializeState(this._state));
+    setInterval(() => this.sendBeat(), gameData.rules.server.beatEverySeconds * 1000);
+  }
+
+  /** Plays offline for this run (dev login bypass): no server requests at all. */
+  goOffline(): void {
+    if (!this.syncStarted) this.link = null;
   }
 
   get online(): boolean {
     return this.link !== null;
+  }
+
+  /** Checks auth status from server link (or returns authenticated if offline). */
+  async checkAuth(): Promise<{ state: 'authenticated' | 'anonymous' | 'none'; email?: string }> {
+    if (!this.link) return { state: 'authenticated' };
+    return this.link.checkAuthStatus();
   }
 
   /** A friends request to the server (Tugas 2.1); offline it answers `offline`. */
@@ -123,7 +140,35 @@ export class GameStore {
     this.link?.signInWithGoogle();
   }
 
-  getUser(): Promise<{ email?: string; provider?: string } | null> {
+  signInWithEmail(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+    return this.link?.signInWithEmail(email, password) ?? Promise.resolve({ ok: true });
+  }
+
+  signUpWithEmail(
+    email: string,
+    password: string,
+  ): Promise<{ ok: boolean; error?: string; session?: boolean }> {
+    return (
+      this.link?.signUpWithEmail(email, password) ?? Promise.resolve({ ok: true, session: true })
+    );
+  }
+
+  recoverPassword(email: string): Promise<{ ok: boolean; error?: string }> {
+    return this.link?.recoverPassword(email) ?? Promise.resolve({ ok: true });
+  }
+
+  /** Links Google to the guest account so its progress stays (redirects on success). */
+  linkGoogle(): Promise<{ ok: boolean; error?: string }> {
+    return this.link?.linkGoogle() ?? Promise.resolve({ ok: false, error: 'offline' });
+  }
+
+  signOut(): void {
+    this.link?.signOut();
+    writeStorage(SAVE_KEY, null);
+    window.location.reload();
+  }
+
+  getUser(): Promise<{ email?: string; provider?: string; isAnonymous?: boolean } | null> {
     return this.link?.getUser() ?? Promise.resolve(null);
   }
 

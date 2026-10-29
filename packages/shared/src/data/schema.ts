@@ -737,6 +737,23 @@ export const rulesFileSchema = z.object({
     maxBeatSeconds: z.number().positive(),
   }),
   debug: z.object({ enabledInDev: z.boolean(), skipMixerUnlock: z.boolean() }),
+  web: z.object({
+    _note: z.string().optional(),
+    featuredMonsters: z.array(z.string().min(1)).length(5),
+    leaderboardSize: z.number().int().min(1),
+    newsPerPage: z.number().int().min(1),
+    newsMaxPerPage: z.number().int().min(1),
+    news: z.object({
+      titleMin: z.number().int().min(1),
+      titleMax: z.number().int().min(1),
+      slugMin: z.number().int().min(1),
+      slugMax: z.number().int().min(1),
+      contentMin: z.number().int().min(1),
+      excerptMax: z.number().int().min(1),
+    }),
+    coverMaxBytes: z.number().int().min(1),
+    coverTypes: z.array(z.string().min(1)).min(1),
+  }),
 });
 
 export const buildingFeatures = [

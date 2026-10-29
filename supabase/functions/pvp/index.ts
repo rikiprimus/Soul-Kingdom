@@ -1,7 +1,7 @@
 // Supabase Edge Function (Deno): Serbu markas pemain lain (Tugas 2.2).
 // Defense snapshots, matchmaking by power, server-computed battle results,
 // and defense replays.
-import { CORS, database, loadSlot, nowSeconds, playerId, reply, saveSlot } from '../_shared/db.ts';
+import { database, loadSlot, nowSeconds, playerId, reply, saveSlot, serve } from '../_shared/db.ts';
 import {
   attackPlayerBase,
   createDefenseSnapshot,
@@ -12,8 +12,7 @@ import {
   type SerbuCell,
 } from '../_shared/game.js';
 
-Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+serve(async (req: Request) => {
   if (req.method !== 'POST') return reply({ ok: false, error: 'badMethod' }, 405);
 
   const db = database();

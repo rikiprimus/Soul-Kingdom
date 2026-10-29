@@ -2,7 +2,7 @@
 // Arena snapshots, 3v3 duel simulation, weekly leaderboard, and rating updates.
 // The client only names an opponent; the server rebuilds it from its own records.
 import { type SupabaseClient } from 'npm:@supabase/supabase-js@2.45.4';
-import { CORS, database, loadSlot, nowSeconds, playerId, reply, saveSlot } from '../_shared/db.ts';
+import { database, loadSlot, nowSeconds, playerId, reply, saveSlot, serve } from '../_shared/db.ts';
 import {
   arenaBotSeed,
   createArenaSnapshot,
@@ -59,8 +59,7 @@ async function storeSnapshot(db: SupabaseClient, id: string, state: PlayerState,
   return snap;
 }
 
-Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+serve(async (req: Request) => {
   if (req.method !== 'POST') return reply({ ok: false, error: 'badMethod' }, 405);
 
   const db = database();

@@ -8,7 +8,7 @@ import {
 } from '@soul-monster/shared';
 import { errorText, t } from '../text';
 import { COLORS, textStyle } from '../ui/theme';
-import { Button, Modal, roundedPanel, toast, inputDialog } from '../ui/widgets';
+import { Button, confirmDialog, Modal, roundedPanel, toast, inputDialog } from '../ui/widgets';
 import { View } from './View';
 
 interface Profile {
@@ -184,9 +184,24 @@ export class FriendsView extends View {
             left + 12,
             y + accH / 2,
             t('friends.googleLinked', { email: this.user.email }),
-            textStyle(13, COLORS.good),
+            textStyle(12, COLORS.good),
           )
           .setOrigin(0, 0.5),
+      );
+      const logoutBtnW = 90;
+      content.add(
+        new Button(scene, left + width - logoutBtnW / 2 - 8, y + accH / 2, {
+          width: logoutBtnW,
+          height: 30,
+          label: t('auth.signOut'),
+          fontSize: 11,
+          color: COLORS.danger,
+          onClick: () => {
+            confirmDialog(scene, t('auth.logoutConfirm'), () => {
+              this.ctx.store.signOut();
+            });
+          },
+        }),
       );
     } else {
       content.add(

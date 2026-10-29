@@ -1,10 +1,10 @@
 {
   "elements": [
     { "id": "normal", "name": "Normal", "color": "#A8A878", "composition": ["normal"] },
-    { "id": "api", "name": "Api", "color": "#F08030", "composition": ["api"] },
-    { "id": "air", "name": "Air", "color": "#6890F0", "composition": ["air"] },
-    { "id": "angin", "name": "Angin", "color": "#4DD0E1", "composition": ["angin"] },
-    { "id": "tanah", "name": "Tanah", "color": "#8D6E63", "composition": ["tanah"] },
+    { "id": "api", "name": "Fire", "color": "#F08030", "composition": ["api"] },
+    { "id": "air", "name": "Water", "color": "#6890F0", "composition": ["air"] },
+    { "id": "angin", "name": "Wind", "color": "#4DD0E1", "composition": ["angin"] },
+    { "id": "tanah", "name": "Earth", "color": "#8D6E63", "composition": ["tanah"] },
     { "id": "lightning", "name": "Lightning", "color": "#FFD700", "composition": ["lightning"] },
     { "id": "ice", "name": "Ice", "color": "#80DEEA", "composition": ["ice", "air"] },
     { "id": "nature", "name": "Nature", "color": "#4CAF50", "composition": ["nature", "tanah"] },

@@ -3,7 +3,7 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2.45.4';
 import {
   areFriends,
-  CORS,
+  serve,
   database,
   loadSlot,
   nowSeconds,
@@ -47,8 +47,7 @@ async function befriend(db: SupabaseClient, x: string, y: string) {
     .or(`and(from_id.eq.${x},to_id.eq.${y}),and(from_id.eq.${y},to_id.eq.${x})`);
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+serve(async (req) => {
   const db = database();
   const id = await playerId(db, req);
   if (!id) return reply({ ok: false, error: 'unauthorized' }, 401);

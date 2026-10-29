@@ -5,7 +5,9 @@
   "packageManager": "pnpm@10.34.7",
   "scripts": {
     "dev": "pnpm --filter @soul-monster/game dev",
-    "build": "pnpm -r typecheck && pnpm --filter @soul-monster/game build",
+    "dev:web": "pnpm --filter @soul-monster/web dev",
+    "build": "pnpm -r typecheck && pnpm --filter @soul-monster/game build && pnpm --filter @soul-monster/web build",
+    "build:web": "pnpm --filter @soul-monster/web build",
     "preview": "pnpm --filter @soul-monster/game preview",
     "test": "vitest run",
     "test:watch": "vitest",

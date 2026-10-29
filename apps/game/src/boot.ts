@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { gameData } from '@soul-monster/shared';
 import { mountDebugPanel } from './debug/DebugPanel';
+import { LoginScene } from './scenes/LoginScene';
 import { SerbuScene } from './scenes/SerbuScene';
 import { UIScene } from './scenes/UIScene';
 import { VillageScene } from './scenes/VillageScene';
@@ -40,7 +41,12 @@ export function boot(): void {
         import.meta.env.DEV && new URLSearchParams(window.location.search).has('timer'),
     },
     input: { activePointers: 3 },
-    scene: [new VillageScene(store), new UIScene(store, dev), new SerbuScene(store)],
+    scene: [
+      new LoginScene(store),
+      new VillageScene(store),
+      new UIScene(store, dev),
+      new SerbuScene(store),
+    ],
   });
 
   const fit = () => {

@@ -36,3 +36,4 @@ export * from './research';
 export * from './guild';
 export * from './server/actions';
 export * from './server/handler';
+export * from './web';

@@ -1,0 +1,108 @@
+{
+  "_note": "Aset website dari SpriteCook (hanya untuk apps/web; game tetap memakai gambar buatan kode). asset_id = id di SpriteCook; account = akun SpriteCook yang membuat aset; sha12 = 12 karakter awal SHA-256 file di repo.",
+  "assets": [
+    {
+      "asset_id": "66174b4f-3880-4a83-8ee7-d44dc8ef04d1",
+      "account": "elk_carport_uncrushed",
+      "label": "key art: desa pulau melayang di langit senja",
+      "source": "art/hero-raw.png",
+      "source_sha12": "e9b0afdf5547",
+      "outputs": [
+        {
+          "path": "public/img/sky.webp",
+          "note": "langit saja: pulau dihapus, lubangnya diisi rata (push-pull) lalu dihaluskan",
+          "sha12": "9b321621c38a"
+        }
+      ]
+    },
+    {
+      "asset_id": "28962ee1-a744-5d01-b791-ee6b69420125",
+      "account": "elk_carport_uncrushed",
+      "label": "key art tanpa latar (remove_background, 1 kredit)",
+      "source": "art/island-cutout-raw.png",
+      "source_sha12": "ae72eb1ff841",
+      "outputs": [
+        {
+          "path": "public/img/island.webp",
+          "note": "pulau utama + naga saja; pulau kecil yang terpotong dibuang; dipangkas",
+          "sha12": "d1f19f992ee9"
+        },
+        {
+          "path": "public/img/island-640.webp",
+          "sha12": "dfdddc040032"
+        }
+      ]
+    },
+    {
+      "asset_id": "98767abe-57eb-4022-9b0e-2e15a246467d",
+      "account": "bungee_upside_deuce",
+      "label": "unggahan art/hero-raw.png sebagai acuan gaya (tanpa kredit)"
+    },
+    {
+      "asset_id": "013b9e26-ef67-4dee-b196-cf4b27dc4b51",
+      "account": "bungee_upside_deuce",
+      "label": "grid 2x2 ilustrasi kartu fitur (16 kredit, acuan gaya 98767abe)",
+      "source": "art/features-raw.png",
+      "source_sha12": "da071db25906",
+      "outputs": [
+        {
+          "path": "public/img/feature-build.webp",
+          "crop": [0, 0, 512, 512],
+          "sha12": "b341eb8243ea"
+        },
+        {
+          "path": "public/img/feature-breed.webp",
+          "crop": [512, 0, 512, 512],
+          "sha12": "1333dff92463"
+        },
+        {
+          "path": "public/img/feature-battle.webp",
+          "crop": [0, 512, 512, 512],
+          "sha12": "8497eaf55d5c"
+        }
+      ],
+      "unused_cells": ["[512, 512, 512, 512] pulau kecil + peti harta (cadangan)"]
+    },
+    {
+      "asset_id": "4013f0d1-cd7c-4838-9d07-98ebadca518b",
+      "account": "bungee_upside_deuce",
+      "label": "logo SOUL MONSTER (mode ui, 8 kredit)",
+      "source": "art/logo-raw.png",
+      "source_sha12": "2abf57d1af1a",
+      "outputs": [
+        {
+          "path": "public/img/logo-small.webp",
+          "size": [220, 178],
+          "sha12": "b91f734b8b2f"
+        }
+      ]
+    },
+    {
+      "asset_id": "ad218dad-5c7e-44d1-b132-d3ef33c33aa2",
+      "account": "bungee_upside_deuce",
+      "label": "dedaunan tepi depan (8 kredit)",
+      "source": "art/leaves-raw.png",
+      "source_sha12": "da37b9fbd726",
+      "outputs": [
+        {
+          "path": "public/img/leaves.webp",
+          "sha12": "632a4702b2c8"
+        }
+      ]
+    },
+    {
+      "asset_id": "d5d9d355-f84b-41c7-adc9-c9e303b58940",
+      "account": "bungee_upside_deuce",
+      "label": "bingkai emas berukir (mode ui, 8 kredit)",
+      "source": "art/frame-raw.png",
+      "source_sha12": "7c40e9ae4998",
+      "outputs": [
+        {
+          "path": "public/img/frame.webp",
+          "note": "9-slice 400 px (potongan 80): sudut berukir asli, sisi diganti garis emas polos, tengah transparan; permata diganti CSS",
+          "sha12": "80a0636ecdcd"
+        }
+      ]
+    }
+  ]
+}

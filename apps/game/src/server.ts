@@ -11,6 +11,9 @@ export interface ServerAnswer {
   [extra: string]: unknown;
 }
 
+/** The auth server refused the session (or there is none): the player must sign in again. */
+export class AuthRefused extends Error {}
+
 interface Session {
   access_token: string;
   refresh_token: string;
@@ -135,45 +138,202 @@ export class ServerLink {
   }
 
   /** Sessions belong to one Supabase project. */
-  private get sessionKey(): string {
+  get sessionKey(): string {
     return `soul-monster:session:${this.config.url}`;
   }
 
   /** Redirects to Supabase Google OAuth sign-in. */
   signInWithGoogle(): void {
+    if (typeof window === 'undefined') return;
     const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
     window.location.href = `${this.config.url}/auth/v1/authorize?provider=google&redirect_to=${redirect}`;
   }
 
-  /** Gets user profile from Supabase auth (to check email / provider). */
-  async getUser(): Promise<{ email?: string; provider?: string } | null> {
+  /** Checks if a session or hash token exists in storage. */
+  hasStoredSession(): boolean {
+    if (typeof window !== 'undefined' && window.location.hash.includes('access_token=')) {
+      return true;
+    }
+    try {
+      const saved = localStorage.getItem(this.sessionKey);
+      return saved !== null && saved !== 'null';
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Links Google to the signed-in (anonymous) account, keeping its user id and save.
+   * Needs "manual linking" on in the Supabase project (docs/SERVER.md).
+   */
+  async linkGoogle(): Promise<{ ok: boolean; error?: string }> {
+    if (typeof window === 'undefined') return { ok: false, error: 'offline' };
     try {
       const sess = await this.session();
-      const res = await fetch(`${this.config.url}/auth/v1/user`, {
-        headers: {
-          apikey: this.config.key,
-          Authorization: `Bearer ${sess.access_token}`,
-        },
-      });
-      if (!res.ok) return null;
-      const data = (await res.json()) as {
-        email?: string;
-        app_metadata?: { provider?: string };
-      };
-      return {
-        email: data.email,
-        provider: data.app_metadata?.provider ?? 'anonymous',
-      };
+      const redirect = encodeURIComponent(window.location.origin + window.location.pathname);
+      const res = await fetch(
+        `${this.config.url}/auth/v1/user/identities/authorize?provider=google&redirect_to=${redirect}&skip_http_redirect=true`,
+        { headers: { apikey: this.config.key, Authorization: `Bearer ${sess.access_token}` } },
+      );
+      const data = (await res.json().catch(() => null)) as { url?: string; msg?: string } | null;
+      if (!res.ok || !data?.url) return { ok: false, error: data?.msg || `auth ${res.status}` };
+      window.location.href = data.url;
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  /** Gets user profile from Supabase auth (to check email / provider). */
+  async getUser(): Promise<{ email?: string; provider?: string; isAnonymous?: boolean } | null> {
+    try {
+      return await this.fetchUser();
     } catch {
       return null;
     }
   }
 
+  /** The signed-in user; throws `AuthRefused` when the session is no longer valid. */
+  private async fetchUser(): Promise<{ email?: string; provider?: string; isAnonymous?: boolean }> {
+    const sess = await this.session();
+    const res = await fetch(`${this.config.url}/auth/v1/user`, {
+      headers: {
+        apikey: this.config.key,
+        Authorization: `Bearer ${sess.access_token}`,
+      },
+    });
+    if (res.status === 401 || res.status === 403) throw new AuthRefused(`auth ${res.status}`);
+    if (!res.ok) throw new Error(`auth ${res.status}`);
+    const data = (await res.json()) as {
+      email?: string;
+      is_anonymous?: boolean;
+      app_metadata?: { provider?: string };
+    };
+    const isAnonymous = data.is_anonymous || data.app_metadata?.provider === 'anonymous';
+    return {
+      email: data.email,
+      provider: data.app_metadata?.provider ?? (isAnonymous ? 'anonymous' : 'email'),
+      isAnonymous,
+    };
+  }
+
   /**
-   * The saved anonymous session, refreshed when close to expiring (or when `renew`);
-   * a new anonymous account only when there is none or it cannot be refreshed.
+   * Check whether current user is authenticated, anonymous guest, or unauthenticated.
+   * Only a session the server refuses is dropped; when the server cannot be reached the
+   * saved session is kept and the player goes on (requests retry later).
    */
-  private async session(renew = false): Promise<Session> {
+  async checkAuthStatus(): Promise<{
+    state: 'authenticated' | 'anonymous' | 'none';
+    email?: string;
+  }> {
+    if (!this.hasStoredSession()) return { state: 'none' };
+    let user: { email?: string; isAnonymous?: boolean };
+    try {
+      user = await this.fetchUser();
+    } catch (err) {
+      if (!(err instanceof AuthRefused)) return { state: 'authenticated' };
+      this.signOut();
+      return { state: 'none' };
+    }
+    if (user.isAnonymous) {
+      return { state: 'anonymous' };
+    }
+    return { state: 'authenticated', email: user.email };
+  }
+
+  /** Sign in with email and password. */
+  async signInWithEmail(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const auth = await this.auth('token?grant_type=password', { email, password });
+      const session: Session = {
+        access_token: auth.access_token,
+        refresh_token: auth.refresh_token,
+        expires_at: Math.floor(Date.now() / 1000) + auth.expires_in,
+      };
+      this.saveSession(session);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  /** Register new account with email and password. */
+  async signUpWithEmail(
+    email: string,
+    password: string,
+  ): Promise<{ ok: boolean; error?: string; session?: boolean }> {
+    try {
+      const res = await fetch(`${this.config.url}/auth/v1/signup`, {
+        method: 'POST',
+        headers: { apikey: this.config.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          msg?: string;
+          error_description?: string;
+        } | null;
+        return {
+          ok: false,
+          error: data?.msg || data?.error_description || `auth ${res.status}`,
+        };
+      }
+      const data = (await res.json()) as {
+        access_token?: string;
+        refresh_token?: string;
+        expires_in?: number;
+      };
+      if (data.access_token && data.refresh_token) {
+        const session: Session = {
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_at: Math.floor(Date.now() / 1000) + (data.expires_in ?? 3600),
+        };
+        this.saveSession(session);
+        return { ok: true, session: true };
+      }
+      return { ok: true, session: false };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  /** Request password reset recovery email. */
+  async recoverPassword(email: string): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const res = await fetch(`${this.config.url}/auth/v1/recover`, {
+        method: 'POST',
+        headers: { apikey: this.config.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      return { ok: res.ok };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  /** Clears stored session (logout). */
+  signOut(): void {
+    try {
+      localStorage.removeItem(this.sessionKey);
+    } catch {
+      // ignore
+    }
+  }
+
+  private saveSession(session: Session): void {
+    try {
+      localStorage.setItem(this.sessionKey, JSON.stringify(session));
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
+   * The saved session, refreshed when close to expiring (or when `renew`).
+   * No longer creates anonymous accounts automatically if missing.
+   */
+  async session(renew = false): Promise<Session> {
     if (typeof window !== 'undefined' && window.location.hash.includes('access_token=')) {
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
       const at = hashParams.get('access_token');
@@ -185,8 +345,8 @@ export class ServerLink {
           refresh_token: rt,
           expires_at: Math.floor(Date.now() / 1000) + exp,
         };
+        this.saveSession(session);
         try {
-          localStorage.setItem(this.sessionKey, JSON.stringify(session));
           window.history.replaceState({}, '', window.location.pathname);
         } catch {
           // ignore
@@ -194,30 +354,40 @@ export class ServerLink {
         return session;
       }
     }
+
     let saved: Session | null = null;
     try {
       saved = JSON.parse(localStorage.getItem(this.sessionKey) ?? 'null') as Session | null;
     } catch {
       saved = null;
     }
-    if (saved && !renew && saved.expires_at - 60 > Date.now() / 1000) return saved;
-    const refresh = saved?.refresh_token;
-    const auth = refresh
-      ? await this.auth('token?grant_type=refresh_token', { refresh_token: refresh }).catch(() =>
-          this.auth('signup', {}),
-        )
-      : await this.auth('signup', {});
-    const session: Session = {
-      access_token: auth.access_token,
-      refresh_token: auth.refresh_token,
-      expires_at: Math.floor(Date.now() / 1000) + auth.expires_in,
-    };
-    try {
-      localStorage.setItem(this.sessionKey, JSON.stringify(session));
-    } catch {
-      // Without storage the player signs in again next time (a new anonymous account).
+
+    if (!saved) {
+      throw new AuthRefused('no_session');
     }
-    return session;
+
+    if (!renew && saved.expires_at - 60 > Date.now() / 1000) return saved;
+
+    const refresh = saved.refresh_token;
+    if (!refresh) {
+      this.signOut();
+      throw new AuthRefused('no_session');
+    }
+
+    try {
+      const auth = await this.auth('token?grant_type=refresh_token', { refresh_token: refresh });
+      const session: Session = {
+        access_token: auth.access_token,
+        refresh_token: auth.refresh_token,
+        expires_at: Math.floor(Date.now() / 1000) + auth.expires_in,
+      };
+      this.saveSession(session);
+      return session;
+    } catch (err) {
+      // A refused refresh token is dead; a network error keeps it for the next try.
+      if (err instanceof AuthRefused) this.signOut();
+      throw err;
+    }
   }
 
   private async auth(path: string, body: object) {
@@ -226,7 +396,11 @@ export class ServerLink {
       headers: { apikey: this.config.key, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`auth ${res.status}`);
+    if (!res.ok) {
+      // 4xx (bad or expired token, wrong password) is a refusal; 429 and 5xx are worth retrying.
+      const refused = res.status >= 400 && res.status < 500 && res.status !== 429;
+      throw refused ? new AuthRefused(`auth ${res.status}`) : new Error(`auth ${res.status}`);
+    }
     return (await res.json()) as {
       access_token: string;
       refresh_token: string;

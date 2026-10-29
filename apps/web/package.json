@@ -1,0 +1,23 @@
+{
+  "name": "@soul-monster/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "predev": "vite-node scripts/build-web-data.ts",
+    "prebuild": "vite-node scripts/build-web-data.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fontsource/cinzel": "^5.3.0",
+    "@fontsource/fredoka": "^5.3.0",
+    "@soul-monster/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5",
+    "vite-node": "^3.2.4"
+  }
+}

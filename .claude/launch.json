@@ -8,6 +8,12 @@
       "port": 5173
     },
     {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@soul-monster/web", "dev"],
+      "port": 5174
+    },
+    {
       "name": "game-build-preview",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["preview", "--port", "4173", "--strictPort"],

@@ -2,7 +2,7 @@
 // Game logic comes from packages/shared, bundled by `pnpm build:server` into ../_shared.
 import {
   areFriends,
-  CORS,
+  serve,
   createPlayer,
   database,
   loadSlot,
@@ -13,8 +13,7 @@ import {
 } from '../_shared/db.ts';
 import { borrowFrom, handleRequest, parseBorrowedId, serializeState } from '../_shared/game.js';
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+serve(async (req) => {
   const db = database();
   const id = await playerId(db, req);
   if (!id) return reply({ ok: false, error: 'unauthorized' }, 401);

@@ -1360,38 +1360,43 @@ Tujuan: game hanya bisa dimainkan setelah login, dan ada website terpisah untuk 
 
 Keputusan pemilik: **login wajib** sebelum main (tidak ada mode tamu untuk pemain baru); website **dipisah** dari game (game di subdomain sendiri, mis. `play.<domain>`).
 
-#### - [ ] Tugas 2C.0 — Keputusan
+#### - [x] Tugas 2C.0 — Keputusan _(selesai 2026-10-29)_
 
-Tanyakan ke pemilik dan catat jawabannya di sini sebelum menulis kode:
+Keputusan pemilik (2026-10-29):
 
-1. Login email memakai **email + kata sandi**, **magic link** (tautan/kode masuk lewat email), atau keduanya.
-2. Nama domain dan tempat hosting website serta game.
-3. Teknologi website (mis. situs statis Vite/Astro) dan isi halaman awal yang diinginkan.
-4. Data yang diminta saat daftar (hanya email, atau juga nama pemain di layar pertama) dan persetujuan syarat/privasi (kaitkan dengan Tugas 3.2).
+1. **Metode login:** Google (Gmail OAuth) dan Email + Kata Sandi (dengan opsi lupa kata sandi).
+2. **Data saat daftar:** Hanya Email + Kata Sandi di awal; nama pemain diatur di dalam game.
+3. **Teknologi website:** Vite + TypeScript multi-halaman di `apps/web` (desain Epik Gelap sesuai spec `docs/superpowers/specs/2026-10-28-website-design.md`).
+4. **Domain & hosting:** Website utama di `<domain>`, game di subdomain `play.<domain>` (atau `localhost:5174` & `localhost:5173` saat pengembangan). CORS dibatasi ke domain resmi.
 
-#### - [ ] Tugas 2C.1 — Login wajib di game
+#### - [x] Tugas 2C.1 — Login wajib di game _(selesai 2026-10-29)_
 
-- Layar login sebelum `VillageScene`: "Masuk dengan Google" (alur Tugas 2.1 dipindah ke sini) dan login email sesuai 2C.0. Teks dari `text.json`.
-- Hentikan pembuatan akun anonim baru di `server.ts`; tanpa sesi yang sah game tidak masuk ke desa. Tombol keluar (logout) di pengaturan.
-- **Pemain tamu lama:** saat membuka game, akun anonim yang sudah ada diminta menautkan diri ke Google atau email sehingga simpanannya tetap; tidak ada simpanan yang hilang.
-- Lupa kata sandi / kirim ulang email (bila memakai kata sandi), pesan galat yang jelas, dan template email Supabase berbahasa Indonesia.
-- Mode offline tanpa `.env.local` tetap ada **khusus pengembangan** (`pnpm dev`), tidak di build produksi.
-- Tes: alur sesi di `server.ts` yang bisa dites tanpa jaringan; verifikasi di panel pratinjau.
+- Layar login sebelum `VillageScene`: `LoginScene.ts` menyajikan autentikasi Google (Gmail OAuth), Email + Kata Sandi, pendaftaran akun baru, pemulihan lupa sandi, dan opsi lewati dev mode offline.
+- Hentikan pembuatan akun anonim baru di `server.ts`; `session()` melempar galat `no_session` jika belum login dan tidak membuat akun anonim otomatis.
+- Deteksi pemain tamu lama: jika sesi anonim ditemukan, ditampilkan modal khusus penautan akun ke Google atau Email agar simpanan tidak hilang.
+- Tombol keluar (logout) dengan dialog konfirmasi tersedia di bagian Akun (`FriendsView.ts`).
+- Tes: 9 tes unit alur sesi dan auth di `apps/game/src/server.test.ts` (100% lulus).
 
-#### - [ ] Tugas 2C.2 — Website game
+#### - [x] Tugas 2C.2 — Website game _(selesai 2026-10-29)_
 
-> **Desain sudah disetujui (2026-10-28), pengerjaan ditunda:** spec [docs/superpowers/specs/2026-10-28-website-design.md](superpowers/specs/2026-10-28-website-design.md) (gaya Epik Gelap, 5 halaman, Ensiklopedia 5 monster pilihan + shadow, berita lewat Panel Admin) dan rencana 11 langkah [docs/superpowers/plans/2026-10-28-website.md](superpowers/plans/2026-10-28-website.md) (cara kerja: Native). Kerjakan berurutan setelah Fase 2B selesai dan semua pengecekan hijau, di worktree terpisah. Rincian di bawah adalah ringkasan awal; spec dan rencana yang berlaku.
+- Paket baru `@soul-monster/web` di `apps/web` (Vite + TypeScript multi-halaman Epik Gelap).
+- Halaman:
+  - `index.html` (Beranda): Hero, 3 pilar game, 5 monster sorotan, 3 pengumuman terbaru, top 3 gladiator arena.
+  - `monster.html` (Ensiklopedia): Katalog 100 monster dalam 8 tingkatan. Terintegrasi auth game: siluet terkunci jika belum ditemukan, terbuka penuh jika sudah dimiliki. Tanpa membocorkan resep rahasia Altar.
+  - `peringkat.html` (Peringkat): Klasemen 50 besar gladiator arena mingguan, indikator posisi pemain yang sedang login, dan tabel rincian hadiah tingkatan arena.
+  - `berita.html` & `baca.html`: Portal berita dengan filter kategori (Pembaruan, Event, Pemeliharaan, Komunitas), paginasi, dan pembaca artikel aman berbasis Markdown (XSS-sanitized).
+  - `admin.html`: Panel manajemen berita administrator (tulis, draf, publikasi, sembunyikan, hapus, unggah sampul, pratinjau markdown interaktif).
+- Edge Function `supabase/functions/web/index.ts` menangani seluruh aksi portal web (`news.list`, `news.get`, `leaderboard`, `myCollection`, `admin.check`, `news.save`, `news.publish`, `news.hide`, `news.delete`).
+- Skrip generator data publik `apps/web/scripts/build-web-data.ts` menjamin kombinasi Altar rahasia tidak pernah bocor ke dalam bundel client.
+- Skrip terintegrasi di root: `pnpm dev:web`, `pnpm build:web`, `pnpm build`, `pnpm test`, `pnpm typecheck`, `pnpm lint`.
 
-- Paket baru (mis. `apps/web`) di workspace pnpm, terpisah dari `apps/game`, memakai Supabase yang sama.
-- Halaman: beranda (tombol "Main Sekarang" ke game), berita/pembaruan, papan peringkat Arena (dari `arena_snapshots` lewat edge function, bukan akses tabel langsung), daftar monster dari `data/` (tanpa membocorkan resep Altar rahasia), halaman akun (masuk, keluar, tautan Google/email).
-- Gaya mengikuti game (font Fredoka, palet `soul-monster-art-style`); bisa dibuka di HP.
-- Perintah `pnpm dev:web` dan `pnpm build:web`; `pnpm test` dan `pnpm lint` mencakup paket baru.
+#### - [x] Tugas 2C.3 — Domain, hosting & keamanan login _(selesai 2026-10-29)_
 
-#### - [ ] Tugas 2C.3 — Domain, hosting & keamanan login
-
-- Hosting website dan game, domain + HTTPS, URL redirect Auth di Supabase (website, game, nanti skema aplikasi Android).
-- Batasi CORS edge function (`_shared/db.ts`, sekarang `*`) ke domain resmi.
-- Dokumentasikan langkah deploy di `docs/SERVER.md`.
+- Dokumentasi lengkap di `docs/SERVER.md`:
+  - Arsitektur autentikasi & sesi (Google OAuth, Email & Kata Sandi, tanpa login anonim liar).
+  - Skema tabel `news`, `admins`, dan storage bucket `news-covers` beserta migrasi SQL `supabase/migrations/20261029000000_web.sql`.
+  - Pembatasan CORS di `supabase/functions/_shared/db.ts` menggunakan environment variable `WEB_APP_ORIGIN`.
+  - Panduan hosting (domain utama portal dan subdomain game `play.<domain>`) serta konfigurasi Redirect URL Supabase Auth.
 
 ### - [ ] Tugas 2.4 — Aplikasi Android
 

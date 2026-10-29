@@ -3,10 +3,36 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.45.4';
 import { createInitialState, deserializeState, gameData, serializeState } from './game.js';
 
+/** Origins allowed to call the functions (comma-separated `WEB_APP_ORIGIN`); empty allows any. */
+const ALLOWED_ORIGINS = (Deno.env.get('WEB_APP_ORIGIN') ?? '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 export const CORS = {
-  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 };
+
+/**
+ * Serves one edge function: answers CORS preflights and adds the allowed origin to every
+ * answer. A browser accepts only one origin per answer, so the caller's own is echoed back
+ * when it is on the list.
+ */
+export function serve(handler: (req: Request) => Promise<Response>): void {
+  Deno.serve(async (req) => {
+    const res =
+      req.method === 'OPTIONS' ? new Response('ok', { headers: CORS }) : await handler(req);
+    const origin = req.headers.get('Origin');
+    if (ALLOWED_ORIGINS.length === 0) {
+      res.headers.set('Access-Control-Allow-Origin', '*');
+    } else if (origin && ALLOWED_ORIGINS.includes(origin)) {
+      res.headers.set('Access-Control-Allow-Origin', origin);
+    }
+    if (ALLOWED_ORIGINS.length > 0) res.headers.append('Vary', 'Origin');
+    return res;
+  });
+}
 
 export const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {

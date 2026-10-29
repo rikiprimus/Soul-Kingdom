@@ -922,5 +922,22 @@
     "enabledInDev": true,
     "skipMixerUnlock": true,
     "_note": "Panel debug hanya aktif di mode pengembangan: tambah sumber daya, lompati waktu, ubah level Balai Utama, tambah bos dikalahkan."
+  },
+  "web": {
+    "_note": "Website publik (Tugas 2C.2). 5 monster pilihan, kuota papan peringkat (juga batas permintaan), jumlah berita per halaman (dan batas per permintaan), batas panjang isian berita, batas sampul berita.",
+    "featuredMonsters": ["baby-slime", "ember-fox", "griffin", "frost-dragon", "astral-behemoth"],
+    "leaderboardSize": 50,
+    "newsPerPage": 12,
+    "newsMaxPerPage": 50,
+    "news": {
+      "titleMin": 3,
+      "titleMax": 120,
+      "slugMin": 3,
+      "slugMax": 140,
+      "contentMin": 5,
+      "excerptMax": 300
+    },
+    "coverMaxBytes": 1048576,
+    "coverTypes": ["image/png", "image/jpeg", "image/webp"]
   }
 }
